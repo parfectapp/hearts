@@ -264,7 +264,38 @@ function finishMatch(){
   c.drawImage(sp,(cvs.width-sp.width*k)/2,(cvs.height-sp.height*k)/2,sp.width*k,sp.height*k);
   $('#results').classList.add('show');
   if(window.MUSIC){ if(win) MUSIC.winner(); else MUSIC.lobby(); }
-  if(win){ SFX.win(); UI.popHeart(); } else SFX.lose();
+  if(win){ SFX.win(); UI.popHeart(); confetti(); } else SFX.lose();
+}
+
+// CONFETI de victoria: llueve confeti sobre la pantalla de resultados
+function confetti(){
+  const cv=$('#confetti-canvas'); if(!cv) return;
+  const c=cv.getContext('2d');
+  const W=cv.width=(window.innerWidth||document.documentElement.clientWidth||screen.width||800),
+        H=cv.height=(window.innerHeight||document.documentElement.clientHeight||screen.height||600);
+  const cols=['#e8c11e','#ff5a4d','#4dd2ff','#57d977','#c77dff','#ff9e3c','#ffffff'];
+  const P=[];
+  for(let i=0;i<200;i++){
+    P.push({ x:Math.random()*W, y:-20-Math.random()*H,
+      vx:(Math.random()-.5)*3, vy:2+Math.random()*4.5,
+      w:6+Math.random()*7, h:9+Math.random()*9,
+      rot:Math.random()*6.28, vr:(Math.random()-.5)*0.35,
+      col:cols[i%cols.length], sway:Math.random()*6.28 });
+  }
+  let t=0;
+  (function frame(){
+    t++; c.clearRect(0,0,W,H); let alive=false;
+    for(const p of P){
+      p.x += p.vx + Math.sin(t*0.05+p.sway)*0.9;
+      p.y += p.vy; p.vy += 0.03; p.rot += p.vr;
+      if(p.y < H+40) alive=true;
+      c.save(); c.translate(p.x,p.y); c.rotate(p.rot);
+      c.fillStyle=p.col; c.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+      c.restore();
+    }
+    if(alive && t<700 && $('#results').classList.contains('show')) requestAnimationFrame(frame);
+    else c.clearRect(0,0,W,H);
+  })();
 }
 
 // ---- SELECTOR DE MESAS: cada una con su STACK. Entras con tu stack, el ganador se lleva la bolsa. ----

@@ -651,3 +651,6 @@ body.touch-on .touch-toggle{background:rgba(232,193,30,.85)}
 .rotate-hint .rot-sub{font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.06em;color:#b7b1a4}
 @keyframes rotphone{0%,100%{transform:rotate(0)}45%,80%{transform:rotate(-90deg)}}
 @media(orientation:portrait){ body.touch-on #screen-game.active .rotate-hint{display:flex} }
+
+/* ============ CONFETI (victoria) ============ */
+.confetti{position:fixed;left:0;top:0;pointer-events:none;z-index:7}
