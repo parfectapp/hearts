@@ -42,7 +42,7 @@ function onLobby(){
     say('<b>¡Bienvenido a HEARTS!</b> Te regalamos tu <b>primer cofre GRATIS</b>.<br>Ábrelo desde tu <b>WALLET</b> (arriba a la derecha).','#wallet-chip');
   } else if(step===4){
     step=5;
-    say('<b>¡Ese es tu guerrero!</b> Ya es tuyo.<br>Ahora éntrale a <b>RANKED</b>: si caes sueltas corazones… y el último <b>se lo lleva TODO</b>.','#btn-ranked');
+    say('<b>¡Ese es tu guerrero!</b> Ya es tuyo.<br>Ahora dale <b>JUGAR</b>: se trata de <b>SOBREVIVIR</b> — el primero en caer pierde 1 ♥. ¡No seas tú!','#btn-ranked');
   }
 }
 function onWalletOpen(){

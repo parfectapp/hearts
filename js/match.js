@@ -14,6 +14,8 @@ let shakeMag=0;
 window.KIT={
   keys,
   tap(code){ if(taps.has(code)){ taps.delete(code); return true; } return false; },
+  press(code){ if(!keys.has(code)) taps.add(code); keys.add(code); },   // controles TÁCTILES: simula keydown
+  release(code){ keys.delete(code); },                                   // simula keyup
   shake(m){ shakeMag=Math.max(shakeMag,m); },
   applyShake(ctx){
     if(shakeMag>0.2){
@@ -68,6 +70,18 @@ const ECOS=[
   {id:'desierto',name:'DESERT'},
   {id:'nieve',   name:'NORTH'},
   {id:'volcan',  name:'VOLCANIC'},
+  {id:'japon',   name:'SAKURA'},
+  {id:'tokyo',   name:'NEO-TOKYO'},
+  {id:'egipto',  name:'GIZA'},
+  {id:'grecia',  name:'OLYMPUS'},
+  {id:'china',   name:'DRAGON'},
+];
+// RANKED: por ahora SOLO TowerFall (ciclando los 5 mundos). Bomberman y Battle Royale (Showdown)
+// están FUERA temporalmente mientras los perfeccionamos — se regresan descomentándolos.
+const MODE_ROT=[
+  {name:'TOWERFALL', obj:()=>window.TOWERFALL},
+  // {name:'BOMBERMAN', obj:()=>window.BOMBERMAN},
+  // {name:'SHOWDOWN',  obj:()=>window.SHOWDOWN},
 ];
 let current=null;
 
@@ -75,17 +89,34 @@ function startRanked(){
   if(window.TUT) TUT.onRanked();
   const st=DATA.state();
   const an=DATA.byId[st.selected];
-  if(!an){ SFX.deny(); UI.toast('Necesitas un animal. Compra uno en el MARKET.'); return; }
-  if(st.hearts<DATA.ECON.FEE){ SFX.deny(); UI.toast('Fee de 3 ♥ — no te alcanza. Reclama el bonus diario en tu wallet.'); return; }
-  st.hearts-=DATA.ECON.FEE; st.matches++; DATA.save(); UI.updateHearts();
+  if(!an){ SFX.deny(); UI.toast('Necesitas un guerrero. Abre un cofre GRATIS en tu WALLET.'); return; }
+  if(st.hearts<=0){ SFX.deny(); UI.toast('Te quedaste sin ♥. Compra corazones o reclama tu bonus diario.'); return; }
+  st.matches++; DATA.save(); UI.updateHearts();   // SIN apuesta: se trata de SOBREVIVIR, no de apostar
 
   const players=[{name:st.name||'TÚ', animal:an, bot:false, color:COLORS[0], weapon:DATA.equipped()}];
   const WPOOL=DATA.WEAPONS;
   DATA.randomBots(DATA.ECON.PLAYERS-1, an.id).forEach((b,i)=>players.push({...b, color:COLORS[(i+1)%COLORS.length], weapon:WPOOL[Math.floor(Math.random()*WPOOL.length)]}));
-  players.forEach(p=>{ p.hp=DATA.ECON.FEE; p.elim=false; p.koRound=false; });
+  players.forEach(p=>{ p.hp=DATA.ECON.LIVES; p.elim=false; p.koRound=false; });
 
   current={ players, round:0 };
-  $('#hud-pot').textContent=players.length*DATA.ECON.FEE;
+  $('#hud-pot').textContent=st.hearts;                       // tus ♥ (lo que proteges)
+  KIT.updateHudPlayers(players,()=>true);
+  $('#results').classList.remove('show');
+  $('#scoreboard').classList.remove('show');
+  UI.show('#screen-game');
+  runRound();
+}
+
+// PARTY con amigos: partida CASUAL (sin apuesta). members[i]={name,animal,me/bot}
+function startParty(members){
+  if(window.TUT && TUT.onRanked) TUT.onRanked();
+  const st=DATA.state();
+  const players=members.slice(0,4).map((mm,i)=>({ name:mm.name, animal:mm.animal, bot:!mm.me,
+    color:COLORS[i%COLORS.length], weapon:mm.me?DATA.equipped():DATA.byWeapon['bow_wood'] }));
+  players.forEach(p=>{ p.hp=DATA.ECON.LIVES; p.elim=false; p.koRound=false; });
+  st.matches++; DATA.save();
+  current={ players, round:0, party:true };
+  $('#hud-pot').textContent='AMIGOS';
   KIT.updateHudPlayers(players,()=>true);
   $('#results').classList.remove('show');
   $('#scoreboard').classList.remove('show');
@@ -104,48 +135,36 @@ function eliminate(list){
 
 function runRound(){
   const m=current;
-  const eco=ECOS[m.round%4];
-  // TORMENTA desde la ronda 5: todos pagan (1♥, 2♥ desde la ronda 9).
-  // La mitad se QUEMA (sale de la economía) y la otra mitad llueve como botín.
-  let rain=0, tax=0;
-  if(m.round>=4){
-    tax=m.round>=8?2:1;
-    const pay=aliveList();
-    let cobrado=0;
-    pay.forEach(p=>{ const c=Math.min(tax,p.hp); p.hp-=c; cobrado+=c; });
-    rain=Math.floor(cobrado/2);
-    eliminate(pay.filter(p=>p.hp<=0));
-    const me0=m.players[0];
-    if(me0.elim || aliveList().length<=1){ showScoreboard(true); return; }
-  }
+  const rot=MODE_ROT[m.round%MODE_ROT.length];        // (por ahora solo TowerFall)
+  const eco=ECOS[Math.floor(m.round/MODE_ROT.length)%ECOS.length]; // cada ronda cambia de mundo
   const parts=aliveList();
-  const cfg={ duration:60, minAlive:1, rain };
+  // SOLO UNO pierde ♥ por ronda: la ronda acaba en cuanto CAE el primero (todos empiezan con sus 3)
+  const rain=0, tax=0;
+  const cfg={ duration:60, minAlive: Math.max(1, parts.length-1), rain };
 
   const intro=$('#phase-intro');
-  const MODE=window.TOWERFALL;
+  const MODE=rot.obj();
   const tower=MODE.mapNames[eco.id];
-  const ROMAN=['I','II','III'];
+  cfg.variant=Math.floor(Math.random()*3);
   $('#intro-kicker').textContent='RONDA '+(m.round+1)+' · '+eco.name+(tax?' · ⛈ TORMENTA −'+tax+'♥':'');
-  $('#intro-desc').textContent='girando el azar de arena...';
+  $('#intro-desc').textContent='girando el modo...';
   $('#intro-go').textContent='?';
   intro.classList.add('show');
   SFX.phase();
   if(window.MUSIC) MUSIC.battle(m.round);
 
-  // ruleta: elige una de las 3 arenas de la torre (como el TowerFall real)
-  const variant=Math.floor(Math.random()*3);
-  cfg.variant=variant;
-  let spins=10+Math.floor(Math.random()*3), i=Math.floor(Math.random()*3);
+  // ruleta: cicla los 3 modos y aterriza en el de esta ronda
+  let spins=10+Math.floor(Math.random()*3), i=Math.floor(Math.random()*MODE_ROT.length);
   const cv=$('#game-canvas');
   const iv=setInterval(()=>{
-    $('#intro-name').textContent=tower+' · ARENA '+ROMAN[i%3]; i++;
+    $('#intro-name').textContent=MODE_ROT[i%MODE_ROT.length].name+' · '+eco.name; i++;
     SFX.count();
     spins--;
     if(spins<=0){
       clearInterval(iv);
-      $('#intro-name').textContent=tower+' · ARENA '+ROMAN[variant];
+      $('#intro-name').textContent=rot.name+' · '+tower;
       $('#intro-desc').textContent=MODE.desc;
-      $('#hud-phase').textContent='RONDA '+(m.round+1)+' · '+eco.name+' · '+tower+' '+ROMAN[variant]+(rain?' ⛈':'');
+      $('#hud-phase').textContent='RONDA '+(m.round+1)+' · '+rot.name+' · '+eco.name+(rain?' ⛈':'');
       $('#game-controls').textContent=MODE.controls;
       SFX.go();
       let n=3;
@@ -179,7 +198,7 @@ function onRoundEnd(){
 
 function showScoreboard(final){
   const m=current;
-  const nextEco = final?null:ECOS[(m.round+1)%4];
+  const nextEco = final?null:ECOS[(m.round+1)%ECOS.length];
   const alive=aliveList();
   let head = final?'FINAL':nextEco.name;
   if(!final&&alive.length===2) head=nextEco.name+' · ¡DUELO 1v1!';
@@ -221,17 +240,22 @@ function finishMatch(){
   const win = winner===me;
   const place = win ? 1 : (me.place || Math.max(2, ranked.indexOf(me)+1));
 
-  if(win){ st.hearts+=me.hp; st.wins++; st.heartsWon+=me.hp; }
-  const xp={1:80,2:45,3:30,4:20}[place]||12;
-  st.xp+=xp; DATA.save(); UI.updateHearts();
+  // NO se le agregan/quitan ♥ al player (su balance de cuenta no cambia). Solo se juega por sobrevivir.
+  const isParty = !!m.party;
+  const xp = DATA.ECON.XP_REWARD[place] || 12;
+  if(win) st.wins++;
+  const lu = DATA.gainXP(xp);            // XP → nivel (regala cofres)
+  DATA.save(); UI.updateHearts();
 
-  // pantalla WINNER (estilo mockup de André)
-  $('#results-title').textContent = win?'WINNER':'ELIMINADO';
-  $('#results-place').textContent = win?'':place+'º LUGAR';
-  $('#results-name').textContent = (winner.bot?winner.name:winner.name)+'  ·  '+winner.animal.name;
-  $('#results-hearts').textContent = win ? ('+'+me.hp+' ♥ ganados') : ('-'+DATA.ECON.FEE+' ♥ (fee)');
-  $('#results-cash').textContent = win?('≈ +$'+(me.hp*DATA.ECON.MXN_PER_HEART)+' MXN (demo)'):'';
-  $('#results-xp').textContent='+'+xp+' XP · LVL '+DATA.level();
+  // pantalla de resultado
+  $('#results-title').textContent = win ? '¡GANASTE!' : (place+'º LUGAR');
+  $('#results-place').textContent = isParty ? (win?'PARTIDA CON AMIGOS':'CASUAL') : (win?'ÚLTIMO EN PIE':'ELIMINADO');
+  $('#results-name').textContent = winner.name+'  ·  '+winner.animal.name;
+  $('#results-hearts').textContent = win ? '¡sobreviviste!' : (place+'º de '+m.players.length);
+  $('#results-cash').className=''; $('#results-cash').style.color = win?'#57d977':'#b7b1a4';
+  $('#results-cash').textContent = win ? 'quedaste como el último en pie' : 'caíste — inténtalo de nuevo';
+  $('#results-xp').textContent = '+'+xp+' XP · Nivel '+DATA.level()+(lu.up?('  ★ ¡NIVEL '+lu.level+'! + COFRE'):'');
+  if(win) SFX.win(); else SFX.lose();
   const cvs=$('#results-sprite'), c=cvs.getContext('2d');
   c.clearRect(0,0,cvs.width,cvs.height);
   const sp=Sprites.spriteCanvas(winner.animal);
@@ -243,10 +267,39 @@ function finishMatch(){
   if(win){ SFX.win(); UI.popHeart(); } else SFX.lose();
 }
 
+// ---- SELECTOR DE MESAS: cada una con su STACK. Entras con tu stack, el ganador se lleva la bolsa. ----
+function openRanks(){
+  const st=DATA.state();
+  $('#ranks-bal').textContent=st.hearts;
+  const list=$('#ranks-list'); list.className='mesa-scroll'; list.innerHTML='';
+  DATA.RANKS.forEach((_,i)=>{
+    const r=DATA.rankAt(i), afford=st.hearts>=r.entry, cur=(st.rank===i);
+    const card=document.createElement('div');
+    card.className='mesa-card'+((cur&&afford)?' cur':'');
+    card.innerHTML=
+      '<div class="mc-top" style="background:'+r.color+'">MESA<br>'+r.name+'</div>'+
+      '<div class="mc-body">'+
+        '<div class="mc-entry">STACK<br><b>'+r.entry+' ♥</b></div>'+
+        '<div class="mc-prize">'+r.pot+' ♥<span>bolsa (ganador)</span></div>'+
+        '<button class="mc-btn'+(afford?' play':'')+'">'+(afford?(cur?'▶ JUGAR':'JUGAR'):'COMPRAR ♥')+'</button>'+
+      '</div>';
+    const btn=card.querySelector('.mc-btn');
+    if(afford){ btn.onclick=()=>{ SFX.click(); DATA.setRank(i); $('#modal-ranks').classList.remove('show'); startRanked(); }; }
+    else { btn.onclick=()=>{ SFX.click(); $('#modal-ranks').classList.remove('show'); if(window.UI&&UI.openStore) UI.openStore(); }; }
+    list.appendChild(card);
+  });
+  const best=DATA.maxAffordableRank(), bc=list.children[best];
+  if(bc) list.scrollLeft = Math.max(0, bc.offsetLeft - (list.clientWidth-bc.clientWidth)/2);
+  $('#modal-ranks').classList.add('show');
+  SFX.click();
+}
+
 function init(){
-  $('#btn-ranked').addEventListener('click',()=>{ SFX.click(); startRanked(); });
+  $('#btn-ranked').addEventListener('click',()=>{ SFX.click(); startRanked(); });   // JUGAR directo: sobrevive, no pierdas ♥
+  $('#btn-ranks-close').addEventListener('click',()=>{ SFX.click(); $('#modal-ranks').classList.remove('show'); });
+  $('#modal-ranks').addEventListener('click',(e)=>{ if(e.target.id==='modal-ranks') $('#modal-ranks').classList.remove('show'); });
   $('#btn-results-lobby').addEventListener('click',()=>{ SFX.click(); $('#results').classList.remove('show'); UI.enterLobby(); });
 }
 
-window.MATCH={ init, startRanked };
+window.MATCH={ init, startRanked, openRanks, startParty };
 })();

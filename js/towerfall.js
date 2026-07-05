@@ -2,10 +2,16 @@
 (function(){
 const W=832,H=640;
 const GRAV=1500, RUN=265, JUMP=-565;
+// tipos de flecha especiales (se consiguen en cofres)
+const ARROW_TYPES={
+  bomba:  {tint:'#ff6a3d', label:'FLECHAS BOMBA 💥'},
+  laser:  {tint:'#4de1ff', label:'FLECHAS LÁSER (rebotan)'},
+  bramble:{tint:'#8adf4a', label:'FLECHAS ESPINA 🌵'},
+};
 
 // fondos de arena (estilo TowerFall) por ecosistema
 const BACKDROPS={};
-['selva','desierto','nieve','volcan'].forEach(e=>{ const im=new Image(); im.onload=()=>BACKDROPS[e]=im; im.src='assets/maps/'+e+'.png?v=1'; });
+['selva','desierto','nieve','volcan','japon','tokyo','egipto','grecia','china'].forEach(e=>{ const im=new Image(); im.onload=()=>BACKDROPS[e]=im; im.src='assets/maps/'+e+'.png?v=4'; });
 
 function start(canvas, players, cfg, onEnd, eco){
   const ctx=canvas.getContext('2d');
@@ -15,7 +21,7 @@ function start(canvas, players, cfg, onEnd, eco){
   const PLATS=layout.plats;
   const tf=THEMES.makeTFRender(layout.arena||'selva',layout);
   const parts=K.particles();
-  const WRAP=!!layout.wrap, WRAPY=!!layout.wrapY;
+  const WRAP=!!layout.wrap, WRAPY=true;   // WRAP TOTAL (túneles): sales por abajo→apareces arriba, por un lado→el otro (como TowerFall)
   function wrapEnt(o){
     if(!WRAP) return;
     if(o.x<-10) o.x+=W+20; else if(o.x>W+10) o.x-=W+20;
@@ -32,18 +38,21 @@ function start(canvas, players, cfg, onEnd, eco){
     let spd=RUN*(1+(st.vel-5)*0.05);
     if(pw==='dash') spd*=1.32;
     const jit = i>=layout.spawns.length ? (Math.random()-0.5)*80 : 0;  // evita apilar cuando hay muchos
-    return { p, x:sp[0]+jit, y:sp[1], vx:0, vy:0, w:pw==='slippery'?24:30, h:42,
+    const sz = p.animal.size || 1;                                     // tamaño según el animal
+    return { p, x:sp[0]+jit, y:sp[1], vx:0, vy:0, w:(pw==='slippery'?24:30)*sz, h:42*sz, sz,
       onG:false, jumps:1, face:i%2?-1:1,
       weap:wd, ammo: wd.kind==='bow'? wd.ammo : 0, cd:0, swing:0, drawT:0, kx:0,
       pow:pw, dj:pw==='doublejump', healT:0,
       jumpMul:0.86+(st.vel-3)*0.035, gravMul:0.9+(st.def-3)*0.03,  // ligeros saltan/flotan, pesados caen
       dead:false, shield:pw==='shield', wings:false, boots:false,
       spd, think:Math.random()*0.3, mvx:0, wantJump:false, wantShootDir:null,
-      inv:1.2, runPh:Math.random()*6, landT:0, crouch:false, crouchT:0 };
+      inv:1.2, runPh:Math.random()*6, landT:0, crouch:false, crouchT:0,
+      dodgeT:0, dodgeCd:0, ddx:0, ddy:0, dropT:0,
+      ultCd:2, rageT:0, phaseT:0, blitzT:0, skyfall:false, ultFlash:0 };  // ULTIMATE (R) por animal
   });
-  const espd=e=>(e.pow==='berserk'&&e.p.hp<=1)? e.spd*1.4 : e.spd;
+  const espd=e=>{ let s=(e.pow==='berserk'&&e.p.hp<=1)?e.spd*1.4:e.spd; if(e.rageT>0)s*=1.5; if(e.phaseT>0)s*=1.25; return s; };
   const MAXA=6;
-  const arrows=[], hearts=[], chests=[], floats=[], stuck=[], corpses=[];
+  const arrows=[], hearts=[], chests=[], floats=[], stuck=[], corpses=[], brambles=[];
   // cuerpo que se cae con la inercia de la flecha, se acuesta y se desvanece
   function addCorpse(e,dir,by){
     let kx = dir ? dir.vx*0.32 : (by? Math.sign(e.x-by.x)*260 : (Math.random()-.5)*200);
@@ -67,13 +76,16 @@ function start(canvas, players, cfg, onEnd, eco){
   function openChest(ch,e){
     chests.splice(chests.indexOf(ch),1);
     SFX.powerup(); parts.spawn(ch.x,ch.y-10,'#ffd34d',14,200);
-    const fx=['corazon','escudo','alas','botas','carcaj'][Math.floor(Math.random()*5)];
-    if(fx==='corazon'){ e.p.hp++; hudRefresh(); say(ch.x,ch.y-24,'+1 ♥','#ff8a80'); SFX.coin(); }
-    else if(fx==='escudo'){ e.shield=true; say(ch.x,ch.y-24,'ESCUDO','#9ce8ff'); }
+    const pool=['escudo','alas','botas','carcaj','bomba','laser','bramble'];   // sin '+♥' (nadie suma corazones)
+    const fx=pool[Math.floor(Math.random()*pool.length)];
+    if(fx==='escudo'){ e.shield=true; say(ch.x,ch.y-24,'ESCUDO','#9ce8ff'); }
     else if(fx==='alas'){ e.wings=true; say(ch.x,ch.y-24,'ALAS','#f2ede2'); }
     else if(fx==='botas'){ e.boots=true; say(ch.x,ch.y-24,'BOTAS DE SALTO','#9dff8a'); }
-    else if(e.weap.kind==='bow'){ e.ammo=Math.min(MAXA,e.ammo+2); say(ch.x,ch.y-24,'+2 FLECHAS','#ffd34d'); }
-    else { e.p.hp++; hudRefresh(); say(ch.x,ch.y-24,'+1 ♥','#ff8a80'); SFX.coin(); }
+    else if(ARROW_TYPES[fx]&&e.weap.kind==='bow'){   // FLECHAS ESPECIALES (bomba/láser/espina)
+      e.special={type:fx,count:4}; e.ammo=Math.min(MAXA,Math.max(e.ammo,4));
+      say(ch.x,ch.y-24,ARROW_TYPES[fx].label,ARROW_TYPES[fx].tint); SFX.powerup();
+    }
+    else { e.shield=true; say(ch.x,ch.y-24,'ESCUDO','#9ce8ff'); }
   }
   // tormenta: los corazones cobrados llueven como botín
   for(let i=0;i<(cfg.rain||0);i++){
@@ -101,28 +113,28 @@ function start(canvas, players, cfg, onEnd, eco){
     // sueltas tus flechas al piso (recuperables) y pierdes tus poderes
     for(let i=0;i<e.ammo;i++) stickArrow(e.x+(Math.random()-.5)*50, e.y-4, Math.PI/2);
     e.ammo=0; e.wings=false; e.boots=false;
-    // sueltas UN corazón como botín y quedas fuera hasta la siguiente ronda
-    if(e.p.hp>0){ e.p.hp--; dropHearts(e.x,e.y-8,1); }
+    // pierdes 1 vida y quedas fuera de la ronda. NO cae ningún corazón al piso (máximo 3, nadie suma).
+    if(e.p.hp>0){ e.p.hp--; }
     addCorpse(e,dir,by);   // el mono sale volando con la flecha y se acuesta
     e.dead=true; e.p.koRound=true; SFX.die();
-    // ROBAVIDAS: quien mata con este poder gana un corazón
-    if(by&&by.pow==='lifesteal'&&!by.dead&&by.p.hp<12){
-      by.p.hp++; parts.spawn(by.x,by.y-by.h*0.6,'#ff5a4d',12,180);
-      say(by.x,by.y-by.h-16,'ROBAVIDAS +1 ♥','#ff5a4d');
-    }
     hudRefresh();
   }
   function shoot(e,dx,dy){
     if(e.weap.kind!=='bow') return;
     if(e.ammo<=0||e.cd>0) return;
     e.ammo--; e.cd=e.weap.cd; e.drawT=0.16;
-    const sp=e.weap.arrowSpeed||720, n=Math.hypot(dx,dy)||1;
+    let sp=e.weap.arrowSpeed||720, n=Math.hypot(dx,dy)||1, tint=e.weap.tint, type=null;
+    if(e.special&&e.special.count>0){        // flecha ESPECIAL del cofre
+      type=e.special.type; tint=ARROW_TYPES[type].tint; e.special.count--;
+      if(type==='laser') sp*=1.5;            // el láser vuela rapidísimo
+      if(e.special.count<=0) e.special=null;
+    }
     const ox=e.x+dx/n*22, oy=e.y-e.h*0.55+dy/n*22;
     const spread=(e.pow==='triple')?[-0.2,0,0.2]:[0];   // TRIPLE FLECHA: abanico de 3
     spread.forEach(a=>{
       const cs=Math.cos(a), sn=Math.sin(a);
       const vx=(dx/n)*cs-(dy/n)*sn, vy=(dx/n)*sn+(dy/n)*cs;
-      arrows.push({x:ox,y:oy,vx:vx*sp,vy:vy*sp,owner:e,t:3,grace:0.09,tint:e.weap.tint});
+      arrows.push({x:ox,y:oy,vx:vx*sp,vy:vy*sp,owner:e,t:type==='laser'?2:3,grace:0.09,tint,type,bounces:type==='laser'?3:0});
     });
     SFX.arrow();
   }
@@ -143,9 +155,55 @@ function start(canvas, players, cfg, onEnd, eco){
   const active=()=>ents.filter(e=>!e.dead);
   const living=active;
 
+  // DODGE estilo TowerFall: dash con invencibilidad en 8 direcciones; atrapa flechas al esquivar
+  const DODGE_DUR=0.26, DODGE_CD=0.6, DODGE_SPD=440;
+  function startDodge(e,dx,dy){
+    if(e.dodgeT>0||e.dodgeCd>0||e.dead) return;
+    const n=Math.hypot(dx,dy)||1; e.ddx=dx/n; e.ddy=dy/n;
+    e.dodgeT=DODGE_DUR; e.dodgeCd=DODGE_CD; e.inv=Math.max(e.inv,DODGE_DUR+0.02);
+    if(dx) e.face=dx<0?-1:1;
+    SFX.jump(); parts.spawn(e.x,e.y-e.h*0.5,'#f2ede2',9,200);
+  }
+  // explosión de la flecha BOMBA
+  function boom(x,y,by){
+    K.shake(13); SFX.ko(); parts.spawn(x,y,'#ff8a3d',30,340); parts.spawn(x,y,'#ffd34d',18,220);
+    living().forEach(o=>{ if(o.dead||o.inv>0||o.dodgeT>0) return;
+      const d=Math.hypot(o.x-x,(o.y-o.h*0.5)-y); if(d<74){ o.kx=(Math.sign(o.x-x)||1)*420; o.vy=-260; kill(o,by,{vx:o.kx,vy:-260}); } });
+  }
+
+  // ---- ULTIMATES (tecla R): cada animal tiene la SUYA según su PODER ----
+  const ULTCD={lifesteal:11,berserk:12,triple:10,shield:10,heal:12,dash:9,slippery:11,doublejump:10};
+  function ultReady(e){ return !e.dead && !!ULTCD[e.pow] && (e.ultCd||0)<=0; }
+  function pulseKO(x,y,rad,by){ K.shake(11); parts.spawn(x,y,'#ff8a3d',26,320); parts.spawn(x,y,'#ffd34d',14,200);
+    living().forEach(o=>{ if(o===by||o.dead||o.inv>0||o.dodgeT>0) return;
+      if(Math.hypot(o.x-x,(o.y-o.h*0.5)-y)<rad){ o.kx=(Math.sign(o.x-x)||1)*400; o.vy=-250; kill(o,by,{vx:o.kx,vy:-250}); } }); }
+  function shove(e,f){ K.shake(6); parts.spawn(e.x,e.y-e.h/2,'#9ce8ff',20,240);
+    living().forEach(o=>{ if(o===e||o.dead) return; const dx=o.x-e.x, d=Math.hypot(dx,(o.y-o.h/2)-(e.y-e.h/2));
+      if(d<130){ o.kx=(Math.sign(dx)||1)*f; o.vy=-190; } }); }
+  function ultVolley(e){ const face=e.face;
+    [-0.55,-0.37,-0.19,0,0.19,0.37,0.55].forEach(a=>{ const cs=Math.cos(a),sn=Math.sin(a);
+      arrows.push({x:e.x+face*20,y:e.y-e.h*0.55,vx:face*cs*760,vy:face*sn*760,owner:e,t:3,grace:0.08,tint:'#ffd34d',type:null,bounces:0}); });
+    SFX.arrow(); }
+  function useUlt(e){
+    if(!ultReady(e)) return;
+    const U=(DATA.POWERS&&DATA.POWERS[e.pow])||{}, col=U.color||'#ffd34d';
+    e.ultCd=ULTCD[e.pow]; e.ultFlash=0.55;
+    say(e.x,e.y-e.h-20,(U.ult||'ULT')+'!',col); parts.spawn(e.x,e.y-e.h*0.5,col,28,320); SFX.powerup();
+    switch(e.pow){
+      case 'lifesteal': pulseKO(e.x,e.y-e.h*0.4,66,e); break;   // onda letal (sin sumar ♥)
+      case 'berserk':   e.rageT=4; e.inv=Math.max(e.inv,0.8); e.special={type:'bomba',count:5}; e.ammo=Math.max(e.ammo,5); break;
+      case 'triple':    ultVolley(e); break;
+      case 'shield':    e.shield=true; shove(e,150); break;
+      case 'heal':      e.shield=true; e.inv=Math.max(e.inv,1.2); break;   // escudo protector (sin sumar ♥)
+      case 'dash':      e.ddx=e.face; e.ddy=0; e.dodgeT=0.55; e.dodgeCd=0.7; e.blitzT=0.55; e.inv=Math.max(e.inv,0.6); e.vx=e.face*DODGE_SPD*1.7; break;
+      case 'slippery':  e.phaseT=4; e.inv=Math.max(e.inv,0.4); break;
+      case 'doublejump':e.vy=-JUMP*1.8; e.onG=false; e.skyfall=true; break;
+    }
+  }
+
   const jumpV=e=>JUMP*(e.boots?1.24:1)*(e.jumpMul||1);
   function physics(e,dt){
-    e.vy+=GRAV*(e.gravMul||1)*dt;
+    if(e.dodgeT<=0) e.vy+=GRAV*(e.gravMul||1)*dt;   // sin gravedad durante el dash del dodge
     if(e.wings&&e.vy>300) e.vy=300; // planeo con alas
     e.vx=e.mvx+(e.kx||0);
     e.kx=(e.kx||0)*Math.pow(0.02,dt);   // el empuje de espada se disipa
@@ -165,7 +223,7 @@ function start(canvas, players, cfg, onEnd, eco){
         else if(m===py1){e.y=pl.y+pl.h+e.h;e.vy=Math.max(0,e.vy);}
         else {e.y=pl.y;e.vy=0;e.onG=true;}
       } else {
-        if(e.vy>=0 && oy<=pl.y+2){ e.y=pl.y; e.vy=0; e.onG=true; }
+        if(e.vy>=0 && oy<=pl.y+2 && e.dropT<=0){ e.y=pl.y; e.vy=0; e.onG=true; }   // dropT>0 = te sueltas
       }
     });
     if(e.onG) e.jumps=(e.wings||e.dj)?2:1;
@@ -191,7 +249,12 @@ function start(canvas, players, cfg, onEnd, eco){
   }
 
   function botThink(e){
-    const foes=living().filter(o=>o!==e);
+    const foes=living().filter(o=>o!==e && o.phaseT<=0);   // a los FANTASMA no se les puede apuntar
+    // ULTIMATE del bot: si hay rival cerca (o está en peligro), suelta su R
+    if(ultReady(e)){
+      const near=foes.reduce((m,o)=>Math.min(m,Math.abs(o.x-e.x)),1e9);
+      if((near<210||e.p.hp<=1)&&Math.random()<0.05) useUlt(e);
+    }
     // corazón cercano: prioridad de botín
     let heartT=null,hd=260;
     hearts.forEach(h=>{ const d=Math.abs(h.x-e.x)+Math.abs(h.y-(e.y-20))*0.6; if(d<hd){hd=d;heartT=h;} });
@@ -203,10 +266,12 @@ function start(canvas, players, cfg, onEnd, eco){
     }
     const tg=foes.length?foes.reduce((a,b)=>Math.abs(a.x-e.x)<Math.abs(b.x-e.x)?a:b):null;
     const inc=arrows.find(a=>a.owner!==e&&Math.hypot(a.x-e.x,a.y-(e.y-e.h/2))<130&&Math.sign(a.vx)===Math.sign(e.x-a.x));
-    if(inc&&e.onG){
-      const r=Math.random();
-      if(r<0.45) e.wantJump=true;
-      else if(r<0.8) e.crouchT=0.35;
+    if(inc){
+      if(e.dodgeCd<=0 && Math.random()<0.5){        // DODGE del bot (a veces atrapa la flecha)
+        const tx=Math.sign(inc.x-e.x)||e.face;
+        if(Math.random()<0.5) startDodge(e, tx, Math.random()<0.4?-1:0);   // hacia la flecha = atrapar
+        else startDodge(e, (Math.random()<0.5?-tx:tx), -1);                // esquiva vertical
+      } else if(e.onG){ const r=Math.random(); if(r<0.45) e.wantJump=true; else if(r<0.8) e.crouchT=0.35; }
     }
     const scared=e.p.hp<=1; // último corazón: sobrevive y saquea
     if(scared&&tg&&Math.abs(tg.x-e.x)<150&&!heartT){ e.mvx=-Math.sign(tg.x-e.x)*espd(e); e.face=tg.x<e.x?-1:1; return; }
@@ -242,17 +307,27 @@ function start(canvas, players, cfg, onEnd, eco){
         const dn=K.keys.has('ArrowDown')||K.keys.has('KeyS');
         me.crouch = dn && me.onG;
         if(me.crouch) me.mvx*=0.25;
+        const upK=K.keys.has('ArrowUp')||K.keys.has('KeyW');
+        const lf=K.keys.has('ArrowLeft')||K.keys.has('KeyA'), rt=K.keys.has('ArrowRight')||K.keys.has('KeyD');
         if(K.tap('Space')||K.tap('KeyZ')||K.tap('KeyK')){
-          if(me.onG||me.jumps>0){ if(!me.onG)me.jumps--; me.vy=jumpV(me); SFX.jump(); }
+          if(dn && me.onG){ me.dropT=0.16; me.onG=false; me.vy=60; }   // ABAJO+SALTO: soltarse por la plataforma
+          else if(me.onG||me.jumps>0){ if(!me.onG)me.jumps--; me.vy=jumpV(me); SFX.jump(); }
+        }
+        // DODGE (esquive/dash con i-frames, atrapa flechas) — C / SHIFT / L
+        if(K.tap('KeyC')||K.tap('ShiftLeft')||K.tap('ShiftRight')||K.tap('KeyL')){
+          let dx=(rt?1:0)-(lf?1:0), dy=(dn?1:0)-(upK?1:0);
+          if(dx===0&&dy===0) dx=me.face;
+          startDodge(me,dx,dy);
         }
         if(K.tap('KeyX')||K.tap('KeyJ')){
           if(me.weap.kind==='sword') melee(me);
           else {
-            const up=K.keys.has('ArrowUp')||K.keys.has('KeyW');
-            if(me.crouch) shoot(me, me.face, 0);
-            else shoot(me, up||dn?0:me.face, up?-1:dn?1:0);
+            let ax=(rt?1:0)-(lf?1:0), ay=(dn?1:0)-(upK?1:0);   // PUNTERÍA 8 DIRECCIONES (con diagonales)
+            if(ax===0&&ay===0) ax=me.face;                      // sin dirección → hacia donde miras
+            shoot(me, ax, ay);
           }
         }
+        if(K.tap('KeyR')) useUlt(me);   // ULTIMATE del animal
       }
       ents.forEach(e=>{
         if(e.dead||!e.p.bot) return;
@@ -271,10 +346,15 @@ function start(canvas, players, cfg, onEnd, eco){
         if(e.dead) return;
         e.inv=Math.max(0,e.inv-dt); e.cd=Math.max(0,e.cd-dt);
         e.swing=Math.max(0,e.swing-dt); e.drawT=Math.max(0,e.drawT-dt);
-        e.crouchT=Math.max(0,e.crouchT-dt);
-        // REGENERACIÓN: recupera un corazón cada cierto tiempo
-        if(e.pow==='heal'){ e.healT+=dt; if(e.healT>=6&&e.p.hp<10){ e.healT=0; e.p.hp++; hudRefresh();
-          parts.spawn(e.x,e.y-e.h*0.6,'#9dff8a',8,120); say(e.x,e.y-e.h-14,'+1 ♥','#9dff8a'); } }
+        e.crouchT=Math.max(0,e.crouchT-dt); e.dodgeCd=Math.max(0,e.dodgeCd-dt); e.dropT=Math.max(0,e.dropT-dt);
+        e.ultCd=Math.max(0,(e.ultCd||0)-dt); e.rageT=Math.max(0,(e.rageT||0)-dt);
+        e.phaseT=Math.max(0,(e.phaseT||0)-dt); e.ultFlash=Math.max(0,(e.ultFlash||0)-dt);
+        if(e.blitzT>0){ e.blitzT-=dt;   // EMBESTIDA: mata a quien toques durante el dash invencible
+          living().forEach(o=>{ if(o===e||o.dead||o.inv>0||o.dodgeT>0) return;
+            if(Math.abs(o.x-e.x)<e.w/2+o.w/2+8 && Math.abs((o.y-o.h/2)-(e.y-e.h/2))<Math.max(e.h,o.h)*0.65){
+              o.kx=e.face*420; o.vy=-220; kill(o,e,{vx:o.kx,vy:-220}); } }); }
+        if(e.dodgeT>0){ e.dodgeT-=dt; e.mvx=e.ddx*DODGE_SPD; e.vy=e.ddy*DODGE_SPD; e.crouch=false; } // dash del dodge
+        // (sin regeneración: nadie suma corazones, máximo 3)
         // recuperar flechas clavadas (como en TowerFall)
         for(let i=stuck.length-1;i>=0;i--){
           const sa=stuck[i];
@@ -289,6 +369,7 @@ function start(canvas, players, cfg, onEnd, eco){
         physics(e,dt);
         e.landT=Math.max(0,e.landT-dt);
         if(e.onG&&!wasG){ e.landT=0.14; parts.spawn(e.x,e.y,'#c9c2b8',5,90); }
+        if(e.skyfall&&e.onG){ e.skyfall=false; pulseKO(e.x,e.y,76,e); K.shake(14); }  // METEORO: pisotón al aterrizar
         if(e.onG&&Math.abs(e.vx)>30){
           e.runPh+=dt*12;
           if(Math.random()<dt*5) parts.spawn(e.x-e.face*10,e.y-2,'#a89e90',1,45);
@@ -298,15 +379,7 @@ function start(canvas, players, cfg, onEnd, eco){
           const ch=chests[i];
           if(Math.abs(ch.x-e.x)<26&&ch.y>e.y-e.h-14&&ch.y<e.y+12){ openChest(ch,e); }
         }
-        // recoger corazones
-        for(let i=hearts.length-1;i>=0;i--){
-          const h=hearts[i];
-          if(Math.abs(h.x-e.x)<22&&h.y>e.y-e.h-12&&h.y<e.y+10){
-            hearts.splice(i,1); e.p.hp++;
-            SFX.coin(); parts.spawn(h.x,h.y,'#ff8a80',8,140);
-            hudRefresh();
-          }
-        }
+        // (sin corazones en el piso para recoger: nadie suma)
       });
       // stomps
       ents.forEach(a=>{ if(a.dead)return;
@@ -327,26 +400,49 @@ function start(canvas, players, cfg, onEnd, eco){
           if(WRAPY){ if(a.y>H+8)a.y-=H+16; else if(a.y<-8)a.y+=H+16; } }
         let dead=a.t<=0||(!WRAP&&(a.x<10||a.x>W-10))||(!WRAPY&&a.y<6);
         let stuckNow=false;
-        if(!dead) PLATS.forEach(pl=>{ if(a.x>pl.x&&a.x<pl.x+pl.w&&a.y>pl.y&&a.y<pl.y+pl.h){dead=true;stuckNow=true;} });
+        if(!dead) for(const pl of PLATS){
+          if(a.x>pl.x&&a.x<pl.x+pl.w&&a.y>pl.y&&a.y<pl.y+pl.h){
+            if(a.type==='laser'&&a.bounces>0){ // LÁSER: rebota en las plataformas
+              a.bounces--;
+              if(Math.abs(a.vy)>=Math.abs(a.vx)){ a.vy=-a.vy; a.y=a.vy<0?pl.y-3:pl.y+pl.h+3; }
+              else { a.vx=-a.vx; a.x=a.vx<0?pl.x-3:pl.x+pl.w+3; }
+              parts.spawn(a.x,a.y,a.tint,5,150);
+            } else { dead=true; stuckNow=true; }
+            break;
+          }
+        }
         if(!dead) for(const e of ents){
           if(e.dead) continue;
           if(e===a.owner&&a.grace>0) continue;
           const eh=e.crouch?e.h*0.62:e.h;
           if(Math.abs(a.x-e.x)<e.w/2+4 && a.y>e.y-eh-4 && a.y<e.y+4){
-            if(e.crouch&&e.ammo<MAXA){ // ¡dodge-catch de TowerFall!
+            const dodging=e.dodgeT>0;
+            if((dodging||e.crouch)&&e.ammo<MAXA){ // ¡ATRAPAR flecha! (esquivando o agachado)
               e.ammo++; say(e.x,e.y-e.h-16,'¡ATRAPADA!','#ffd34d');
-              SFX.powerup(); parts.spawn(a.x,a.y,'#ffd34d',8,140);
+              SFX.powerup(); parts.spawn(a.x,a.y,'#ffd34d',10,160); dead=true; break;
+            } else if(dodging||e.inv>0){ // invencible: la flecha rebota, no mata
+              say(e.x,e.y-e.h-16,'¡ESQUIVE!','#9ce8ff'); parts.spawn(a.x,a.y,'#9ce8ff',6,140); dead=true; break;
+            } else if(a.type==='laser'){   // el LÁSER ATRAVIESA (mata y sigue)
+              kill(e,a.owner,{vx:a.vx,vy:a.vy}); parts.spawn(a.x,a.y,a.tint,6,150);   // sin dead: sigue de largo
             } else {
               kill(e,a.owner,{vx:a.vx,vy:a.vy});   // se cae con la comba de la flecha
+              dead=true; break;
             }
-            dead=true; break;
           }
         }
         if(dead){
-          if(stuckNow&&a.owner) stickArrow(a.x,a.y,Math.atan2(a.vy,a.vx));
-          else parts.spawn(a.x,a.y,'#ffd34d',5,120);
+          if(a.type==='bomba') boom(a.x,a.y,a.owner);                 // BOMBA: explota
+          else if(a.type==='bramble') brambles.push({x:a.x,y:a.y,t:4}); // ESPINA: deja púas
+          else if(stuckNow&&a.owner) stickArrow(a.x,a.y,Math.atan2(a.vy,a.vx));
+          else parts.spawn(a.x,a.y,a.tint||'#ffd34d',5,120);
           arrows.splice(i,1);
         }
+      }
+      // ESPINAS (bramble): matan a quien las toca durante unos segundos
+      for(let i=brambles.length-1;i>=0;i--){ const b=brambles[i]; b.t-=dt;
+        if(b.t<=0){ brambles.splice(i,1); continue; }
+        living().forEach(o=>{ if(o.dead||o.inv>0||o.dodgeT>0) return;
+          if(Math.abs(o.x-b.x)<20 && Math.abs((o.y-6)-b.y)<26){ kill(o,null); } });
       }
       hearts.forEach(h=>heartPhysics(h,dt));
       // cuerpos: vuelan con la inercia de la flecha, aterrizan y se acuestan
@@ -374,13 +470,7 @@ function start(canvas, players, cfg, onEnd, eco){
     } else {
       endTimer-=dt;
       if(endTimer<=0){
-        // los que quedan barren los corazones sueltos
-        const act=active();
-        while(hearts.length&&act.length){
-          for(const e of act){ if(!hearts.length)break; hearts.pop(); e.p.hp++; }
-        }
-        hudRefresh();
-        cancelAnimationFrame(raf); onEnd(); return;
+        cancelAnimationFrame(raf); onEnd(); return;   // sin barrido de corazones (nadie suma)
       }
     }
 
@@ -395,7 +485,7 @@ function start(canvas, players, cfg, onEnd, eco){
     if(bd){   // fondo atmosférico estilo TowerFall (cubre la arena)
       const s=Math.max(W/bd.width,H/bd.height), bw=bd.width*s, bh=bd.height*s;
       ctx.drawImage(bd,(W-bw)/2,(H-bh)/2,bw,bh);
-      ctx.fillStyle='rgba(6,8,16,.40)'; ctx.fillRect(0,0,W,H);   // oscurece para que resalten plataformas
+      ctx.fillStyle='rgba(6,8,16,.18)'; ctx.fillRect(0,0,W,H);   // apenas oscurece: deja lucir el arte pixel
     } else {
       tf.bg(ctx,time);
     }
@@ -424,6 +514,15 @@ function start(canvas, players, cfg, onEnd, eco){
       ctx.fillStyle=`rgba(255,211,77,${gl*0.4})`;
       ctx.beginPath(); ctx.arc(sa.x,sa.y,8,0,7); ctx.fill();
     });
+    // ESPINAS (bramble): matorral de púas verdes que mata al tocar
+    brambles.forEach(b=>{
+      const fade=b.t<0.8?b.t/0.8:1;
+      ctx.save(); ctx.globalAlpha=fade;
+      for(let k=0;k<7;k++){ const a=-1.57+(k-3)*0.42, ln=12+((k*7)%7);
+        ctx.strokeStyle='#4e7a26'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(b.x,b.y+5); ctx.lineTo(b.x+Math.cos(a)*ln,b.y+5+Math.sin(a)*ln); ctx.stroke();
+        ctx.fillStyle='#8adf4a'; ctx.fillRect(b.x+Math.cos(a)*ln-1.5,b.y+5+Math.sin(a)*ln-1.5,3,3); }
+      ctx.restore();
+    });
     // corazones sueltos
     hearts.forEach(h=>M.drawHeart(ctx,h.x,h.y-8,1.1,time+h.t));
     // flechas
@@ -442,13 +541,21 @@ function start(canvas, players, cfg, onEnd, eco){
       ctx.save(); ctx.globalAlpha=Math.min(1,c.t*2.2);
       if(c.land) M.shadow(ctx,c.x,c.y+2,14);
       ctx.translate(c.x,c.y-18); ctx.rotate(c.rot);
-      Sprites.drawAnimal(ctx,c.a,0,18,46,c.face<0,{air:!c.land,vy:c.land?0:180,t:0,spawn:0});
+      Sprites.drawAnimal(ctx,c.a,0,18,56*(c.a.size||1),c.face<0,{air:!c.land,vy:c.land?0:180,t:0,spawn:0});
       ctx.restore(); ctx.globalAlpha=1;
     });
     // personajes
     ents.forEach(e=>{
       if(e.dead) return;
       if(e.onG) M.shadow(ctx,e.x,e.y+2,15);
+      if(e.dodgeT>0){ // rastro/estela del esquive + aura de invencibilidad
+        for(let k=1;k<=4;k++){ ctx.globalAlpha=0.14*(1-k/5);
+          ctx.fillStyle=e.p.color; const tx=e.x-e.ddx*k*9, ty=e.y-e.h/2-e.ddy*k*9;
+          ctx.beginPath(); ctx.ellipse(tx,ty,e.w*0.5,e.h*0.5,0,0,7); ctx.fill(); }
+        ctx.globalAlpha=1;
+        ctx.strokeStyle='rgba(210,244,255,.8)'; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.arc(e.x,e.y-e.h/2,e.h*0.55,0,7); ctx.stroke();
+      }
       const recoil=Math.max(0,(e.cd-0.2)/0.12);
       if(e.shield){
         ctx.fillStyle='rgba(156,232,255,.18)';
@@ -456,6 +563,17 @@ function start(canvas, players, cfg, onEnd, eco){
         ctx.strokeStyle='rgba(200,244,255,.7)'; ctx.lineWidth=2;
         ctx.beginPath(); ctx.arc(e.x,e.y-e.h/2,32,0,7); ctx.stroke();
       }
+      if(ultReady(e)){   // aura pulsante = ULTIMATE lista (color del poder del animal)
+        const uc=((DATA.POWERS&&DATA.POWERS[e.pow])||{}).color||'#ffd34d';
+        const pu=0.5+Math.sin(time*6)*0.5;
+        ctx.save(); ctx.globalAlpha=0.28+pu*0.4; ctx.strokeStyle=uc; ctx.lineWidth=2.5;
+        ctx.beginPath(); ctx.arc(e.x,e.y-e.h/2,e.h*0.62+pu*3,0,7); ctx.stroke(); ctx.restore();
+      }
+      if(e.rageT>0){ ctx.save(); ctx.globalAlpha=0.6; ctx.strokeStyle='#ff7a3c'; ctx.lineWidth=3;
+        ctx.beginPath(); ctx.arc(e.x,e.y-e.h/2,e.h*0.58,0,7); ctx.stroke(); ctx.restore(); }
+      if(e.ultFlash>0){ ctx.save(); const uf=((DATA.POWERS&&DATA.POWERS[e.pow])||{}).color||'#fff';
+        ctx.globalAlpha=Math.min(1,e.ultFlash*1.6); ctx.strokeStyle=uf; ctx.lineWidth=4;
+        ctx.beginPath(); ctx.arc(e.x,e.y-e.h/2,(0.55-e.ultFlash)*130+18,0,7); ctx.stroke(); ctx.restore(); }
       if(e.wings){ // alitas que aletean
         const fl=e.onG?0.2:Math.sin(time*18)*0.55;
         ctx.fillStyle='rgba(242,237,226,.9)';
@@ -468,11 +586,13 @@ function start(canvas, players, cfg, onEnd, eco){
       }
       if(e.boots&&e.onG){ ctx.fillStyle='rgba(157,255,138,.7)';
         ctx.fillRect(e.x-9,e.y-3,6,3); ctx.fillRect(e.x+3,e.y-3,6,3); }
-      Sprites.drawAnimal(ctx,e.p.animal,e.x,e.y,46,e.face<0,
+      const _phase=e.phaseT>0; if(_phase) ctx.globalAlpha=0.4;   // FANTASMA: casi invisible
+      Sprites.drawAnimal(ctx,e.p.animal,e.x,e.y,56*(e.sz||1),e.face<0,
         {moving:e.onG&&Math.abs(e.vx)>30, run:e.runPh, air:!e.onG, vy:e.vy,
          idle:e.onG&&Math.abs(e.vx)<=30, t:time+e.runPh,
          crouch:e.crouch, land:e.landT/0.14, atk:-recoil*0.6,
          spawn:e.inv>0?e.inv/1.5:0});
+      if(_phase) ctx.globalAlpha=1;
       // arma equipada en la mano
       if(window.WEAP && WEAP.ready(e.weap.id) && e.inv<0.9){
         const hy=e.y-e.h*0.5-(e.crouch?e.h*0.18:0);
@@ -485,11 +605,9 @@ function start(canvas, players, cfg, onEnd, eco){
           WEAP.draw(ctx,e.weap.id, e.x+e.face*(15+sw*6), hy-3, 36, e.face<0, e.face<0?-ang:ang);
         }
       }
-      ctx.fillStyle=e.p.color; ctx.font='bold 11px "Space Mono"'; ctx.textAlign='center';
-      ctx.strokeStyle='rgba(0,0,0,.6)'; ctx.lineWidth=3;
-      const nm='♥'+e.p.hp;   // sin nombre (estorbaba); solo la vida
-      ctx.strokeText(nm,e.x,e.y-e.h-12); ctx.fillText(nm,e.x,e.y-e.h-12);
-      for(let i=0;i<Math.min(6,e.ammo);i++){ ctx.fillStyle='#ffd34d'; ctx.fillRect(e.x-21+i*8,e.y-e.h-8,5,3); }
+      // (sin etiqueta ♥N sobre el jugador — la vida se ve en el HUD de arriba)
+      const spc=(e.special&&e.special.count>0)?ARROW_TYPES[e.special.type].tint:null;   // flechas especiales = barritas de color
+      for(let i=0;i<Math.min(6,e.ammo);i++){ ctx.fillStyle=(spc&&i<e.special.count)?spc:'#ffd34d'; ctx.fillRect(e.x-21+i*8,e.y-e.h-8,5,3); }
     });
     parts.draw(ctx);
     // textos flotantes de los cofres
@@ -517,6 +635,19 @@ function start(canvas, players, cfg, onEnd, eco){
       ctx.fillStyle='#b7b1a4'; ctx.font='bold 11px "Space Mono"';
       ctx.fillText('viendo el final de la ronda · te quedan ♥'+meE.p.hp,W/2,120);
     }
+    if(meE&&!meE.dead&&ULTCD[meE.pow]){   // MEDIDOR de ULTIMATE del jugador (tecla R)
+      const U=(DATA.POWERS&&DATA.POWERS[meE.pow])||{}, uc=U.color||'#ffd34d';
+      const cd=ULTCD[meE.pow], ready=ultReady(meE), frac=ready?1:1-Math.min(1,(meE.ultCd||0)/cd);
+      const bx=16, by=H-26, bw=162, bh=13;
+      ctx.textAlign='left';
+      ctx.fillStyle='rgba(8,10,16,.62)'; ctx.fillRect(bx-7,by-20,bw+14,35);
+      ctx.fillStyle=ready?uc:'#cdc6ba'; ctx.font='900 11px "Space Mono"';
+      ctx.fillText('R · '+(U.ult||'ULT')+(ready?'  ¡LISTA!':''), bx, by-6);
+      ctx.fillStyle='rgba(255,255,255,.16)'; ctx.fillRect(bx,by,bw,bh);
+      ctx.fillStyle=ready?uc:'rgba(220,220,225,.5)'; ctx.fillRect(bx,by,bw*frac,bh);
+      if(ready){ const pu=0.5+Math.sin(time*6)*0.5; ctx.save(); ctx.strokeStyle=uc; ctx.globalAlpha=0.5+pu*0.5; ctx.lineWidth=2; ctx.strokeRect(bx-1,by-1,bw+2,bh+2); ctx.restore(); }
+      ctx.textAlign='center';
+    }
     ctx.restore();
   }
 
@@ -527,6 +658,6 @@ function start(canvas, players, cfg, onEnd, eco){
 window.TOWERFALL={ start,
   title:'HEARTS FALL',
   mapNames:{selva:'THORNWOOD',desierto:'MIRAGE',nieve:'FROSTFANG KEEP',volcan:'TOWERFORGE'},
-  desc:'3 flechas: recupéralas del suelo. Agáchate para ATRAPARLAS. Cofres: alas, botas, escudo (se combinan).',
-  controls:'FLECHAS/WASD mover · ESPACIO saltar · X/J disparar (+ARRIBA apunta) · ABAJO agacharte/atrapar flechas' };
+  desc:'3 flechas (recupéralas). ESQUIVA (C/SHIFT) para ATRAPAR flechas. Apunta en 8 direcciones. Pisotón en la cabeza. Cada animal tiene su ULTIMATE con la tecla R. Cofres dan flechas BOMBA💥/LÁSER (rebotan)/ESPINA🌵 + alas/botas/escudo. ABAJO+SALTO te suelta por la plataforma.',
+  controls:'FLECHAS/WASD mover · ESPACIO saltar · X/J disparar (8 dir) · C/SHIFT ESQUIVAR/atrapar · R ULTIMATE · cabeza = pisotón' };
 })();

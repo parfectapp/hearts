@@ -49,6 +49,61 @@ const T={
     frameA:'#4a3a42', frameB:'#362a30', frameC:'#241a20',
     ambient:'embers',
   },
+  japon:{
+    name:'SAKURA',
+    skyA:'#3a2440', skyB:'#5e3a58', sil:'#241830', sil2:'#3a2444',
+    deckTop:'#8a5a3a', deck:'#6b4530', deckDark:'#4a2e20',
+    fallA:'#ffd6e6', fallB:'#f0a8c8', glow:'#ff9ac0',
+    floor1:'#7a9a4a', floor2:'#6f8f42', spot:'#c98ab0',
+    crateA:'#8a6450', crateB:'#6b4a3a', crateC:'#472e24',
+    solidA:'#9a9088', solidB:'#6e665e', solidC:'#4a4038',
+    frameA:'#8a6450', frameB:'#6b4a3a', frameC:'#472e24',
+    ambient:'petals',
+  },
+  tokyo:{
+    name:'NEO-TOKYO',
+    skyA:'#0e1424', skyB:'#1c2a44', sil:'#0a1020', sil2:'#141e34',
+    deckTop:'#3a4a66', deck:'#28344a', deckDark:'#171f30',
+    fallA:'#c0f8ff', fallB:'#26e6ff', glow:'#26e6ff',
+    floor1:'#1e2636', floor2:'#182030', spot:'#ff3ea5',
+    crateA:'#38445c', crateB:'#28344a', crateC:'#171f30',
+    solidA:'#3a4560', solidB:'#28344a', solidC:'#161d2c',
+    frameA:'#2e3a52', frameB:'#20293c', frameC:'#12182c',
+    ambient:'neon',
+  },
+  egipto:{
+    name:'GIZA',
+    skyA:'#e8a860', skyB:'#b0642e', sil:'#7a4a1e', sil2:'#9a5e24',
+    deckTop:'#e6c078', deck:'#c99a52', deckDark:'#8a6a34',
+    fallA:'#ffe8b0', fallB:'#ffcf7a', glow:'#ffcf6a',
+    floor1:'#d9a95e', floor2:'#c99850', spot:'#ffd97a',
+    crateA:'#d9a95e', crateB:'#a8814a', crateC:'#75561f',
+    solidA:'#d9b878', solidB:'#a8814a', solidC:'#75561f',
+    frameA:'#c99858', frameB:'#a87840', frameC:'#7a5528',
+    ambient:'dust',
+  },
+  grecia:{
+    name:'OLYMPUS',
+    skyA:'#f0a06a', skyB:'#8a6aa0', sil:'#3a4a6a', sil2:'#5a6a8a',
+    deckTop:'#eef0f4', deck:'#cdd0d6', deckDark:'#8f949e',
+    fallA:'#eafaff', fallB:'#a8d8ec', glow:'#8fd8ff',
+    floor1:'#d7d3c6', floor2:'#c9c5b8', spot:'#5ab0e0',
+    crateA:'#dcd8cc', crateB:'#b8b4a8', crateC:'#7e7a70',
+    solidA:'#cdd0d6', solidB:'#9aa0aa', solidC:'#6e737e',
+    frameA:'#c2c6cc', frameB:'#9aa0aa', frameC:'#6e737e',
+    ambient:'dust',
+  },
+  china:{
+    name:'DRAGON',
+    skyA:'#e8b060', skyB:'#8a3a2a', sil:'#3a2418', sil2:'#5a3020',
+    deckTop:'#c99a2a', deck:'#7a2e2a', deckDark:'#4a1a18',
+    fallA:'#ffe8a0', fallB:'#ffce4a', glow:'#ffce4a',
+    floor1:'#6a2e2a', floor2:'#5a2622', spot:'#ffce4a',
+    crateA:'#9a4038', crateB:'#7a2e2a', crateC:'#4a1a18',
+    solidA:'#8a4038', solidB:'#6a2e2a', solidC:'#3e1614',
+    frameA:'#7a2e2a', frameB:'#5a2622', frameC:'#3a1614',
+    ambient:'petals',
+  },
 };
 
 // ---------- helpers ----------
@@ -112,122 +167,134 @@ function brickTile(a,b,c,seed){
     g.globalAlpha=1;
   });
 }
-// tile de bloque PIXEL-ART estilo TowerFall (52x52) por ecosistema
-function arenaTile(eco,pal,seed){
-  const S=52;
+// ===== SISTEMA DE TEXTURAS UNIFICADO estilo TowerFall (MISMO lenguaje en todo el juego) =====
+// material por ecosistema: cuerpo (base/hi/lo/edge) + copete temático (top/topHi/topLo)
+const TFMAT={
+  selva:   {base:'#61704a',hi:'#7f9058',lo:'#41492e',edge:'#28301e', top:'#57a83c',topHi:'#84d15c',topLo:'#37701f'},
+  desierto:{base:'#c0954f',hi:'#ddb972',lo:'#8c6a36',edge:'#5c4422', top:'#e8c86e',topHi:'#f8e6aa',topLo:'#b0863c'},
+  nieve:   {base:'#89a9c1',hi:'#b6d2e4',lo:'#5c7c93',edge:'#3a566c', top:'#eef8ff',topHi:'#ffffff',topLo:'#c0dcee'},
+  volcan:  {base:'#52413a',hi:'#6f5448',lo:'#312422',edge:'#180f0e', top:'#ca4f28',topHi:'#ff8a3a',topLo:'#7a2c14'},
+  japon:   {base:'#6b4a3a',hi:'#8a6450',lo:'#472e24',edge:'#2a1a14', top:'#ec93b2',topHi:'#ffc6d8',topLo:'#c96f90'},
+  tokyo:   {base:'#2b3242',hi:'#3f4a60',lo:'#191e2a',edge:'#0c0f16', top:'#26e6ff',topHi:'#c4f8ff',topLo:'#0a9fc4'},
+  egipto:  {base:'#c99a52',hi:'#e6c078',lo:'#8a6a34',edge:'#5a4420', top:'#ffd97a',topHi:'#fff0c0',topLo:'#c99a44'},
+  grecia:  {base:'#cdd0d6',hi:'#eef0f4',lo:'#8f949e',edge:'#5e636e', top:'#5ab0e0',topHi:'#bfe6ff',topLo:'#3a86b8'},
+  china:   {base:'#7a2e2a',hi:'#9a4038',lo:'#4a1a18',edge:'#2a0e0c', top:'#ffce4a',topHi:'#fff0a8',topLo:'#c99a2a'},
+};
+// CONCRETO gris: material de los bloques DESTRUCTIBLES de Bomberman (distinto de los muros temáticos)
+const CONCRETE={base:'#93938a',hi:'#b4b4a8',lo:'#5e5e57',edge:'#3a3a35', top:'#93938a',topHi:'#b4b4a8',topLo:'#5e5e57'};
+// bloque sólido chunky estilo TowerFall (para plataformas TowerFall Y bloques de Bomberman)
+function tfBlock(S,m,seed,soft){
   return cv(S,S,g=>{
-    const r=rng((eco.length*97+(seed||0)*31)>>>0);
-    g.fillStyle=pal.block; g.fillRect(0,0,S,S);
-    // ruido de piedra en pixeles
-    for(let i=0;i<30;i++){ g.fillStyle=r()<0.5?'rgba(255,255,255,.05)':'rgba(0,0,0,.11)';
-      g.fillRect((r()*S)|0,(r()*S)|0,2,2); }
-    // bisel pixel: claro arriba/izq, oscuro abajo/der
-    g.fillStyle=pal.top;               g.fillRect(0,0,S,3); g.fillRect(0,0,3,S);
-    g.fillStyle='rgba(0,0,0,.34)';     g.fillRect(0,S-4,S,4); g.fillRect(S-4,0,4,S);
-    if(eco==='nieve'){ g.fillStyle='rgba(212,240,255,.5)';
-      g.beginPath(); g.moveTo(26,12); g.lineTo(36,22); g.lineTo(26,32); g.lineTo(16,22); g.closePath(); g.fill();
-      g.fillStyle='rgba(255,255,255,.45)'; g.fillRect(24,20,4,4);
-      g.fillStyle='rgba(150,195,225,.5)'; g.fillRect(10,40,6,2); g.fillRect(38,42,5,2);
-    } else if(eco==='selva'){ g.strokeStyle='rgba(0,0,0,.22)'; g.lineWidth=2;
-      g.beginPath(); g.moveTo(12,10); g.lineTo(20,22); g.lineTo(14,36); g.moveTo(34,12); g.lineTo(30,28); g.stroke();
-      g.fillStyle='rgba(96,150,66,.6)'; for(let i=0;i<6;i++) g.fillRect((8+r()*36)|0,(8+r()*36)|0,3,3);
-    } else if(eco==='desierto'){ g.fillStyle='rgba(0,0,0,.22)';
-      g.fillRect(14,12,7,7); g.fillRect(31,12,7,7); g.fillRect(16,28,20,3); g.fillRect(24,34,7,7);
-      g.fillStyle='rgba(255,211,77,.22)'; g.fillRect(15,13,5,2); g.fillRect(32,13,5,2);
-    } else if(eco==='volcan'){ g.strokeStyle='rgba(255,120,40,.65)'; g.lineWidth=2;
-      g.beginPath(); g.moveTo(10,36); g.lineTo(20,24); g.lineTo(26,32); g.lineTo(38,20); g.stroke();
-      g.fillStyle='#ffd34d'; g.fillRect(19,24,3,3); g.fillRect(36,20,3,3);
-    }
-    g.strokeStyle='rgba(0,0,0,.5)'; g.lineWidth=2; g.strokeRect(1,1,S-2,S-2);  // rejilla estilo TowerFall
+    const r=rng(((seed||0)*2654435761+11)>>>0);
+    g.fillStyle=soft? m.hi : m.base; g.fillRect(0,0,S,S);
+    for(let i=0;i<(S*S/22)|0;i++){ g.fillStyle=r()<0.5?m.hi:m.lo; g.globalAlpha=.45; g.fillRect((r()*S)|0,(r()*S)|0,2,2); }
+    g.globalAlpha=1;
+    g.strokeStyle=m.lo; g.lineWidth=2; g.beginPath();          // vetas de piedra
+    g.moveTo((S*0.22)|0,(S*0.28)|0); g.lineTo((S*0.34)|0,(S*0.52)|0);
+    g.moveTo((S*0.72)|0,(S*0.26)|0); g.lineTo((S*0.60)|0,(S*0.50)|0); g.stroke();
+    g.fillStyle=m.hi;   g.fillRect(0,0,S,3); g.fillRect(0,0,3,S);           // bisel: luz arriba/izq
+    g.fillStyle=m.lo;   g.fillRect(0,S-4,S,4); g.fillRect(S-4,0,4,S);       //        sombra abajo/der
+    g.fillStyle=m.edge; g.fillRect(0,S-2,S,2); g.fillRect(S-2,0,2,S);
+    g.fillStyle=m.hi;   g.fillRect(4,4,3,2); g.fillRect(4,4,2,3);           // destello de esquina
+    if(soft){ // CONCRETO agrietado: grietas gruesas ramificadas + chips = "esto SÍ se rompe"
+      g.strokeStyle=m.edge; g.lineWidth=2.5; g.beginPath();
+      g.moveTo(S*0.5,4); g.lineTo(S*0.42,S*0.4); g.lineTo(S*0.56,S*0.62); g.lineTo(S*0.46,S-4);
+      g.moveTo(S*0.42,S*0.4); g.lineTo(S*0.22,S*0.5);
+      g.moveTo(S*0.56,S*0.62); g.lineTo(S*0.78,S*0.7); g.stroke();
+      g.fillStyle=m.edge; g.fillRect((S*0.7)|0,(S*0.2)|0,4,4); g.fillRect((S*0.2)|0,(S*0.72)|0,4,3); }
+    g.strokeStyle='rgba(0,0,0,.22)'; g.lineWidth=1; g.strokeRect(0.5,0.5,S-1,S-1);
   });
+}
+// suelo hundido (para el piso de Bomberman) — mismo material, más oscuro
+function tfGround(S,m,seed){
+  return cv(S,S,g=>{
+    const r=rng(((seed||0)*40503+7)>>>0);
+    g.fillStyle=m.lo; g.fillRect(0,0,S,S);
+    for(let i=0;i<(S*S/16)|0;i++){ g.fillStyle=r()<0.5?m.base:m.edge; g.globalAlpha=.4; g.fillRect((r()*S)|0,(r()*S)|0,2,2); }
+    g.globalAlpha=1;
+    g.fillStyle=m.edge; g.fillRect(0,0,S,2); g.fillRect(0,0,2,S);           // junta hundida
+    g.fillStyle='rgba(255,255,255,.05)'; g.fillRect(0,S-2,S,2);
+  });
+}
+// copete temático sobre el borde superior de una plataforma (firma TowerFall: pasto/nieve/lava)
+function tfTopCap(ctx,x,y,w,eco,time,c){
+  const m=TFMAT[eco]||TFMAT.selva;
+  ctx.fillStyle=m.topLo; ctx.fillRect(x,y-6,w,7);
+  ctx.fillStyle=m.top;   ctx.fillRect(x,y-6,w,4);
+  ctx.fillStyle=m.topHi; ctx.fillRect(x,y-6,w,2);
+  if(eco==='volcan'){ const p=0.5+0.5*Math.sin((time||0)*2.5+(c||0)*1.3);
+    ctx.fillStyle=`rgba(255,150,60,${0.4+0.4*p})`; ctx.fillRect(x,y-7,w,2); }
+  ctx.fillStyle=m.topLo;                                                    // mechones colgando
+  for(let i=4;i<w-4;i+=9){ const hh=3+(((i*7+x)|0)%4); ctx.fillRect(x+i,y+1,3,hh); }
+  if(eco==='nieve'){ ctx.fillStyle=m.topHi; for(let i=8;i<w-4;i+=13) ctx.fillRect(x+i,y+1,2,5+(i%3)); }
+}
+// tile de plataforma TowerFall (52x52) — usa el sistema unificado
+function arenaTile(eco,pal,seed){
+  return tfBlock(52, TFMAT[eco]||TFMAT.selva, (eco.length*97+(seed||0)*31)|0, false);
 }
 
 // ---------- kit de bomberman por ecosistema ----------
 function bomberKit(id){
-  const th=T[id];
+  const th=T[id], m=TFMAT[id]||TFMAT.selva;
   const MI=window.MAPART?window.MAPART.img:{};
-  const useAndre = id==='selva' && MI.grassA0; // selva usa las texturas reales de André
+  const S=44;
   const kit={ th, glow:th.glow };
-  if(useAndre){
-    kit.floorA=[MI.grassA0,MI.grassA1,MI.grassA2];
-    kit.floorB=[MI.grassB0,MI.grassB1,MI.grassB2];
-    kit.crate=[MI.bush0,MI.bush1,MI.bush2,MI.bush3];
-    kit.solid=[MI.solid0,MI.solid1,MI.solid2,MI.solid3,MI.solid4];
-    kit.frameH=MI.wallTop; kit.frameV=MI.wallLeft; kit.corner=MI.wallCorner; kit.gold=MI.wallGold;
-    kit.torchImg=MI.torch;
-  } else {
-    kit.floorA=[0,1,2].map(i=>floorTile(th.floor1,th.spot,id.length*31+i));
-    kit.floorB=[0,1,2].map(i=>floorTile(th.floor2,th.spot,id.length*77+i));
-    const crateMotif={desierto:'x',nieve:'ice',volcan:'lava'}[id]||'x';
-    kit.crate=[0,1].map(i=>blockTile(th.crateA,th.crateB,th.crateC,900+i,crateMotif));
-    const solidMotif={desierto:'glyph',nieve:'rock',volcan:'rock'}[id]||'rock';
-    kit.solid=[0,1].map(i=>blockTile(th.solidA,th.solidB,th.solidC,300+i,solidMotif));
-    const brick=brickTile(th.frameA,th.frameB,th.frameC,50);
-    kit.frameH=brick; kit.frameV=brick; kit.corner=brick; kit.gold=null;
-  }
+  // MISMO sistema unificado que TowerFall en TODOS los mundos (uniforme, no "cereal")
+  kit.floorA=[0,1,2].map(i=>tfGround(S,m,id.length*31+i));                                // piso oscuro
+  kit.floorB=[0,1,2].map(i=>tfGround(S,{lo:m.base,base:m.hi,edge:m.lo},id.length*77+i));  // piso claro (ajedrez)
+  kit.crate=[0,1].map(i=>tfBlock(S,CONCRETE,900+i,true)); // DESTRUCTIBLE = concreto gris agrietado (se nota)
+  kit.solid=[0,1].map(i=>tfBlock(S,m,300+i,false));       // SÓLIDO permanente = piedra temática del mundo
+  const frame=tfBlock(S,{base:m.lo,hi:m.base,lo:m.edge,edge:m.edge},50,false);            // marco oscuro
+  kit.frameH=frame; kit.frameV=frame; kit.corner=frame; kit.gold=null;
+  kit.torchImg=MI.torch;
   kit.center = CENTERPIECES[id];
   return kit;
 }
 
-// piezas centrales 3x3 (una por ecosistema)
+// pieza central 3x3: MISMA pirámide pixel-art en TODOS los mundos, sólo tintada por ecosistema
+// (uniforme: "el mismo diseño en todas como la de la jungla"). Se genera una vez y se cachea.
+const _pyCache={};
+const PY_FILT={
+  desierto:'none',                                         // oro/arenisca original
+  selva:   'hue-rotate(55deg) saturate(1.2)',              // piedra con musgo verdoso
+  nieve:   'hue-rotate(172deg) saturate(0.55) brightness(1.4)', // hielo azul-blanco
+  volcan:  'hue-rotate(-32deg) saturate(1.6) brightness(0.72)', // obsidiana rojiza
+  japon:   'hue-rotate(295deg) saturate(1.25) brightness(1.05)', // rosa cerezo
+  tokyo:   'hue-rotate(150deg) saturate(1.6) brightness(1.15)',  // neón cyan
+  egipto:  'none',                                               // oro/arenisca (perfecto para Giza)
+  grecia:  'saturate(0.32) brightness(1.42)',                    // mármol pálido
+  china:   'hue-rotate(-22deg) saturate(1.5) brightness(0.96)',  // laca roja + oro
+};
+function pyramidFor(eco){
+  const MI=window.MAPART?window.MAPART.img:{};
+  const img=MI.pyramid; if(!img) return null;
+  if(_pyCache[eco]) return _pyCache[eco];
+  const filt=PY_FILT[eco]||'none';
+  const c=cv(img.width,img.height,g=>{ if(filt!=='none') g.filter=filt; g.imageSmoothingEnabled=false; g.drawImage(img,0,0); });
+  _pyCache[eco]=c; return c;
+}
+function drawPyramid(ctx,cx,by,eco,time){
+  const p=pyramidFor(eco);
+  if(!p){ // respaldo simple si aún no carga la imagen
+    ctx.fillStyle='#8a6a34'; ctx.fillRect(cx-70,by-40,140,40); return; }
+  const pw=176, ph=pw*(p.height/p.width);
+  const sm=ctx.imageSmoothingEnabled; ctx.imageSmoothingEnabled=false;
+  ctx.drawImage(p,cx-pw/2,by-ph,pw,ph);
+  if(eco==='volcan'){ // brillo de lava latiendo en la cima
+    const g=0.4+0.3*Math.sin((time||0)*2.4);
+    ctx.fillStyle=`rgba(255,140,50,${g})`; ctx.fillRect(cx-20,by-ph+6,40,6); }
+  ctx.imageSmoothingEnabled=sm;
+}
 const CENTERPIECES={
-  selva(ctx,cx,by,time){
-    const MI=window.MAPART?window.MAPART.img:{};
-    if(MI.pyramid){ const pw=176, ph=pw*(MI.pyramid.height/MI.pyramid.width);
-      ctx.drawImage(MI.pyramid,cx-pw/2,by-ph,pw,ph); return; }
-    CENTERPIECES.desierto(ctx,cx,by,time);
-  },
-  nieve(ctx,cx,by){
-    // montaña nevada en bandas pixel (ref de André)
-    const h=176, bands=16, bh=h/bands;
-    for(let i=0;i<bands;i++){
-      const t=i/bands;                       // 0 arriba, 1 abajo
-      const y=by-h+i*bh;
-      const jag=((i*37)%3)*4-4;              // dientes
-      const w=18+t*158+jag;
-      const snow=t<0.42;
-      ctx.fillStyle=snow?(i%2?'#f2f8fc':'#dcebf4'):(i%2?'#5a6c7c':'#4a5866');
-      ctx.fillRect(cx-w/2,y,w,bh+1);
-      // luz izquierda / sombra derecha
-      ctx.fillStyle='rgba(255,255,255,.16)'; ctx.fillRect(cx-w/2,y,Math.max(4,w*0.16),bh+1);
-      ctx.fillStyle='rgba(0,0,10,.18)'; ctx.fillRect(cx+w/2-Math.max(4,w*0.2),y,Math.max(4,w*0.2),bh+1);
-    }
-    // goteo de nieve bajo el casquete
-    ctx.fillStyle='#dcebf4';
-    [[-22,0.46],[6,0.5],[24,0.44]].forEach(([ox,t])=>ctx.fillRect(cx+ox,by-h+h*t,10,8));
-  },
-  desierto(ctx,cx,by){
-    // zigurat de arenisca
-    const tiers=[[168,34],[128,32],[88,30],[48,26]];
-    let y=by;
-    tiers.forEach(([w,h])=>{
-      ctx.fillStyle='#c99858'; ctx.fillRect(cx-w/2,y-h,w,h);
-      ctx.fillStyle='#e8c078'; ctx.fillRect(cx-w/2,y-h,w,6);
-      ctx.fillStyle='#8a6a34'; ctx.fillRect(cx-w/2,y-6,w,6);
-      ctx.strokeStyle='rgba(90,60,20,.5)'; ctx.strokeRect(cx-w/2+.5,y-h+.5,w-1,h-1);
-      y-=h;
-    });
-    ctx.fillStyle='#4a3014'; ctx.fillRect(cx-12,by-30,24,30);   // puerta
-    ctx.fillStyle='#e8c078'; ctx.fillRect(cx-16,by-34,32,6);
-  },
-  volcan(ctx,cx,by,time){
-    // cráter con lava + portal morado (ref de André)
-    ctx.fillStyle='#33222a';
-    ctx.beginPath(); ctx.ellipse(cx,by-38,88,52,0,0,7); ctx.fill();
-    ctx.fillStyle='#241a20';
-    ctx.beginPath(); ctx.ellipse(cx,by-44,70,38,0,0,7); ctx.fill();
-    const p=0.7+0.3*Math.sin(time*2.4);
-    ctx.fillStyle=`rgba(255,122,42,${0.85*p})`;
-    ctx.beginPath(); ctx.ellipse(cx,by-46,56,28,0,0,7); ctx.fill();
-    ctx.fillStyle=`rgba(255,211,77,${0.9*p})`;
-    ctx.beginPath(); ctx.ellipse(cx,by-48,34,16,0,0,7); ctx.fill();
-    // portal morado girando
-    for(let i=0;i<3;i++){
-      ctx.strokeStyle=`rgba(178,102,255,${0.55-i*0.15})`; ctx.lineWidth=4-i;
-      ctx.beginPath();
-      ctx.ellipse(cx,by-48,20+i*9,9+i*5,0,time*2+i*2,time*2+i*2+4.2); ctx.stroke();
-    }
-  },
+  selva:   (ctx,cx,by,time)=>drawPyramid(ctx,cx,by,'selva',time),
+  desierto:(ctx,cx,by,time)=>drawPyramid(ctx,cx,by,'desierto',time),
+  nieve:   (ctx,cx,by,time)=>drawPyramid(ctx,cx,by,'nieve',time),
+  volcan:  (ctx,cx,by,time)=>drawPyramid(ctx,cx,by,'volcan',time),
+  japon:   (ctx,cx,by,time)=>drawPyramid(ctx,cx,by,'japon',time),
+  tokyo:   (ctx,cx,by,time)=>drawPyramid(ctx,cx,by,'tokyo',time),
+  egipto:  (ctx,cx,by,time)=>drawPyramid(ctx,cx,by,'egipto',time),
+  grecia:  (ctx,cx,by,time)=>drawPyramid(ctx,cx,by,'grecia',time),
+  china:   (ctx,cx,by,time)=>drawPyramid(ctx,cx,by,'china',time),
 };
 
 // ---------- ARENAS TOWERFALL (layouts reales del juego, grid 16x12 @52px) ----------
@@ -390,6 +457,23 @@ const TF_ARENAS={
       '.....######.....',
       '#####......#####']]},
 };
+// JAPÓN (Sakura): mismas rejillas que la selva, paleta cerezo. Fondo/piso propios (assets).
+TF_ARENAS.japon={ name:'SAKURA', wrapY:false,
+  pal:{block:'#6b4a3a',mortar:'#3a2820',top:'#ec93b2',bg1:'#2a1a2e',bg2:'#4a2a3e',moon:'#ffd6e6',amb:'petals'},
+  grids:TF_ARENAS.selva.grids };
+// NEO-TOKYO (cyberpunk neón): rejillas de la selva, paleta neón. Fondo/piso propios (assets).
+TF_ARENAS.tokyo={ name:'NEO-TOKYO', wrapY:false,
+  pal:{block:'#2b3242',mortar:'#12182c',top:'#26e6ff',bg1:'#0a0f1c',bg2:'#16233c',moon:'#c4f8ff',amb:'neon'},
+  grids:TF_ARENAS.selva.grids };
+TF_ARENAS.egipto={ name:'GIZA', wrapY:false,
+  pal:{block:'#c99a52',mortar:'#5a4420',top:'#ffd97a',bg1:'#2e1c0a',bg2:'#5a3a12',moon:'#ffe0a0',amb:'dust'},
+  grids:TF_ARENAS.selva.grids };
+TF_ARENAS.grecia={ name:'OLYMPUS', wrapY:false,
+  pal:{block:'#cdd0d6',mortar:'#5e636e',top:'#5ab0e0',bg1:'#14243a',bg2:'#2a4a6a',moon:'#eaf6ff',amb:'dust'},
+  grids:TF_ARENAS.selva.grids };
+TF_ARENAS.china={ name:'DRAGON', wrapY:false,
+  pal:{block:'#7a2e2a',mortar:'#2a0e0c',top:'#ffce4a',bg1:'#241010',bg2:'#4a1a16',moon:'#ffe0a0',amb:'petals'},
+  grids:TF_ARENAS.selva.grids };
 // compila un grid a rects sólidos + antorchas + spawns automáticos
 function compileArena(a,gi){
   const grid=a.grids[gi||0];
@@ -400,7 +484,9 @@ function compileArena(a,gi){
       if(row[c]==='#'){
         let c2=c;
         while(c2<16&&row[c2]==='#') c2++;
-        plats.push({x:c*CELL,y:GRID_OY+r*CELL,w:(c2-c)*CELL,h:CELL,solid:true,wall:true});
+        // plataformas DELGADAS tipo puente/tronco flotante (18px), de un solo sentido
+        // (aterrizas encima, saltas por debajo) — ya no bloques macizos de 52px
+        plats.push({x:c*CELL,y:GRID_OY+r*CELL,w:(c2-c)*CELL,h:18,solid:true,wall:false});
         if(c2-c>=4&&r<11) torches.push([(c+(c2-c)/2)*CELL,GRID_OY+r*CELL]);
         c=c2;
       } else c++;
@@ -428,7 +514,18 @@ function compileArena(a,gi){
   return {plats,torches,spawns,grid};
 }
 // layout de una arena concreta (eco + variante 0-2)
+// (Modo arte-colisión DESACTIVADO: las plataformas dibujadas en el arte "hacían finta".
+//  Volvemos a las estructuras propias del juego (grid+tiles) sobre fondo escénico limpio.)
+const TF_ART={};
+const ALL_DOTS=Array.from({length:12},()=>'................');
 function getFallLayout(eco,variant){
+  const art=TF_ART[eco];
+  if(art){
+    return { mapName:(TF_ARENAS[eco]||TF_ARENAS.selva).name, arena:eco, variant:0, art:true,
+      wrap:true, wrapY:!!art.wrapY, grid:ALL_DOTS, torches:[],
+      plats: art.P.map(p=>({x:p[0],y:p[1],w:p[2],h:p[3],solid:true,wall:true})),
+      spawns: art.P.map(p=>[p[0]+p[2]/2, p[1]]) };
+  }
   const a=TF_ARENAS[eco]||TF_ARENAS.selva;
   const comp=compileArena(a,variant);
   return { mapName:a.name, arena:eco, variant:variant||0, wrap:true, wrapY:a.wrapY,
@@ -586,8 +683,21 @@ function makeTFRender(eco,layout){
 
   function blocks(ctx,time){
     const M=window.MAPART;
+    // MODO ARTE: el fondo pixel ya trae plataformas/antorchas/marco. Solo marcamos el piso
+    // con una sombra sutil bajo cada colisión (para que se lea dónde te paras) + ambiente.
+    if(layout.art){
+      ctx.save();
+      layout.plats.forEach(pl=>{
+        ctx.fillStyle='rgba(0,0,0,.28)'; ctx.fillRect(pl.x, pl.y+pl.h-1, pl.w, 5);
+        ctx.fillStyle='rgba(255,255,255,.06)'; ctx.fillRect(pl.x, pl.y, pl.w, 2);
+      });
+      ctx.restore();
+      amb.draw(ctx,time);
+      if(M) M.vignette(ctx,832,640);
+      return;
+    }
     // marco del escenario (anillo decorado)
-    ctx.fillStyle=pal.mortar; 
+    ctx.fillStyle=pal.mortar;
     ctx.fillRect(0,0,832,10); ctx.fillRect(0,630,832,10);
     ctx.fillRect(0,0,10,640); ctx.fillRect(822,0,10,640);
     ctx.fillStyle=pal.block;
@@ -621,25 +731,25 @@ function makeTFRender(eco,layout){
       }
     });
 
-    // bloques: tile PIXEL-ART estilo TowerFall
-    const sm=ctx.imageSmoothingEnabled; ctx.imageSmoothingEnabled=false;
+    // PUENTES / TRONCOS flotantes delgados (18px) — ya no bloques macizos de 52px
     for(let r2=0;r2<12;r2++)for(let c=0;c<16;c++){
       if(!at(c,r2)) continue;
-      const x=c*CELL, y=GRID_OY+r2*CELL;
-      ctx.drawImage(blockImg,x,y);
-      // copete temático en la superficie donde te paras
-      if(!at(c,r2-1)){
-        if(eco==='nieve'){ ctx.fillStyle='#eef8ff'; ctx.fillRect(x,y-4,CELL,6);
-          ctx.fillRect(x+6,y-7,12,4); ctx.fillRect(x+30,y-6,14,3); }
-        else if(eco==='selva'){ ctx.fillStyle='#5a8f3c'; ctx.fillRect(x,y-2,CELL,4);
-          ctx.fillRect(x+8,y+3,5,6); ctx.fillRect(x+34,y+3,5,7); }
-        else if(eco==='desierto'){ ctx.fillStyle='#ffd34d'; ctx.fillRect(x,y-2,CELL,4);
-          ctx.fillStyle='#8a5a1a'; ctx.fillRect(x+10,y-1,4,3); ctx.fillRect(x+38,y-1,4,3); }
-        else if(eco==='volcan'){ const p=0.5+0.5*Math.sin(time*2.5+c*1.3);
-          ctx.fillStyle=`rgba(255,140,50,${0.55+0.4*p})`; ctx.fillRect(x,y-1,CELL,3); }
-      }
+      const x=c*CELL, y=GRID_OY+r2*CELL, H=18;
+      const left=!at(c-1,r2), right=!at(c+1,r2);
+      ctx.fillStyle='rgba(0,0,0,.22)'; ctx.fillRect(x,y+H,CELL,3);          // sombra proyectada
+      ctx.fillStyle='#5f3e1e'; ctx.fillRect(x,y,CELL,H);                    // madera oscura
+      ctx.fillStyle='#835832'; ctx.fillRect(x,y+2,CELL,H-4);               // tabla
+      ctx.fillStyle='rgba(0,0,0,.16)'; ctx.fillRect(x,y+9,CELL,1);         // veta
+      ctx.fillStyle='rgba(0,0,0,.24)';                                     // divisiones de tablas
+      for(let i=x+13;i<x+CELL;i+=13) ctx.fillRect(i,y+1,1,H-2);
+      ctx.fillStyle='#a67c40'; ctx.fillRect(x,y,CELL,2);                   // filo iluminado
+      ctx.fillStyle='rgba(0,0,0,.22)'; ctx.fillRect(x,y+H-2,CELL,2);       // filo inferior
+      if(left)  { ctx.fillStyle='#4a3016'; ctx.fillRect(x,y-1,3,H+2); }    // poste/tope izq
+      if(right) { ctx.fillStyle='#4a3016'; ctx.fillRect(x+CELL-3,y-1,3,H+2); } // poste/tope der
+      ctx.fillStyle='#3a2410'; ctx.fillRect(x+5,y+4,2,2); ctx.fillRect(x+CELL-7,y+4,2,2); // clavos
+      // copete temático delgado (pasto/nieve/arena/lava) donde te paras
+      if(!at(c,r2-1)) tfTopCap(ctx,x,y,CELL,eco,time,c);
     }
-    ctx.imageSmoothingEnabled=sm;
     // antorchas laterales con flama viva
     torches.forEach(([tx,ty],i)=>{
       ctx.fillStyle='#3a2a18'; ctx.fillRect(tx-3,ty-4,6,12);
@@ -691,7 +801,7 @@ const BROS_LAYOUTS={
 
 // ---------- ambiente (partículas por ecosistema) ----------
 function makeAmbient(kind,W,H){
-  const n=kind==='snow'?40:kind==='embers'?26:kind==='dust'?22:14;
+  const n=kind==='snow'?40:kind==='petals'?34:kind==='neon'?30:kind==='embers'?26:kind==='dust'?22:14;
   const list=[];
   for(let i=0;i<n;i++) list.push({x:Math.random()*W,y:Math.random()*H,s:Math.random()*6.3,v:0.4+Math.random()});
   return {
@@ -701,6 +811,8 @@ function makeAmbient(kind,W,H){
         if(kind==='snow'){ y=(p.y+time*22*p.v)%H; x=p.x+Math.sin(time*0.8+p.s)*18; a=0.5+0.3*Math.sin(time+p.s); c='240,248,255'; }
         else if(kind==='embers'){ y=H-((p.y+time*30*p.v)%H); x=p.x+Math.sin(time*1.4+p.s)*14; a=0.4+0.4*Math.sin(time*3+p.s); c='255,150,60'; }
         else if(kind==='dust'){ x=(p.x+time*14*p.v)%W; y=p.y+Math.sin(time*0.6+p.s)*10; a=0.18+0.12*Math.sin(time+p.s); c='240,214,160'; sz=2; }
+        else if(kind==='petals'){ y=(p.y+time*18*p.v)%H; x=p.x+Math.sin(time*0.9+p.s)*26; a=0.5+0.3*Math.sin(time+p.s); c='255,190,214'; sz=3; }
+        else if(kind==='neon'){ y=H-((p.y+time*24*p.v)%H); x=p.x+Math.sin(time*1.1+p.s)*10; a=0.4+0.4*Math.sin(time*3+p.s); c=(i%2)?'38,230,255':'255,62,165'; sz=2; }
         else { x=p.x+Math.sin(time*0.5+p.s)*22; y=p.y+Math.sin(time*0.33+p.s*2)*16; a=0.25+0.25*Math.sin(time*2.2+p.s); c='190,255,150'; }
         ctx.fillStyle=`rgba(${c},${a})`; ctx.fillRect(x,y,sz,sz);
       });

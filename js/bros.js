@@ -306,7 +306,7 @@ function start(canvas, players, cfg, onEnd, eco){
       if(e.buffPow){ ctx.fillStyle='rgba(255,138,77,.35)'; ctx.beginPath(); ctx.arc(e.x,e.y-e.h/2,34,0,7); ctx.fill(); }
       if(e.crouch){ ctx.strokeStyle='rgba(156,232,255,.6)'; ctx.lineWidth=3;
         ctx.beginPath(); ctx.arc(e.x,e.y-16,26,0,7); ctx.stroke(); }
-      Sprites.drawAnimal(ctx,e.p.animal,e.x,e.y,52,e.face<0,
+      Sprites.drawAnimal(ctx,e.p.animal,e.x,e.y,52*(e.p.animal.size||1),e.face<0,
         {moving:e.onG&&Math.abs(e.vx)>40&&e.stun<=0, run:e.runPh, air:!e.onG, vy:e.vy,
          idle:e.onG&&Math.abs(e.vx)<=40&&e.stun<=0, t:time+e.runPh,
          crouch:e.crouch, land:e.landT/0.14,
@@ -320,7 +320,7 @@ function start(canvas, players, cfg, onEnd, eco){
       }
       ctx.fillStyle=e.p.color; ctx.font='bold 10px "Space Mono"'; ctx.textAlign='center';
       ctx.strokeStyle='rgba(0,0,0,.6)'; ctx.lineWidth=3;
-      const nm=(e.p.bot?e.p.name:'TÚ')+' ♥'+e.p.hp;
+      const nm=(e.p.bot?e.p.name:'TÚ');   // sin ♥N (la vida se ve en el HUD)
       ctx.strokeText(nm,e.x,e.y-e.h-14); ctx.fillText(nm,e.x,e.y-e.h-14);
       // % de daño chico bajo el nombre
       const hue=Math.max(0,120-e.dmg*1.2);

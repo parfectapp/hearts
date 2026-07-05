@@ -4,3 +4,6 @@
 node_modules/
 _batch.txt
 _status.txt
+
+# backups de desarrollo (no van al repo)
+assets/maps/_*/

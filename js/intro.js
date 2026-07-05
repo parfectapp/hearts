@@ -67,7 +67,7 @@ function play(canvas, onDone){
         const ak=Math.max(0,Math.min(1,(t-3.3-i*0.09)/0.35));
         if(ak>0){
           if(ak<0.2&&coins<=i){ coins=i+1; if(window.SFX)SFX.coin(); }
-          Sprites.drawAnimal(ctx,f.a,x,y+42,96*ak,f.tx>CX,{spawn:1-ak});
+          Sprites.drawAnimal(ctx,f.a,x,y+42,96*ak,f.tx>CX,{spawn:1-ak,smooth:true});
         }
       });
       // el octavo fragmento sube y se queda como corazón flotante
@@ -78,7 +78,7 @@ function play(canvas, onDone){
       const k=Math.min(1,(t-4.6)/0.6);
       frags.forEach((f,i)=>{
         const bob=Math.sin(t*2.4+i)*5;
-        Sprites.drawAnimal(ctx,f.a,f.tx,f.ty+42+bob,96,f.tx>CX,{idle:true,t:t+i});
+        Sprites.drawAnimal(ctx,f.a,f.tx,f.ty+42+bob,96,f.tx>CX,{idle:true,t:t+i,smooth:true});
       });
       // el corazón flotante corona el anillo
       const hbob=Math.sin(t*2)*8;

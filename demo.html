@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HEARTS — live gameplay</title>
+<style>
+  html,body{margin:0;height:100%;background:#05060f;overflow:hidden}
+  #stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+  #game-canvas{width:100%;height:100%;display:block;object-fit:cover}
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="game-canvas" width="832" height="640"></canvas></div>
+
+<!-- motor REAL del juego (mismos archivos que index.html) -->
+<script src="js/audio.js?v=99"></script>
+<script src="js/sprites.js?v=99"></script>
+<script src="js/mapart.js?v=99"></script>
+<script src="js/themes.js?v=99"></script>
+<script src="js/data.js?v=99"></script>
+<script src="js/match.js?v=99"></script>
+<script src="js/towerfall.js?v=99"></script>
+<script>
+/* DEMO EN VIVO: corre el motor REAL de HEARTS con 4 bots peleando, ciclando los 9 mundos.
+   Sin login, sin HUD, sin audio — puro gameplay para grabar / mostrar en la landing. */
+(function(){
+  var noop=function(){};
+  // silenciar audio (autoplay embebido) y desconectar el HUD (aquí no existe #hud-players)
+  window.SFX  = new Proxy({}, {get:function(){ return noop; }});
+  window.MUSIC= new Proxy({}, {get:function(){ return noop; }});
+  if(window.KIT) window.KIT.updateHudPlayers = noop;
+  try{ DATA.load(); }catch(e){}
+
+  var cv=document.getElementById('game-canvas');
+  var ECOS=['selva','tokyo','japon','volcan','grecia','china','egipto','nieve','desierto'];
+  var COLORS=['#e8c11e','#ff5a4d','#4dd2ff','#9dff8a','#c77dff','#ffa64d'];
+  var e=0;
+
+  function pick(n){
+    var pool=DATA.ANIMALS.slice(), out=[];
+    for(var i=0;i<n && pool.length;i++){ out.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]); }
+    return out;
+  }
+  function run(){
+    var eco=ECOS[e%ECOS.length]; e++;
+    var players=pick(4).map(function(a,i){
+      return { name:DATA.BOT_NAMES[(i+e*3)%DATA.BOT_NAMES.length], animal:a, bot:true,
+        color:COLORS[i%COLORS.length], weapon:DATA.byWeapon['bow_wood'],
+        hp:DATA.ECON.LIVES, elim:false, koRound:false };
+    });
+    var cfg={ duration:34, minAlive:1, variant:Math.floor(Math.random()*3), rain:0 };
+    try{ TOWERFALL.start(cv, players, cfg, function(){ setTimeout(run, 650); }, eco); }
+    catch(err){ console.warn('demo retry', err); setTimeout(run, 1500); }
+  }
+  // CARGA los stickers reales (los animales) y arranca el loop infinito de partidas
+  var started=false, go=function(){ if(started) return; started=true; run(); };
+  Sprites.load(DATA.ANIMALS).then(go);
+  setTimeout(go, 2500);   // fallback por si el server tarda
+})();
+</script>
+</body>
+</html>

@@ -209,14 +209,10 @@ function start(canvas, players, cfg, onEnd, eco){
     if(e.shield){ e.shield=false; SFX.hit(); parts.spawn(OX+(e.fx+.5)*TILE,OY+(e.fy+.5)*TILE,'#7de8ff',14,220); return; }
     parts.spawn(OX+(e.fx+.5)*TILE,OY+(e.fy+.5)*TILE,'#ff5a4d',22,260);
     SFX.ko(); K.shake(10);
-    const drop=e.p.hp;
-    if(drop>0){
-      dropHearts(Math.round(e.fx),Math.round(e.fy),drop);
-      e.p.hp=0;
-      e.dead=true; e.respT=2.4; e.moving=false;
-    } else {
-      e.out=true; e.p.koRound=true; SFX.die();
-    }
+    // UNA sola vida: mueres = fuera hasta la siguiente ronda (igual que TowerFall/Showdown,
+    // sin respawn). Sueltas 1 ♥ como los demás modos.
+    if(e.p.hp>0){ e.p.hp--; dropHearts(Math.round(e.fx),Math.round(e.fy),1); }
+    e.out=true; e.p.koRound=true; e.moving=false; SFX.die();
     hudRefresh();
   }
   function respawn(e){
@@ -349,10 +345,10 @@ function start(canvas, players, cfg, onEnd, eco){
       ctx.beginPath(); ctx.arc(px,py-24,28,0,7); ctx.stroke(); }
     const pose=e.moving?{moving:true,run:time*13+e.seed}:{idle:true,t:time+e.seed};
     if(e.spawnT>0) pose.spawn=e.spawnT/0.7;
-    Sprites.drawAnimal(ctx,e.p.animal,px,py,46,e.dir<0,pose);
+    Sprites.drawAnimal(ctx,e.p.animal,px,py,50*(e.p.animal.size||1),e.dir<0,pose);
     ctx.fillStyle=e.p.color; ctx.font='bold 10px "Space Mono"'; ctx.textAlign='center';
     ctx.strokeStyle='rgba(0,0,0,.6)'; ctx.lineWidth=3;
-    const nm=(e.p.bot?e.p.name:'TÚ')+' ♥'+e.p.hp;
+    const nm=(e.p.bot?e.p.name:'TÚ');   // sin ♥N (la vida se ve en el HUD)
     ctx.strokeText(nm,px,py-52); ctx.fillText(nm,px,py-52);
   }
   function drawBomb(b){

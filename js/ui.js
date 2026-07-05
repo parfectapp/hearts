@@ -33,7 +33,12 @@ function renderRosters(){
 function initLogin(){
   const input=$('#login-name');
   const st=DATA.state();
-  if(st.name) input.value=st.name;
+  if(st.name){ input.value=st.name; $('#login-user-title').textContent='*'+st.name.toUpperCase()+'*'; }
+  // si compraste un monito en la tienda de la landing, ya te espera aquí
+  if(st.name && st.selected && DATA.byId[st.selected]){
+    const sub=document.querySelector('.login-sub');
+    if(sub) sub.innerHTML='✦ tu monito <b>'+DATA.byId[st.selected].name+'</b> te espera · dale ENTER';
+  }
   input.addEventListener('input',()=>{
     $('#login-user-title').textContent = input.value.trim()? '*'+input.value.trim().toUpperCase()+'*' : '*USUARIO*';
   });
@@ -51,7 +56,8 @@ function initLogin(){
 function enterLobby(){
   const st=DATA.state();
   $('#lobby-username').textContent='*'+(st.name||'USUARIO').toUpperCase()+'*';
-  $('#lobby-lvl').textContent='LVL. '+DATA.level();
+  const r6=DATA.playerRankHearts();
+  $('#lobby-lvl').innerHTML='<b style="color:'+r6.tier.c1+'">'+r6.name+'</b> · '+st.hearts+' ♥';
   $('#xp-fill').style.width=(DATA.levelProgress()*100).toFixed(0)+'%';
   updateHearts();
   const an=DATA.byId[st.selected];
@@ -75,8 +81,8 @@ function enterLobby(){
     $('#stats-card').style.display='';
     const rc=DATA.RARITY[an.rarity]||DATA.RARITY.common, pw=DATA.POWERS[an.power];
     $('#avatar-name').style.color=rc.color;
-    $('#avatar-value').innerHTML='<span style="color:'+rc.color+';font-weight:900">'+rc.name+'</span> · PODER: <b style="color:'+(pw?pw.color:'#fff')+'">'+(pw?pw.name:'—')+'</b><br>'
-      +'VALOR '+an.price+' ♥ · VENTA '+Math.floor(an.price*DATA.ECON.SELL_RATE)+' ♥';
+    $('#avatar-value').innerHTML='<span style="color:'+rc.color+';font-weight:900">'+rc.name+'</span> · PODER: <b style="color:'+(pw?pw.color:'#fff')+'">'+(pw?pw.name:'—')+'</b>'
+      +(pw&&pw.ult?'<br><span style="opacity:.8">R · '+pw.ult+'</span>':'');
   } else {
     $('#avatar-name').textContent='SIN ANIMAL';
     $('#avatar-token').textContent='compra en MARKET';
@@ -139,34 +145,36 @@ function renderMarket(){
   DATA.ANIMALS.forEach(a=>{ (a.side==='pred'?red:blue).appendChild(make(a)); });
   updateHearts();
 }
-function openBuy(a){    // ahora es "ver tarjeta" (sin comprar/vender)
+function openBuy(a){    // "ver tarjeta" estilo mockup: header HEARTS · pips · podio · nombre · ULT
   SFX.click();
   buyTarget=a;
   const st=DATA.state();
   const owned=!!st.owned[a.id];
   const rc=DATA.RARITY[a.rarity]||DATA.RARITY.common, pw=DATA.POWERS[a.power];
+  // fondo de la carta según el lado (rojo depredador / azul presa)
+  $('#buy-card').classList.toggle('pred', a.side==='pred');
+  // sprite del animal sobre el podio
   const cv=$('#buy-canvas'), c=cv.getContext('2d');
   c.clearRect(0,0,cv.width,cv.height);
   const sp=Sprites.spriteCanvas(a);
   c.imageSmoothingEnabled=true; c.imageSmoothingQuality='high';
-  const k=Math.min(205/sp.height, 190/sp.width);
+  const k=Math.min(230/sp.height, 220/sp.width);
   const w=sp.width*k, h=sp.height*k;
   c.drawImage(sp,(cv.width-w)/2,(cv.height-h)/2,w,h);
+  // el corazón de arriba muestra con cuántos ♥ VIENE el monito
+  $('#buy-price').textContent=DATA.animalHearts(a);
   $('#buy-name').textContent=a.name;
-  $('#buy-name').style.color=rc.color;
-  const side=$('#buy-side');
-  side.innerHTML=(a.side==='pred'?'DEPREDADOR':'PRESA')+' · <b style="color:'+rc.color+'">'+rc.name+'</b>';
-  side.className='buy-side '+a.side;
-  const stats=$('#buy-stats'); stats.innerHTML='';
+  $('#buy-side').textContent=owned?((a.side==='pred'?'DEPREDADOR':'PRESA')+' · '+rc.name+' · TUYO')
+    :((a.side==='pred'?'DEPREDADOR':'PRESA')+' · '+rc.name+' · viene con '+DATA.animalHearts(a)+' ♥');
+  // PIPS (puntos rellenos, como el mockup)
   const pp=DATA.statPips(a);
-  [['DIFFICULTY',pp.dif],['SPEED',pp.spd],['HEALTH',pp.hp],['R',pp.r]].forEach(([l,v])=>{
-    const row=document.createElement('div'); row.className='stat-row';
-    row.innerHTML=`<span class="sr-label">${l}</span><div class="sr-bar"><div class="sr-fill" style="width:${v*20}%"></div></div><span>${v}</span>`;
-    stats.appendChild(row);
-  });
-  $('#buy-price').innerHTML = 'PODER · <b style="color:'+(pw?pw.color:'#fff')+'">'+(pw?pw.name:'—')+'</b>';
+  const setPips=(sel,n)=>{ const el=$(sel); el.innerHTML=''; for(let i=0;i<Math.max(1,n);i++) el.appendChild(document.createElement('i')); };
+  setPips('#buy-dif',pp.dif); setPips('#buy-spd',pp.spd); setPips('#buy-hp',pp.hp);
+  setPips('#buy-r', Math.min(5,(rc.rank||0)+2));   // R = fuerza del ultimate (por rareza)
+  // ULTIMATE del animal (tecla R), personalizado
+  $('#buy-ult').innerHTML = (pw&&pw.ult) ? ('<b>R · '+pw.ult+'</b> — '+(pw.ultDesc||pw.blurb)) : (pw?pw.blurb:'');
   $('#btn-buy-select').style.display = owned&&st.selected!==a.id?'':'none';
-  $('#buy-note').textContent = pw?pw.blurb:'';
+  $('#btn-buy-buy').style.display = 'none';   // la compra de monitos es en la TIENDA de la landing
   $('#modal-buy').classList.add('show');
   if(window.TUT) TUT.onBuyModal();
 }
@@ -181,6 +189,13 @@ function initMarket(){
     if(!st.owned[buyTarget.id]){ SFX.deny(); return; }
     st.selected=buyTarget.id; DATA.save();
     SFX.click(); toast(buyTarget.name+' equipado'); closeBuy(); renderMarket();
+  });
+  $('#btn-buy-buy').addEventListener('click',()=>{         // COMPRAR el monito (trae sus ♥)
+    const r=DATA.buyAnimal(buyTarget.id); if(!r || r.already){ SFX.deny(); return; }
+    SFX.coin(); popHeart(); updateHearts();
+    toast('¡'+r.animal.name+' es TUYO! Viene con +'+r.hearts+' ♥');
+    renderMarket(); openBuy(buyTarget);                    // re-abre la carta ya como TUYO
+    if(window.TUT && TUT.onBought) TUT.onBought();
   });
 }
 
@@ -198,11 +213,129 @@ function initMute(){
   b.addEventListener('click',()=>{ MUSIC.toggleMute(); paint(); });
 }
 
+// insignia de escudo con el metal del tier + corazón (estrella si CAMPEÓN)
+function rankBadgeSVG(tier, isMax){
+  const id='rg'+Math.random().toString(36).slice(2,7);
+  return '<svg viewBox="0 0 100 118" xmlns="http://www.w3.org/2000/svg">'
+    +'<defs><linearGradient id="'+id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+tier.c1+'"/><stop offset="1" stop-color="'+tier.c2+'"/></linearGradient>'
+    +'<linearGradient id="'+id+'g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(255,255,255,.6)"/><stop offset="1" stop-color="rgba(255,255,255,0)"/></linearGradient></defs>'
+    +'<path d="M50 6 L90 20 L90 58 Q90 92 50 112 Q10 92 10 58 L10 20 Z" fill="url(#'+id+')" stroke="rgba(0,0,0,.4)" stroke-width="2.5"/>'
+    +'<path d="M50 17 L80 28 L80 57 Q80 84 50 99 Q20 84 20 57 L20 28 Z" fill="rgba(0,0,0,.26)"/>'
+    +'<path d="M50 50 C50 44 44 38 37 38 C28 38 23 45 23 53 C23 65 35 75 50 88 C65 75 77 65 77 53 C77 45 72 38 63 38 C56 38 50 44 50 50 Z" fill="'+tier.c1+'" stroke="rgba(255,255,255,.55)" stroke-width="1.5"/>'
+    +'<path d="M50 6 L90 20 L90 38 Q50 28 10 38 L10 20 Z" fill="url(#'+id+'g)" opacity=".55"/>'
+    +(isMax?'<path d="M50 1 l3.4 6.9 7.6 1.1 -5.5 5.4 1.3 7.6 -6.8 -3.6 -6.8 3.6 1.3 -7.6 -5.5 -5.4 7.6 -1.1 z" fill="#fff2b0" stroke="#c99a17" stroke-width="1"/>':'')
+    +'</svg>';
+}
+function fillProfile(){   // TU RANGO por CORAZONES: insignia + tier + progreso al siguiente
+  const st=DATA.state(), rk=DATA.playerRankHearts();
+  $('#modal-hearts').textContent=st.hearts;
+  $('#wal-lvl').textContent=DATA.level();
+  $('#rank-badge').innerHTML=rankBadgeSVG(rk.tier, rk.isMax);
+  const rt=$('#rank-tier'); rt.textContent=rk.name; rt.style.color=rk.tier.c2;
+  const rf=$('#rp-fill'); rf.style.width=(rk.progress*100).toFixed(0)+'%'; rf.style.background='linear-gradient(90deg,'+rk.tier.c2+','+rk.tier.c1+')';
+  $('#rank-next').textContent = rk.isMax ? '¡rango MÁXIMO — eres CAMPEÓN!' : ('faltan '+rk.toNext+' ♥ para '+rk.next.name);
+}
+// ---- TIENDA: paquetes de corazones (compra simulada, sin dinero real) ----
+function renderPacks(){
+  const grid=$('#pack-grid'); if(!grid) return; grid.innerHTML='';
+  DATA.HEART_PACKS.forEach(p=>{
+    const card=document.createElement('div'); card.className='pack'+(p.popular?' pop':'');
+    card.innerHTML=(p.popular?'<div class="pk-tag">MÁS POPULAR</div>':'')
+      +'<div class="pk-h">'+p.label+'</div>'
+      +'<div class="pk-amt">'+p.hearts.toLocaleString()+' ♥</div>'
+      +'<div class="pk-bonus">'+(p.bonus||'')+'</div>'
+      +'<button class="pk-buy">$'+p.usd.toFixed(2)+'</button>';
+    card.querySelector('.pk-buy').onclick=()=>{
+      SFX.coin(); const r=DATA.buyPack(p.id); popHeart(); updateHearts(); fillProfile();
+      toast('+'+r.hearts.toLocaleString()+' ♥ (compra demo)');
+    };
+    grid.appendChild(card);
+  });
+}
+function openStore(){ renderPacks(); $('#modal-store').classList.add('show'); SFX.click(); }
+
+// ---- PARTY: jugar con amigos (sala + código; online real = servidor, por ahora bots cubren) ----
+let party=null;
+function genCode(){ const a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s=''; for(let i=0;i<4;i++) s+=a[Math.floor(Math.random()*a.length)]; return 'HRT-'+s; }
+function randAnimal(){ return DATA.ANIMALS[Math.floor(Math.random()*DATA.ANIMALS.length)]; }
+function botName(){ return DATA.BOT_NAMES[Math.floor(Math.random()*DATA.BOT_NAMES.length)]; }
+function openParty(){
+  $('#party-start').style.display=''; $('#party-room').style.display='none';
+  $('#party-code-in').value='';
+  party=null;
+  $('#modal-party').classList.add('show'); SFX.click();
+}
+function myAnimalOr(){ const an=DATA.byId[DATA.state().selected]; return an; }
+function partyRoom(){
+  $('#party-start').style.display='none'; $('#party-room').style.display='';
+  $('#party-code').textContent=party.code;
+  renderPartySlots();
+}
+function createParty(){
+  const an=myAnimalOr(); if(!an){ SFX.deny(); toast('Primero saca un guerrero (abre un cofre).'); return; }
+  party={ code:genCode(), members:[{me:true, name:DATA.state().name||'TÚ', animal:an}] };
+  partyRoom();
+}
+function joinParty(){
+  const code=($('#party-code-in').value||'').trim().toUpperCase();
+  if(code.replace(/[^A-Z0-9]/g,'').length<3){ SFX.deny(); toast('Escribe el código de tu amigo.'); return; }
+  const an=myAnimalOr(); if(!an){ SFX.deny(); toast('Primero saca un guerrero (abre un cofre).'); return; }
+  // simulado: entras a la party de un "host"
+  party={ code:code.indexOf('HRT-')===0?code:('HRT-'+code), members:[
+    {name:botName(), animal:randAnimal(), bot:true},
+    {me:true, name:DATA.state().name||'TÚ', animal:an}
+  ]};
+  partyRoom();
+}
+function renderPartySlots(){
+  const wrap=$('#party-slots'); wrap.innerHTML='';
+  for(let i=0;i<4;i++){
+    const m=party.members[i], slot=document.createElement('div');
+    if(m){
+      slot.className='pslot'+(m.me?' me':'');
+      const cv=document.createElement('canvas'); cv.width=cv.height=40;
+      const src=Sprites.spriteCanvas(m.animal), c=cv.getContext('2d');
+      const k=Math.min(40/src.height,40/src.width); c.imageSmoothingEnabled=true;
+      c.drawImage(src,(40-src.width*k)/2,(40-src.height*k)/2,src.width*k,src.height*k);
+      slot.appendChild(cv);
+      const nm=document.createElement('div'); nm.className='pn';
+      nm.innerHTML=(m.me?'★ ':'')+m.name+(m.bot?' <span style="opacity:.55;font-weight:400">(bot)</span>':'');
+      slot.appendChild(nm);
+    } else {
+      slot.className='pslot empty';
+      slot.innerHTML='<span class="pn">esperando amigo…</span>';
+      const add=document.createElement('button'); add.className='add'; add.textContent='+ BOT';
+      add.onclick=()=>{ SFX.click(); party.members.push({name:botName(), animal:randAnimal(), bot:true}); renderPartySlots(); };
+      slot.appendChild(add);
+    }
+    wrap.appendChild(slot);
+  }
+}
+function copyPartyCode(){
+  const t=party.code;
+  if(navigator.clipboard) navigator.clipboard.writeText(t).catch(()=>{});
+  toast('Código copiado: '+t+' — compártelo con tu amigo');
+}
+function startPartyGame(){
+  if(!party){ return; }
+  while(party.members.length<4) party.members.push({name:botName(), animal:randAnimal(), bot:true});
+  $('#modal-party').classList.remove('show');
+  MATCH.startParty(party.members.slice(0,4));
+}
+function initParty(){
+  $('#btn-party').addEventListener('click',()=>{ SFX.click(); openParty(); });
+  $('#btn-party-create').addEventListener('click',()=>{ SFX.click(); createParty(); });
+  $('#btn-party-join').addEventListener('click',()=>{ SFX.click(); joinParty(); });
+  $('#btn-party-copy').addEventListener('click',()=>{ SFX.click(); copyPartyCode(); });
+  $('#btn-party-start').addEventListener('click',()=>{ SFX.click(); startPartyGame(); });
+  $('#btn-party-leave').addEventListener('click',()=>{ SFX.click(); openParty(); });
+  $('#btn-party-close').addEventListener('click',()=>$('#modal-party').classList.remove('show'));
+  $('#modal-party').addEventListener('click',(e)=>{ if(e.target.id==='modal-party') $('#modal-party').classList.remove('show'); });
+}
 function initWallet(){
   $('#wallet-chip').addEventListener('click',()=>{
     const st=DATA.state();
-    $('#modal-hearts').textContent=st.hearts;
-    $('#modal-mxn').textContent=(st.hearts*DATA.ECON.MXN_PER_HEART).toLocaleString();
+    fillProfile();
     const today=new Date().toDateString();
     $('#btn-daily').disabled = st.lastDaily===today;
     $('#btn-daily').style.opacity = st.lastDaily===today?.5:1;
@@ -215,15 +348,12 @@ function initWallet(){
     const st=DATA.state(), today=new Date().toDateString();
     if(st.lastDaily===today){ SFX.deny(); return; }
     st.lastDaily=today; st.hearts+=5; DATA.save();
-    SFX.coin(); popHeart(); updateHearts();
-    $('#modal-hearts').textContent=st.hearts;
-    $('#modal-mxn').textContent=(st.hearts*DATA.ECON.MXN_PER_HEART).toLocaleString();
+    SFX.coin(); popHeart(); updateHearts(); fillProfile();
     toast('+5 ♥ bonus diario');
   });
-  $('#btn-cashout').addEventListener('click',()=>{
-    SFX.click();
-    toast('CASH OUT demo: en la versión real esto liquida a tu banco vía blockchain.');
-  });
+  $('#btn-buy-hearts').addEventListener('click',()=>{ SFX.click(); openStore(); });
+  $('#btn-store-close').addEventListener('click',()=>$('#modal-store').classList.remove('show'));
+  $('#modal-store').addEventListener('click',(e)=>{ if(e.target.id==='modal-store') $('#modal-store').classList.remove('show'); });
 }
 
 // ---------- armería (tienda de armas) ----------
@@ -407,5 +537,28 @@ function initBoard(){
   $('#btn-board-back').addEventListener('click',()=>{ SFX.click(); enterLobby(); });
 }
 
-window.UI = { show, toast, enterLobby, updateHearts, popHeart, renderRosters, initLogin, initMarket, initWallet, initBoard, initMute, initHelp, initChests };
+// ---------- CONTROLES TÁCTILES (celular): los botones simulan teclas vía KIT.press/release ----------
+function initTouch(){
+  const body=document.body;
+  const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints>0;
+  const pref = localStorage.getItem('hearts-touch');           // '1' / '0' / null → que ESCOJA el usuario
+  let on = pref!==null ? pref==='1' : isTouch;                  // por defecto ON en celular
+  const apply=()=>body.classList.toggle('touch-on', on);
+  apply();
+  const tog=$('#touch-toggle');
+  if(tog) tog.addEventListener('click',()=>{ on=!on; localStorage.setItem('hearts-touch', on?'1':'0'); apply(); if(window.SFX)SFX.click(); toast(on?'Controles táctiles ON':'Controles táctiles OFF'); });
+  document.querySelectorAll('#touch-controls .tc-btn').forEach(btn=>{
+    const k=btn.getAttribute('data-k');
+    const down=ev=>{ ev.preventDefault(); btn.classList.add('on'); if(window.KIT)KIT.press(k); };
+    const up  =ev=>{ if(ev&&ev.preventDefault)ev.preventDefault(); btn.classList.remove('on'); if(window.KIT)KIT.release(k); };
+    btn.addEventListener('touchstart',down,{passive:false});
+    btn.addEventListener('touchend',up,{passive:false});
+    btn.addEventListener('touchcancel',up,{passive:false});
+    btn.addEventListener('mousedown',down);
+    btn.addEventListener('mouseup',up);
+    btn.addEventListener('mouseleave',()=>{ if(btn.classList.contains('on')) up(); });
+  });
+}
+
+window.UI = { show, toast, enterLobby, updateHearts, popHeart, renderRosters, initLogin, initMarket, initWallet, initBoard, initMute, initHelp, initChests, initParty, initTouch, openStore };
 })();

@@ -2,12 +2,12 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>HEARTS — Battle Royale</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Archivo+Black&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=51">
+<link rel="stylesheet" href="css/style.css?v=99">
 </head>
 <body>
 
@@ -81,8 +81,9 @@
         <div class="pedestal"></div>
         <div class="avatar-meta"><span id="avatar-name">—</span><span class="token-id" id="avatar-token">#—</span></div>
       </div>
-      <button class="btn-flat btn-ranked" id="btn-ranked">RANKED<small>FEE: 3 <span class="mini-heart">♥</span><span class="mini-heart">♥</span><span class="mini-heart">♥</span></small></button>
+      <button class="btn-flat btn-ranked" id="btn-ranked">JUGAR<small>sobrevive · no pierdas tus ♥</small></button>
       <div class="lobby-actions">
+        <button class="btn-flat" id="btn-party">👥 AMIGOS</button>
         <button class="btn-flat" id="btn-leaderboard">LEADERBOARD</button>
         <button class="btn-flat btn-market" id="btn-market">ANIMALES</button>
         <button class="btn-flat" id="btn-help">¿CÓMO JUGAR?</button>
@@ -164,7 +165,7 @@
   <div class="game-hud">
     <div class="hud-left"><span class="hud-brand">HEARTS</span><span class="hud-phase" id="hud-phase">FASE 1</span></div>
     <div class="hud-mid" id="hud-players"></div>
-    <div class="hud-right"><div class="heart-px sm"><span id="hud-pot">12</span></div><span class="hud-pot-label">POT</span></div>
+    <div class="hud-right"><div class="heart-px sm"><span id="hud-pot">12</span></div><span class="hud-pot-label">TUS ♥</span></div>
   </div>
   <div class="game-stage">
     <canvas id="game-canvas" width="832" height="640"></canvas>
@@ -200,34 +201,108 @@
     </div>
   </div>
   <div class="game-controls" id="game-controls"></div>
+  <!-- CONTROLES TÁCTILES (celular) -->
+  <div class="touch-controls" id="touch-controls">
+    <div class="tc-pad">
+      <button class="tc-btn tc-up"    data-k="ArrowUp">▲</button>
+      <button class="tc-btn tc-left"  data-k="ArrowLeft">◄</button>
+      <button class="tc-btn tc-right" data-k="ArrowRight">►</button>
+      <button class="tc-btn tc-down"  data-k="ArrowDown">▼</button>
+    </div>
+    <div class="tc-actions">
+      <button class="tc-btn tc-ult"   data-k="KeyR"><span>R</span></button>
+      <button class="tc-btn tc-dodge" data-k="KeyC"><span>ESQ</span></button>
+      <button class="tc-btn tc-shoot" data-k="KeyX"><span>🏹</span></button>
+      <button class="tc-btn tc-jump"  data-k="Space"><span>SALTO</span></button>
+    </div>
+  </div>
+  <button class="touch-toggle" id="touch-toggle" title="controles táctiles">🎮</button>
+  <!-- aviso: gira el celular (solo en vertical) -->
+  <div class="rotate-hint" id="rotate-hint">
+    <div class="rot-phone">📱</div>
+    <div class="rot-title">GIRA TU CELULAR</div>
+    <div class="rot-sub">HEARTS se juega mejor en horizontal</div>
+  </div>
 </section>
 
 <!-- ============ MODALS ============ -->
 <div class="modal-back" id="modal-buy">
-  <div class="modal">
-    <canvas id="buy-canvas" width="200" height="220"></canvas>
-    <h3 id="buy-name">—</h3>
-    <div class="buy-side" id="buy-side">DEPREDADOR</div>
-    <div class="buy-stats" id="buy-stats"></div>
-    <div class="buy-price" id="buy-price"></div>
+  <div class="modal card-view" id="buy-card">
+    <div class="cv-top">
+      <div class="cv-brand"><span class="cv-kicker">BATTLE ROYALE</span><span class="cv-title">HEARTS</span></div>
+      <div class="heart-px sm cv-price"><span id="buy-price">15</span></div>
+    </div>
+    <div class="cv-stats">
+      <div class="sc-row"><label>DIFFICULTY</label><div class="pips" id="buy-dif"></div></div>
+      <div class="sc-row"><label>SPEED</label><div class="pips" id="buy-spd"></div></div>
+      <div class="sc-row"><label>HEALTH</label><div class="pips" id="buy-hp"></div></div>
+      <div class="sc-row"><label>R · ULT</label><div class="pips" id="buy-r"></div></div>
+    </div>
+    <div class="cv-stage">
+      <canvas id="buy-canvas" width="240" height="240"></canvas>
+      <div class="cv-pedestal"></div>
+    </div>
+    <div class="cv-name" id="buy-name">—</div>
+    <div class="cv-side" id="buy-side"></div>
+    <div class="cv-ult" id="buy-ult"></div>
     <div class="modal-actions">
+      <button class="btn-flat btn-ranked" id="btn-buy-buy" style="display:none">COMPRAR</button>
       <button class="btn-flat btn-buy" id="btn-buy-select" style="display:none">USAR ESTE</button>
       <button class="btn-flat" id="btn-buy-cancel">CERRAR</button>
     </div>
-    <div class="buy-note" id="buy-note"></div>
   </div>
 </div>
 
 <div class="modal-back" id="modal-wallet">
   <div class="modal">
-    <h3>WALLET</h3>
-    <div class="wallet-big"><span id="modal-hearts">0</span> ♥</div>
-    <div class="wallet-cash">≈ $<span id="modal-mxn">0</span> MXN <em>(demo)</em></div>
-    <button class="btn-flat cofres-btn" id="btn-chests" style="margin-top:14px">ABRIR COFRES</button>
+    <h3>TU RANGO</h3>
+    <div class="rank-hero">
+      <div class="rank-badge" id="rank-badge"></div>
+      <div class="rank-info">
+        <div class="rank-tier" id="rank-tier">COBRE</div>
+        <div class="rank-rp"><b><span id="modal-hearts">0</span> ♥</b> · entre más ♥, mayor rango</div>
+        <div class="rp-bar"><div class="rp-fill" id="rp-fill"></div></div>
+        <div class="rank-next" id="rank-next"></div>
+      </div>
+    </div>
+    <div class="wallet-sub">Nivel <b id="wal-lvl">1</b> — protege tus ♥ para subir de rango</div>
+    <button class="btn-flat btn-buy" id="btn-buy-hearts" style="margin-top:8px">COMPRAR ♥</button>
+    <button class="btn-flat cofres-btn" id="btn-chests" style="margin-top:8px">ABRIR COFRES</button>
     <button class="btn-flat" id="btn-daily" style="margin-top:8px">BONUS DIARIO +5 ♥</button>
-    <button class="btn-flat btn-buy" id="btn-cashout" style="margin-top:8px">CASH OUT</button>
-    <div class="buy-note">Economía simulada. La versión real requiere blockchain + pasarela de pagos.</div>
     <div class="modal-actions"><button class="btn-flat" id="btn-wallet-close">CERRAR</button></div>
+  </div>
+</div>
+
+<div class="modal-back" id="modal-store">
+  <div class="modal" style="width:min(560px,96vw);max-width:560px">
+    <h3>COMPRAR CORAZONES</h3>
+    <div style="font-size:12px;opacity:.82;margin:2px 0 14px">Paquetes de ♥ para entrar a mesas con stacks más grandes.</div>
+    <div class="pack-grid" id="pack-grid"></div>
+    <div class="buy-note">Compra simulada (demo) — no se cobra dinero real. La versión real necesitaría una pasarela de pagos.</div>
+    <div class="modal-actions"><button class="btn-flat" id="btn-store-close">CERRAR</button></div>
+  </div>
+</div>
+
+<div class="modal-back" id="modal-party">
+  <div class="modal" style="max-width:440px;width:min(440px,94vw)">
+    <h3>JUGAR CON AMIGOS</h3>
+    <div id="party-start">
+      <div style="font-size:12px;opacity:.8;margin:2px 0 14px">Crea una party y comparte el código, o únete a la de un amigo.</div>
+      <button class="btn-flat btn-ranked" id="btn-party-create">CREAR PARTY</button>
+      <div style="margin:12px 0;font-size:11px;opacity:.6;letter-spacing:.2em">— O —</div>
+      <div style="display:flex;gap:8px">
+        <input id="party-code-in" placeholder="CÓDIGO" maxlength="8" autocomplete="off" style="flex:1;padding:11px 12px;border:1px solid rgba(0,0,0,.2);border-radius:8px;font-family:'Space Mono',monospace;font-size:14px;letter-spacing:.12em;text-transform:uppercase;background:#fff;color:#2b2822">
+        <button class="btn-flat" id="btn-party-join">UNIRME</button>
+      </div>
+    </div>
+    <div id="party-room" style="display:none">
+      <div class="party-code">CÓDIGO <b id="party-code">HRT-0000</b> <button class="btn-flat" id="btn-party-copy" style="padding:6px 12px;font-size:10px">COMPARTIR</button></div>
+      <div class="party-slots" id="party-slots"></div>
+      <div class="buy-note">El juego en línea con amigos reales llega pronto (necesita servidor). Por ahora los lugares vacíos los cubren bots.</div>
+      <button class="btn-flat btn-ranked" id="btn-party-start" style="margin-top:6px">INICIAR PARTIDA</button>
+      <button class="btn-flat" id="btn-party-leave" style="margin-top:8px">SALIR DE LA PARTY</button>
+    </div>
+    <div class="modal-actions"><button class="btn-flat" id="btn-party-close">CERRAR</button></div>
   </div>
 </div>
 
@@ -235,32 +310,46 @@
   <div class="modal" style="text-align:left;max-width:440px;width:min(440px,92vw)">
     <h3 style="text-align:center">¿CÓMO JUGAR?</h3>
     <div class="help-body">
-      <p><b>EL JUEGO:</b> battle royale de 8. Entras pagando 3 ♥ — esos corazones los CARGAS en la arena. Rondas por 4 mundos hasta que quede uno. <b>El último con corazones banquea todo lo que carga.</b></p>
-      <p><b>MORIR:</b> sueltas 1 ♥ al piso (cualquiera lo roba) y quedas fuera hasta la siguiente ronda. Con 0 ♥ estás eliminado. Desde la ronda 5, la tormenta ⛈ cobra corazones.</p>
-      <p><b>FLECHAS:</b> solo 3. Se clavan donde caen — ve por ellas. <b>Agáchate para ATRAPAR</b> flechas enemigas.</p>
-      <p><b>COFRES:</b> alas (planeas + salto extra), botas (salto alto), escudo burbuja, +♥, +flechas. Se combinan y se pierden al morir.</p>
+      <p><b>EL JUEGO:</b> battle royale de 4. Eliges tu <b>RANGO</b> y pagas su entrada en ♥ (tu <b>stake</b>). Todos entran con <b>3 vidas</b> y se juega por rondas en 9 mundos hasta que quede uno. <b>El último vivo se lleva la BOLSA</b> (menos 15% de la casa).</p>
+      <p><b>ESCALAR:</b> empiezas con ~$10 (40 ♥) en NOVATO. Ganas → creces → subes de rango (BRONCE, PLATA, ORO, DIAMANTE, LEYENDA). Entre <b>mayor rango, más cuesta la entrada… y más grande el premio.</b></p>
+      <p><b>MORIR:</b> pierdes 1 vida y quedas fuera hasta la siguiente ronda. Con 0 vidas estás eliminado. Desde la ronda 5, la tormenta ⛈ te cobra vidas.</p>
+      <p><b>FLECHAS:</b> solo 3. Se clavan donde caen — ve por ellas para recargar. <b>Agáchate para ATRAPAR</b> flechas enemigas al vuelo.</p>
+      <p><b>PODERES (cofres de la arena):</b> alas (planeas + salto extra), botas (salto alto), escudo burbuja, +♥ y +flechas. Se combinan y se pierden al morir.</p>
+      <p><b>GUERREROS:</b> los sacas abriendo <b>COFRES</b> en tu WALLET (¡el primero GRATIS!). Cada animal tiene su rareza y un PODER. Míralos todos en <b>ANIMALES</b>.</p>
       <p><b>CONTROLES:</b> FLECHAS/WASD mover · ESPACIO saltar (doble) · X o J disparar (+ARRIBA apunta) · ABAJO agacharte/atrapar.</p>
-      <p><b>MARKET:</b> compra guerreros con ♥ (los rojos son depredadores, los azules presas). Son tuyos: véndelos al 70%.</p>
     </div>
     <div class="modal-actions"><button class="btn-flat" id="btn-help-close">¡A JUGAR!</button></div>
   </div>
 </div>
 
+<div class="modal-back" id="modal-ranks">
+  <div class="modal" style="max-width:470px;width:min(470px,94vw)">
+    <h3>ELIGE TU MESA</h3>
+    <div style="font-size:12.5px;line-height:1.6;opacity:.82;margin:2px 2px 10px">Como en el billar: las <b>mesas más caras</b> se desbloquean <b>subiendo de nivel</b> y <b>ahorrando</b>. Entra, gana la bolsa y escala.</div>
+    <div style="font-size:13px;margin-bottom:6px">NIVEL <b><span id="ranks-lvl">1</span></b> · balance <b><span id="ranks-bal">0</span> ♥</b> <em style="opacity:.7">(≈ $<span id="ranks-usd">0</span>)</em></div>
+    <div class="mesa-hint">←  desliza entre mesas  →</div>
+    <div id="ranks-list"></div>
+    <div class="buy-note">Economía simulada (demo). La casa se queda 15% de rake por bolsa. La versión real requiere blockchain + pasarela de pagos.</div>
+    <div class="modal-actions"><button class="btn-flat" id="btn-ranks-close">CERRAR</button></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
-<script src="js/audio.js?v=51"></script>
-<script src="js/sprites.js?v=51"></script>
-<script src="js/mapart.js?v=51"></script>
-<script src="js/intro.js?v=51"></script>
-<script src="js/tutorial.js?v=51"></script>
-<script src="js/themes.js?v=51"></script>
-<script src="js/data.js?v=51"></script>
-<script src="js/weapons.js?v=51"></script>
-<script src="js/ui.js?v=51"></script>
-<script src="js/bomberman.js?v=51"></script>
-<script src="js/towerfall.js?v=51"></script>
-<script src="js/bros.js?v=51"></script>
-<script src="js/match.js?v=51"></script>
-<script src="js/main.js?v=51"></script>
+<script src="js/audio.js?v=99"></script>
+<script src="js/sprites.js?v=99"></script>
+<script src="js/mapart.js?v=99"></script>
+<script src="js/intro.js?v=99"></script>
+<script src="js/tutorial.js?v=99"></script>
+<script src="js/themes.js?v=99"></script>
+<script src="js/data.js?v=99"></script>
+<script src="js/weapons.js?v=99"></script>
+<script src="js/ui.js?v=99"></script>
+<script src="js/bomberman.js?v=99"></script>
+<script src="js/towerfall.js?v=99"></script>
+<script src="js/showdown.js?v=99"></script>
+<script src="js/bros.js?v=99"></script>
+<script src="js/match.js?v=99"></script>
+<script src="js/main.js?v=99"></script>
 </body>
 </html>

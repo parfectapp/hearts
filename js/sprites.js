@@ -29,6 +29,29 @@ function spriteCanvas(an){
   return cv;
 }
 
+// versión PIXEL-ART del sticker (baja-res + CONTORNO oscuro estilo TowerFall) — solo en la pelea
+const pixCache={};
+function pixOf(an){
+  if(pixCache[an.id]) return pixCache[an.id];
+  const im=imgs[an.id]; if(!im) return null;
+  const PIXH=42;                                   // altura de trabajo = pixeles chunky al escalar
+  const ph=PIXH, pw=Math.max(1,Math.round(PIXH*(im.width/im.height)));
+  // 1) downscale limpio a baja resolución
+  const t=document.createElement('canvas'); t.width=pw; t.height=ph;
+  const tg=t.getContext('2d'); tg.imageSmoothingEnabled=true; tg.imageSmoothingQuality='high';
+  tg.drawImage(im,0,0,pw,ph);
+  // 2) silueta oscura (para el contorno)
+  const sil=document.createElement('canvas'); sil.width=pw; sil.height=ph;
+  const sg=sil.getContext('2d'); sg.drawImage(t,0,0);
+  sg.globalCompositeOperation='source-in'; sg.fillStyle='#161018'; sg.fillRect(0,0,pw,ph);
+  // 3) canvas final: contorno de 1px en 8 direcciones + sprite encima
+  const c=document.createElement('canvas'); c.width=pw+2; c.height=ph+2;
+  const g=c.getContext('2d'); g.imageSmoothingEnabled=false;
+  [[0,1],[2,1],[1,0],[1,2],[0,0],[2,2],[2,0],[0,2]].forEach(o=>g.drawImage(sil,o[0],o[1]));
+  g.drawImage(t,1,1);
+  pixCache[an.id]=c; return c;
+}
+
 // dibuja en el juego: centrado en cx, apoyado en bottomY, altura h (aspecto nativo)
 // pose (opcional) anima el sticker estilo Brawl Stars:
 //  - moving+run: trote juguetón (brinquito + inclinación + rebote)
@@ -67,13 +90,15 @@ function drawAnimal(ctx,an,cx,bottomY,h,flip,pose){
     }
     flash=pose.flash||0;
   }
+  const sm=pose&&pose.smooth;                        // 'smooth' = suave (intro/UI); si no, pixel-art
+  const src=sm?im:(pixOf(an)||im);                   // sprite PIXEL-ART con contorno (estilo TowerFall)
   ctx.save();
-  ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
+  ctx.imageSmoothingEnabled=!!sm;                    // nearest-neighbor = pixeles crujientes en el juego
   if(flash>0.05) ctx.filter=`brightness(${1+1.8*flash}) saturate(${1-0.6*flash})`;
   ctx.translate(cx,bottomY+dy);
   ctx.rotate(rot*(flip?-1:1));
   ctx.scale(sx*(flip?-1:1),sy);
-  ctx.drawImage(im,-w/2,-h,w,h);
+  ctx.drawImage(src,-w/2,-h,w,h);
   ctx.restore();
 }
 
