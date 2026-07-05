@@ -65,7 +65,7 @@ function pixOf(an){
 function drawAnimal(ctx,an,cx,bottomY,h,flip,pose){
   const im=imgs[an.id]; if(!im) return;
   const w=h*(im.width/im.height);
-  let rot=0, sx=1, sy=1, dy=0, flash=0;
+  let rot=0, sx=1, sy=1, dy=0, dx=0, flash=0;
   if(pose){
     if(pose.crouch){
       sy=0.62; sx=1.16;
@@ -74,12 +74,22 @@ function drawAnimal(ctx,an,cx,bottomY,h,flip,pose){
       sy=1+0.15*Math.abs(k); sx=1-0.10*Math.abs(k);
       rot=0.12*k;
     } else if(pose.moving){
-      dy=-Math.abs(Math.sin(pose.run))*h*0.085;
-      rot=Math.sin(pose.run)*0.11;
-      sy=1+Math.sin(pose.run*2)*0.05;
+      // CORRER: rebote de pasos + inclinación hacia adelante (esfuerzo) + contoneo lateral
+      const r=pose.run;
+      dy=-Math.abs(Math.sin(r))*h*0.12;                 // brinquito de cada paso (más marcado)
+      rot=Math.sin(r)*0.10 + 0.14;                        // balanceo + LEAN hacia donde corre
+      sy=1+Math.sin(r*2)*0.07; sx=1-Math.sin(r*2)*0.05;  // squash/stretch del trote
+      dx=Math.cos(r)*h*0.045;                             // vaivén lateral (contoneo de caminar)
     } else if(pose.idle){
       sy=1+Math.sin((pose.t||0)*3.2)*0.028;
       sx=1-Math.sin((pose.t||0)*3.2)*0.018;
+    }
+    // DISPARAR: draw = 0..1 mientras jala/suelta la flecha → se echa hacia atrás y hace fuerza
+    if(pose.draw){
+      const d=pose.draw;
+      rot-=0.26*d;                                        // se inclina hacia atrás (tensa el arco)
+      dx-=h*0.06*d;                                       // el cuerpo retrocede
+      sx*=1+0.10*d; sy*=1-0.06*d;                         // pecho hinchado del esfuerzo
     }
     if(pose.atk){ rot+=0.22*pose.atk; sx*=1+0.12*pose.atk; dy+=h*0.02*pose.atk; }
     if(pose.land){ sy*=1-0.30*pose.land; sx*=1+0.28*pose.land; }
@@ -95,7 +105,7 @@ function drawAnimal(ctx,an,cx,bottomY,h,flip,pose){
   ctx.save();
   ctx.imageSmoothingEnabled=!!sm;                    // nearest-neighbor = pixeles crujientes en el juego
   if(flash>0.05) ctx.filter=`brightness(${1+1.8*flash}) saturate(${1-0.6*flash})`;
-  ctx.translate(cx,bottomY+dy);
+  ctx.translate(cx+dx*(flip?-1:1),bottomY+dy);
   ctx.rotate(rot*(flip?-1:1));
   ctx.scale(sx*(flip?-1:1),sy);
   ctx.drawImage(src,-w/2,-h,w,h);

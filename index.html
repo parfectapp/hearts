@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Archivo+Black&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=103">
+<link rel="stylesheet" href="css/style.css?v=104">
 </head>
 <body>
 
@@ -39,6 +39,30 @@
     <div class="login-row"><label>PASSWORD</label><input id="login-pass" type="password" placeholder="••••••" autocomplete="off"></div>
     <button id="btn-enter" class="btn-flat">ENTER</button>
     <div class="login-sub">BATTLE ROYALE · DEPREDADORES VS PRESAS</div>
+  </div>
+</section>
+
+<!-- ============ MENÚ PRINCIPAL ============ -->
+<section id="screen-menu" class="screen">
+  <div class="menu-top">
+    <button class="btn-mute" id="btn-mute-menu">SONIDO ON</button>
+    <div class="wallet" id="wallet-menu"><div class="heart-px sm"><span id="menu-hearts">0</span></div><span class="wallet-label">MONEDERO</span></div>
+  </div>
+  <div class="menu-wrap">
+    <div class="menu-logo"><span class="ml-a">HE</span><span class="ml-heart">♥</span><span class="ml-b">RTS</span></div>
+    <div class="menu-tag">BATTLE ROYALE · 5 MODOS</div>
+    <div class="menu-mains">
+      <button class="menu-main mm-versus" id="mm-versus"><span class="mm-ic">⚔</span><span class="mm-t">VERSUS</span><small>elige modo · 2-4 monitos</small></button>
+      <button class="menu-main mm-coop" id="mm-coop"><span class="mm-ic">🛡</span><span class="mm-t">CO-OP</span><small>QUEST · oleadas</small></button>
+    </div>
+    <div class="menu-mini">
+      <button id="mm-trials"><span>🎯</span>TRIALS</button>
+      <button id="mm-animals"><span>🐾</span>ANIMALES</button>
+      <button id="mm-store"><span>🎁</span>COFRES</button>
+      <button id="mm-friends"><span>👥</span>AMIGOS</button>
+      <button id="mm-monito"><span>★</span>MI MONITO</button>
+      <button id="mm-help"><span>?</span>CÓMO JUGAR</button>
+    </div>
   </div>
 </section>
 
@@ -83,6 +107,7 @@
       </div>
       <button class="btn-flat btn-ranked" id="btn-ranked">JUGAR<small>sobrevive · no pierdas tus ♥</small></button>
       <div class="lobby-actions">
+        <button class="btn-flat" id="btn-lobby-menu">🏠 MENÚ</button>
         <button class="btn-flat" id="btn-party">👥 AMIGOS</button>
         <button class="btn-flat" id="btn-leaderboard">LEADERBOARD</button>
         <button class="btn-flat btn-market" id="btn-market">ANIMALES</button>
@@ -346,20 +371,20 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/audio.js?v=103"></script>
-<script src="js/sprites.js?v=103"></script>
-<script src="js/mapart.js?v=103"></script>
-<script src="js/intro.js?v=103"></script>
-<script src="js/tutorial.js?v=103"></script>
-<script src="js/themes.js?v=103"></script>
-<script src="js/data.js?v=103"></script>
-<script src="js/weapons.js?v=103"></script>
-<script src="js/ui.js?v=103"></script>
-<script src="js/bomberman.js?v=103"></script>
-<script src="js/towerfall.js?v=103"></script>
-<script src="js/showdown.js?v=103"></script>
-<script src="js/bros.js?v=103"></script>
-<script src="js/match.js?v=103"></script>
-<script src="js/main.js?v=103"></script>
+<script src="js/audio.js?v=104"></script>
+<script src="js/sprites.js?v=104"></script>
+<script src="js/mapart.js?v=104"></script>
+<script src="js/intro.js?v=104"></script>
+<script src="js/tutorial.js?v=104"></script>
+<script src="js/themes.js?v=104"></script>
+<script src="js/data.js?v=104"></script>
+<script src="js/weapons.js?v=104"></script>
+<script src="js/ui.js?v=104"></script>
+<script src="js/bomberman.js?v=104"></script>
+<script src="js/towerfall.js?v=104"></script>
+<script src="js/showdown.js?v=104"></script>
+<script src="js/bros.js?v=104"></script>
+<script src="js/match.js?v=104"></script>
+<script src="js/main.js?v=104"></script>
 </body>
 </html>

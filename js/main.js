@@ -12,6 +12,7 @@ Promise.all([Sprites.load(DATA.ANIMALS), MAPART.load(), WEAP.load()]).then(()=>{
   UI.initChests();
   UI.initParty();
   UI.initTouch();
+  UI.initMenu();
   MATCH.init();
   INTRO.play(document.querySelector('#intro-canvas'), ()=>UI.show('#screen-login'));
 });

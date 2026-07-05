@@ -658,6 +658,7 @@ function start(canvas, players, cfg, onEnd, eco){
         {moving:e.onG&&Math.abs(e.vx)>30, run:e.runPh, air:!e.onG, vy:e.vy,
          idle:e.onG&&Math.abs(e.vx)<=30, t:time+e.runPh,
          crouch:e.crouch, land:e.landT/0.14, atk:-recoil*0.6,
+         draw:Math.min(1,(e.drawT||0)/0.16),           // ESFUERZO al disparar (jala/suelta)
          spawn:e.inv>0?e.inv/1.5:0});
       if(_phase) ctx.globalAlpha=1;
       // arma equipada en la mano
