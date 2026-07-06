@@ -85,10 +85,10 @@ function enterLobby(){
     $('#avatar-value').innerHTML='<span style="color:'+rc.color+';font-weight:900">'+rc.name+'</span> · PODER: <b style="color:'+(pw?pw.color:'#fff')+'">'+(pw?pw.name:'—')+'</b>'
       +(pw&&pw.ult?'<br><span style="opacity:.8">R · '+pw.ult+'</span>':'');
   } else {
-    $('#avatar-name').textContent='SIN ANIMAL';
-    $('#avatar-token').textContent='compra en MARKET';
+    $('#avatar-name').textContent='SIN GUERRERO';
+    $('#avatar-token').textContent='—';
     $('#stats-card').style.display='none';
-    $('#avatar-value').textContent='';
+    $('#avatar-value').innerHTML='Consigue tu guerrero:<br><a href="landing.html" style="color:#ffd34d;font-weight:900;text-decoration:underline">COMPRA UN COFRE EN LA LANDING →</a>';
   }
   // selector rápido de tus guerreros
   const row=$('#own-row'); row.innerHTML='';
@@ -115,41 +115,26 @@ function enterLobby(){
   if(window.TUT) TUT.onLobby();
 }
 
-// ---------- ONBOARDING: pantallas de bienvenida (copas/rangos/cómo jugar) + cofre de bienvenida ----------
+// ---------- ONBOARDING: pantallas de bienvenida (copas/rangos + cómo jugar) ----------
+// Los guerreros se consiguen SOLO comprando cofres en la landing — ya no hay cofre ni ratón de arranque.
 function showOnboarding(){
   const st=DATA.state();
   const ov=$('#onboarding'), card=$('#onb-card');
   if(!ov||!card){ st.onboarded=true; DATA.save(); enterLobby(); return; }
   const slides=[
     {t:'GANA COPAS · SUBE DE ARENA', b:'Ganas partidas → ganas <b>COPAS 🏆</b>. Entre más copas, mejor tu <b>rango</b> y tu <b>ARENA</b> (hay 8). Si pierdes, bajas copas — como Clash Royale.', ladder:true, btn:'SIGUIENTE'},
-    {t:'CÓMO SE JUEGA', b:'En la partida tienes <b>3 ♥ vidas</b>. Muévete, salta y dispara. <b>Sobrevive</b>: el último en pie gana. ¡No pierdas tus ♥!', keys:true, btn:'SIGUIENTE'},
-    {t:'TU COFRE DE BIENVENIDA', b:'Empiezas como el <b>RATÓN</b> 🐭. Ábrete tu cofre y reclama tu primer guerrero.', chest:true, btn:'BUSCAR PARTIDA'}
+    {t:'CÓMO SE JUEGA', b:'En la partida tienes <b>3 ♥ vidas</b>. Muévete, salta y dispara. <b>Sobrevive</b>: el último en pie gana. ¡No pierdas tus ♥!<br><br>Tu <b>guerrero</b> lo consigues comprando un <b>cofre en la landing</b> — con tus credenciales aparece aquí.', keys:true, btn:'ENTRAR'}
   ];
-  let i=0, claimed=false;
+  let i=0;
   function finish(){ st.onboarded=true; DATA.save(); ov.classList.remove('show'); enterLobby(); }
   function render(){
     const s=slides[i]; let mid='';
     if(s.ladder){ mid='<div class="onb-ladder">'+DATA.RANK_TIERS.map((t,idx)=>
       '<div class="onb-rung" style="border-color:'+t.c1+'66"><span style="color:'+t.c1+'">ARENA '+(idx+1)+' · '+t.name+'</span><em>'+t.hmin+' 🏆</em></div>').join('')+'</div>'; }
     else if(s.keys){ mid='<div class="onb-keys"><span>← →</span><span>SALTO</span><span>DISPARA</span><span>C ESQUIVA</span><span>♥ ♥ ♥</span></div>'; }
-    else if(s.chest){ mid='<div class="onb-chest" id="onb-chest">🪵</div><div class="onb-reward" id="onb-reward"></div>'; }
     card.innerHTML='<div class="onb-step">'+(i+1)+' / '+slides.length+'</div><h3>'+s.t+'</h3><p>'+s.b+'</p>'+mid
       +'<button class="btn-flat onb-next" id="onb-next">'+s.btn+'</button>';
-    const next=$('#onb-next');
-    if(s.chest && !claimed){ next.disabled=true; next.style.opacity=.5;
-      const ch=$('#onb-chest');
-      ch.addEventListener('click',()=>{
-        if(claimed)return; claimed=true;
-        const epics=DATA.ANIMALS.filter(a=>a.rarity==='epic'); const pick=epics[(Math.random()*epics.length)|0];
-        st.owned[pick.id]='#'+String(1000+((Math.random()*9000)|0)); st.selected=pick.id; DATA.save();
-        ch.textContent='📭'; ch.style.cursor='default';
-        const rc=DATA.RARITY[pick.rarity]||DATA.RARITY.epic;
-        $('#onb-reward').innerHTML='<img src="assets/'+pick.id+'.png" alt=""><b style="color:'+rc.color+'">¡'+rc.name+'! '+pick.name+'</b>';
-        next.disabled=false; next.style.opacity=1;
-        try{ if(window.SFX)SFX.win(); }catch(e){}
-      });
-    }
-    next.onclick=()=>{ SFX.click(); if(i<slides.length-1){ i++; render(); } else { finish(); } };
+    $('#onb-next').onclick=()=>{ SFX.click(); if(i<slides.length-1){ i++; render(); } else { finish(); } };
   }
   ov.classList.add('show'); render();
 }
@@ -159,7 +144,7 @@ function updateHearts(){
   ['#market-hearts','#chests-hearts'].forEach(s=>{ const el=$(s); if(el) el.textContent=st.hearts; });
 }
 function popHeart(){
-  const h=$('#wallet-heart'); h.classList.remove('pop'); void h.offsetWidth; h.classList.add('pop');
+  const h=$('#wallet-heart'); if(!h) return; h.classList.remove('pop'); void h.offsetWidth; h.classList.add('pop');
 }
 
 // ---------- ANIMALES (galería: ver los 50 monitos y sus tarjetas) ----------

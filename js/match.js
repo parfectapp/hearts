@@ -327,6 +327,8 @@ function openRanks(){
 
 // ================= MODOS DE JUEGO (la ÚNICA forma de jugar) =================
 function openModes(){
+  // sin guerrero no se puede jugar — se consigue comprando un cofre en la landing
+  if(!DATA.byId[DATA.state().selected]){ UI.toast('Consigue tu guerrero: compra un cofre en la LANDING'); return; }
   const grid=$('#modes-list'); if(!grid) return; grid.innerHTML='';
   DATA.MODES.forEach(m=>{
     const card=document.createElement('div'); card.className='mode-card';
