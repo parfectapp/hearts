@@ -202,20 +202,22 @@ function maxAffordableRank(){ let m=0; for(let i=0;i<RANKS.length;i++){ if(mesaP
 const DEFAULT = ()=>({
   name:null,
   hearts:ECON.START_HEARTS,
+  cups:0,             // COPAS: puntos de RANGO estilo Clash Royale — el nuevo usuario empieza en 0
   coins:ECON.START_COINS,
-  owned:{},           // id -> tokenId
+  owned:{mouse:'#0000'},  // el nuevo usuario empieza con el RATÓN
   weapons:['bow_wood'],   // armas que posees
   weapon:'bow_wood',      // arma equipada
-  selected:null,
+  selected:'mouse',
   xp:0,
-  wins:0, matches:0, heartsWon:0,
+  wins:0, matches:0, heartsWon:0, cupsWon:0,
   rp:0,               // RANK POINTS (ranked estilo R6): COBRE V → CAMPEÓN
   rank:0,             // (mesas diferidas) índice en RANKS
   houseHearts:0,      // TESORERÍA: ganancia acumulada de la casa (rake de cada partida)
   lastDaily:null,
   mintCount:0,
   tut:false,
-  freeChest:true,   // el primer cofre (de madera) es gratis para el nuevo usuario
+  onboarded:false,  // ¿ya vio las pantallas de bienvenida (copas/rangos/cómo jugar)?
+  freeChest:true,   // cofre de bienvenida GRATIS para el nuevo usuario
 });
 let S = DEFAULT();
 function load(){
@@ -301,6 +303,10 @@ function rankFromHearts(h){
     toNext: next?Math.max(0,next.hmin-h):0, progress: next?Math.min(1,Math.max(0,(h-t.hmin)/span)):1, isMax:!next };
 }
 function playerRankHearts(){ return rankFromHearts(S.hearts); }
+// COPAS (ranking estilo Clash Royale): mismos umbrales que los rangos, medidos en copas
+function rankFromCups(c){ return rankFromHearts(c); }
+function playerRankCups(){ return rankFromHearts(S.cups|0); }
+function gainCups(n){ S.cups=Math.max(0,(S.cups|0)+(n|0)); if(n>0) S.cupsWon=(S.cupsWon|0)+n; save(); return S.cups; }
 const RP_PER_DIV = 120, DIVS = 5;                 // 5 divisiones (V..I) por tier · 600 RP por tier
 const TIER_RP = RP_PER_DIV*DIVS;
 const CHAMP_RP = (RANK_TIERS.length-1)*TIER_RP;   // 7*600 = 4200 → CAMPEÓN
@@ -375,5 +381,5 @@ function statPips(a){
 window.DATA = { ANIMALS, byId, WEAPONS, byWeapon, ECON, MODES, byMode, HEART_PACKS, buyPack, animalHearts, animalPrice, buyAnimal, RANKS, rankAt, curRank, setRank, maxAffordableRank, mesaPlayable,
   RARITY, POWERS, CHESTS, byChest, byRarity, openTreasure,
   state:()=>S, load, save, reset, level, levelProgress, TITLES, playerRank, nextRank, gainXP,
-  RANK_TIERS, rankFromRP, playerRankR6, gainRP, rankFromHearts, playerRankHearts, mint, randomBots, leaderboard, BOT_NAMES, statPips, buyWeapon, equipWeapon, equipped };
+  RANK_TIERS, rankFromRP, playerRankR6, gainRP, rankFromHearts, playerRankHearts, rankFromCups, playerRankCups, gainCups, mint, randomBots, leaderboard, BOT_NAMES, statPips, buyWeapon, equipWeapon, equipped };
 })();

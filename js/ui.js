@@ -45,7 +45,8 @@ function initLogin(){
   const enter=()=>{
     const name=input.value.trim()||'USUARIO';
     st.name=name; DATA.save(); SFX.click();
-    enterLobby();                       // pantalla principal estilo Fortnite (con fondo de paisajes)
+    if(!st.onboarded) showOnboarding();   // usuario nuevo: pantallas de bienvenida + cofre
+    else enterLobby();                    // pantalla principal (fondo = tu arena)
   };
   $('#btn-enter').addEventListener('click',enter);
   input.addEventListener('keydown',e=>{ if(e.key==='Enter') enter(); });
@@ -56,8 +57,8 @@ function initLogin(){
 function enterLobby(){
   const st=DATA.state();
   $('#lobby-username').textContent='*'+(st.name||'USUARIO').toUpperCase()+'*';
-  const r6=DATA.playerRankHearts();
-  $('#lobby-lvl').innerHTML='<b style="color:'+r6.tier.c1+'">'+r6.name+'</b> · '+st.hearts+' ♥';
+  const r6=DATA.playerRankCups();
+  $('#lobby-lvl').innerHTML='<b style="color:'+r6.tier.c1+'">'+r6.name+'</b> · '+(st.cups|0)+' 🏆';
   $('#xp-fill').style.width=(DATA.levelProgress()*100).toFixed(0)+'%';
   updateHearts();
   const an=DATA.byId[st.selected];
@@ -106,16 +107,56 @@ function enterLobby(){
     });
   }
   const wr=st.matches?Math.round(st.wins/st.matches*100):0;
-  $('#lobby-record').innerHTML=`PARTIDAS ${st.matches}<br>VICTORIAS ${st.wins} (${wr}%)<br>♥ GANADOS ${st.heartsWon}`;
+  $('#lobby-record').innerHTML=`PARTIDAS ${st.matches}<br>VICTORIAS ${st.wins} (${wr}%)<br>🏆 GANADAS ${st.cupsWon|0}`;
   if(window.MUSIC) MUSIC.lobby();
   show('#screen-lobby');
   startLobbyBG();
   renderArena();
   if(window.TUT) TUT.onLobby();
 }
+
+// ---------- ONBOARDING: pantallas de bienvenida (copas/rangos/cómo jugar) + cofre de bienvenida ----------
+function showOnboarding(){
+  const st=DATA.state();
+  const ov=$('#onboarding'), card=$('#onb-card');
+  if(!ov||!card){ st.onboarded=true; DATA.save(); enterLobby(); return; }
+  const slides=[
+    {t:'GANA COPAS · SUBE DE ARENA', b:'Ganas partidas → ganas <b>COPAS 🏆</b>. Entre más copas, mejor tu <b>rango</b> y tu <b>ARENA</b> (hay 8). Si pierdes, bajas copas — como Clash Royale.', ladder:true, btn:'SIGUIENTE'},
+    {t:'CÓMO SE JUEGA', b:'En la partida tienes <b>3 ♥ vidas</b>. Muévete, salta y dispara. <b>Sobrevive</b>: el último en pie gana. ¡No pierdas tus ♥!', keys:true, btn:'SIGUIENTE'},
+    {t:'TU COFRE DE BIENVENIDA', b:'Empiezas como el <b>RATÓN</b> 🐭. Ábrete tu cofre y reclama tu primer guerrero.', chest:true, btn:'BUSCAR PARTIDA'}
+  ];
+  let i=0, claimed=false;
+  function finish(){ st.onboarded=true; DATA.save(); ov.classList.remove('show'); enterLobby(); }
+  function render(){
+    const s=slides[i]; let mid='';
+    if(s.ladder){ mid='<div class="onb-ladder">'+DATA.RANK_TIERS.map((t,idx)=>
+      '<div class="onb-rung" style="border-color:'+t.c1+'66"><span style="color:'+t.c1+'">ARENA '+(idx+1)+' · '+t.name+'</span><em>'+t.hmin+' 🏆</em></div>').join('')+'</div>'; }
+    else if(s.keys){ mid='<div class="onb-keys"><span>← →</span><span>SALTO</span><span>DISPARA</span><span>C ESQUIVA</span><span>♥ ♥ ♥</span></div>'; }
+    else if(s.chest){ mid='<div class="onb-chest" id="onb-chest">🪵</div><div class="onb-reward" id="onb-reward"></div>'; }
+    card.innerHTML='<div class="onb-step">'+(i+1)+' / '+slides.length+'</div><h3>'+s.t+'</h3><p>'+s.b+'</p>'+mid
+      +'<button class="btn-flat onb-next" id="onb-next">'+s.btn+'</button>';
+    const next=$('#onb-next');
+    if(s.chest && !claimed){ next.disabled=true; next.style.opacity=.5;
+      const ch=$('#onb-chest');
+      ch.addEventListener('click',()=>{
+        if(claimed)return; claimed=true;
+        const epics=DATA.ANIMALS.filter(a=>a.rarity==='epic'); const pick=epics[(Math.random()*epics.length)|0];
+        st.owned[pick.id]='#'+String(1000+((Math.random()*9000)|0)); st.selected=pick.id; DATA.save();
+        ch.textContent='📭'; ch.style.cursor='default';
+        const rc=DATA.RARITY[pick.rarity]||DATA.RARITY.epic;
+        $('#onb-reward').innerHTML='<img src="assets/'+pick.id+'.png" alt=""><b style="color:'+rc.color+'">¡'+rc.name+'! '+pick.name+'</b>';
+        next.disabled=false; next.style.opacity=1;
+        try{ if(window.SFX)SFX.win(); }catch(e){}
+      });
+    }
+    next.onclick=()=>{ SFX.click(); if(i<slides.length-1){ i++; render(); } else { finish(); } };
+  }
+  ov.classList.add('show'); render();
+}
 function updateHearts(){
   const st=DATA.state();
-  ['#wallet-hearts','#market-hearts','#chests-hearts'].forEach(s=>{ const el=$(s); if(el) el.textContent=st.hearts; });
+  { const el=$('#wallet-hearts'); if(el) el.textContent=st.cups|0; }   // monedero del lobby = COPAS 🏆
+  ['#market-hearts','#chests-hearts'].forEach(s=>{ const el=$(s); if(el) el.textContent=st.hearts; });
 }
 function popHeart(){
   const h=$('#wallet-heart'); h.classList.remove('pop'); void h.offsetWidth; h.classList.add('pop');
@@ -228,14 +269,14 @@ function rankBadgeSVG(tier, isMax){
     +(isMax?'<path d="M50 1 l3.4 6.9 7.6 1.1 -5.5 5.4 1.3 7.6 -6.8 -3.6 -6.8 3.6 1.3 -7.6 -5.5 -5.4 7.6 -1.1 z" fill="#fff2b0" stroke="#c99a17" stroke-width="1"/>':'')
     +'</svg>';
 }
-function fillProfile(){   // TU RANGO por CORAZONES: insignia + tier + progreso al siguiente
-  const st=DATA.state(), rk=DATA.playerRankHearts();
-  $('#modal-hearts').textContent=st.hearts;
+function fillProfile(){   // TU RANGO por COPAS: insignia + tier + progreso al siguiente
+  const st=DATA.state(), rk=DATA.playerRankCups();
+  $('#modal-hearts').textContent=st.cups|0;
   $('#wal-lvl').textContent=DATA.level();
   $('#rank-badge').innerHTML=rankBadgeSVG(rk.tier, rk.isMax);
   const rt=$('#rank-tier'); rt.textContent=rk.name; rt.style.color=rk.tier.c2;
   const rf=$('#rp-fill'); rf.style.width=(rk.progress*100).toFixed(0)+'%'; rf.style.background='linear-gradient(90deg,'+rk.tier.c2+','+rk.tier.c1+')';
-  $('#rank-next').textContent = rk.isMax ? '¡rango MÁXIMO — eres CAMPEÓN!' : ('faltan '+rk.toNext+' ♥ para '+rk.next.name);
+  $('#rank-next').textContent = rk.isMax ? '¡rango MÁXIMO — eres CAMPEÓN!' : ('faltan '+rk.toNext+' 🏆 para '+rk.next.name);
 }
 // ---- TIENDA: paquetes de corazones (compra simulada, sin dinero real) ----
 function renderPacks(){
@@ -790,12 +831,12 @@ function startBiomeBG(cv, menu){
 function startMenuBG(){ startBiomeBG($('#menu-bg'), $('#screen-menu')); }
 function startLobbyBG(){
   const cv=$('#lobby-bg'); startBiomeBG(cv, $('#screen-lobby'));
-  const idx=(window.DATA&&DATA.playerRankHearts)?DATA.playerRankHearts().idx:0;
-  if(cv && cv.__bg && cv.__bg.setArena) cv.__bg.setArena(idx);   // fondo = TU arena actual
+  const idx=(window.DATA&&DATA.playerRankCups)?DATA.playerRankCups().idx:0;
+  if(cv && cv.__bg && cv.__bg.setArena) cv.__bg.setArena(idx);   // fondo = TU arena actual (por copas)
 }
-// ---------- ARENAS estilo Clash Royale (banner + escalera) ----------
+// ---------- ARENAS estilo Clash Royale (banner + escalera, por COPAS) ----------
 function renderArena(){
-  const r=DATA.playerRankHearts(), idx=r.idx;
+  const r=DATA.playerRankCups(), idx=r.idx;
   const num=$('#ab-num'), nm=$('#ab-name'), banner=$('#arena-banner');
   if(num) num.textContent='ARENA '+(idx+1)+' / '+ARENA_NAMES.length;
   if(nm){ nm.textContent=ARENA_NAMES[idx]||'ARENA'; nm.style.color=r.tier.c1; }
@@ -809,15 +850,15 @@ function renderArena(){
 }
 function renderArenaLadder(){
   const box=$('#arena-ladder'); if(!box) return;
-  const you=DATA.playerRankHearts().idx, h=DATA.state().hearts, T=DATA.RANK_TIERS;
+  const you=DATA.playerRankCups().idx, h=DATA.state().cups|0, T=DATA.RANK_TIERS;
   box.innerHTML='';
   for(let i=T.length-1;i>=0;i--){                   // de la más alta a la más baja (se sube)
     const t=T[i], st=i===you?'current':(i<you?'done':'locked');
     const row=document.createElement('div'); row.className='arena-row '+st;
     row.style.borderLeftColor=t.c1;
     const right = st==='done' ? '✓ superada'
-                : st==='current' ? 'AQUÍ · '+h+' ♥'
-                : 'faltan '+Math.max(0,t.hmin-h)+' ♥';
+                : st==='current' ? 'AQUÍ · '+h+' 🏆'
+                : 'faltan '+Math.max(0,t.hmin-h)+' 🏆';
     row.innerHTML='<span class="ar-num" style="background:'+t.c1+'22;color:'+t.c1+'">'+(i+1)+'</span>'
       +'<span class="ar-name">'+(ARENA_NAMES[i]||'')+'<b style="color:'+t.c1+'">'+t.name+'</b></span>'
       +'<span class="ar-req">'+right+'</span>';
