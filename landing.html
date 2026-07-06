@@ -3,434 +3,495 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HEARTS — AI Battle Royale on Blockchain</title>
-<meta name="description" content="HEARTS is an AI-powered play-to-earn battle royale on blockchain. Fight AI champions across 9 AI-crafted worlds. $HEARTS is our memecoin — win it, cash out on-chain.">
+<title>HEARTS — On-Chain Battle Royale</title>
+<meta name="description" content="HEARTS is a browser battle royale of collectible NFT animals. Open chests, climb 8 ranked arenas, and win. Playable demo live. Raising $100M.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800;900&family=Archivo+Black&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&family=Archivo+Black&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-:root{ --red:#ff3b2f; --blue:#2fb4ff; --gold:#ffd34d; --green:#7dff8a; --paper:#f4f0e6; --grey:#8b867b; --p:0; }
+:root{
+  --red:#ff3b2f; --gold:#ffd34d; --paper:#f4f0e6; --ink:#06060c;
+  --common:#b8b2a6; --rare:#4dd2ff; --epic:#c77dff; --legend:#ffd34d;
+}
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{color:var(--paper);font-family:'Archivo',system-ui,sans-serif;overflow-x:hidden;background:#04040a}
+body{color:var(--paper);font-family:'Archivo',system-ui,sans-serif;background:#06060c;overflow-x:hidden;-webkit-font-smoothing:antialiased}
 .mono{font-family:'Space Mono',monospace}
 .blk{font-family:'Archivo Black',sans-serif}
-.wrap{max-width:1000px;margin:0 auto;padding:0 6vw;position:relative;z-index:3}
+a{color:inherit}
+.wrap{max-width:1120px;margin:0 auto;padding:0 6vw}
+.kick{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.34em;color:var(--gold);font-weight:700;text-transform:uppercase}
+h2{font-family:'Archivo Black',sans-serif;font-size:clamp(28px,5vw,52px);line-height:1.02;letter-spacing:.01em}
+.lead{color:#c3c9d6;font-size:clamp(15px,1.8vw,17px);line-height:1.7;max-width:640px;margin-top:14px}
+section{position:relative;padding:clamp(70px,11vh,130px) 0}
 
-/* ===== FIXED ENVIRONMENT LAYERS (cross-fade on scroll: world → everest → cerro → desert → volcano) ===== */
-.bg{position:fixed;inset:0;z-index:0;opacity:0;background-position:center;background-size:cover;background-repeat:no-repeat;will-change:opacity;transform:scale(1.04)}
-#bgWorld{opacity:1;background:radial-gradient(ellipse at 50% 125%,#132444,#05060f 68%)}
-#bgEverest{background-image:url('assets/everest.png')}
-#bgCerro{background-image:url('assets/cerro.png')}
-#bgDesierto{background-image:url('assets/desierto.png')}
-#bgVolcan{background-image:url('assets/volcan.png')}
-#stars{position:fixed;inset:0;z-index:0;pointer-events:none}
-#stars i{position:absolute;width:2px;height:2px;border-radius:50%;background:#fff;box-shadow:0 0 4px #fff}
-#globe{position:fixed;left:50%;bottom:-40vh;width:104vh;height:104vh;transform:translateX(-50%);border-radius:50%;z-index:0;pointer-events:none;
-  background:url('assets/planet.png') center 58%/138% no-repeat;box-shadow:inset -30px -28px 120px rgba(0,0,0,.5),inset 0 22px 60px rgba(5,6,15,.9)}
-#scrim{position:fixed;inset:0;z-index:1;pointer-events:none;background:linear-gradient(180deg,rgba(4,5,12,.42),rgba(4,5,12,.26) 42%,rgba(4,5,12,.6))}
+/* ambient background */
+#amb{position:fixed;inset:0;z-index:0;background:
+  radial-gradient(1100px 700px at 78% -8%,rgba(255,59,47,.16),transparent 60%),
+  radial-gradient(900px 700px at 10% 12%,rgba(120,80,255,.12),transparent 60%),
+  #06060c;}
+#amb::after{content:'';position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.05) 1px,transparent 1px);background-size:46px 46px;mask-image:linear-gradient(180deg,#000,transparent 70%)}
+.content{position:relative;z-index:2}
 
-/* ===== CONTENT (descends over the sky) ===== */
-section{position:relative;z-index:3;min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:14vh 0}
-.kick{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.4em;color:var(--gold);font-weight:700}
-h1.title{font-family:'Archivo Black',sans-serif;font-size:clamp(70px,16vw,190px);line-height:.82;letter-spacing:.02em;text-align:center;margin:16px 0 4px;text-shadow:0 0 50px rgba(255,59,47,.4)}
-.slash{font-family:'Archivo Black',sans-serif;font-size:clamp(22px,5vw,46px);color:var(--red);text-align:center;letter-spacing:.02em}
-.hero{align-items:center;text-align:center;min-height:100vh;justify-content:center}
-.hero p{color:#dfe6f2;max-width:580px;margin:22px auto 0;font-size:16px;line-height:1.65}
-.scrollhint{position:absolute;bottom:5vh;left:50%;transform:translateX(-50%);font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.25em;color:#aeb8cc;opacity:.85}
-.scrollhint::after{content:'';display:block;width:1px;height:34px;margin:12px auto 0;background:linear-gradient(#aeb8cc,transparent);animation:down 1.6s ease-in-out infinite}
-@keyframes down{0%,100%{opacity:.3;transform:translateY(-6px)}50%{opacity:1;transform:translateY(6px)}}
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:40;display:flex;align-items:center;justify-content:space-between;
+  padding:16px 6vw;backdrop-filter:blur(10px);background:linear-gradient(180deg,rgba(6,6,12,.82),rgba(6,6,12,.25));border-bottom:1px solid rgba(255,255,255,.06)}
+.logo{font-family:'Archivo Black',sans-serif;font-size:22px;letter-spacing:.02em;display:flex;align-items:center;gap:1px}
+.logo .h{color:var(--red);text-shadow:0 0 18px rgba(255,59,47,.7);animation:beat 1.5s ease-in-out infinite}
+@keyframes beat{45%{transform:scale(1.16)}}
+.nav-links{display:flex;gap:26px;align-items:center}
+.nav-links a{font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.12em;color:#c3c9d6;text-decoration:none;transition:color .15s}
+.nav-links a:hover{color:#fff}
+.nav-play{background:var(--red);color:#fff;font-family:'Archivo Black',sans-serif;font-size:12px;letter-spacing:.12em;
+  padding:11px 22px;border-radius:6px;text-decoration:none;box-shadow:0 0 0 1px #000,4px 4px 0 #7a1710;transition:transform .08s}
+.nav-play:hover{transform:translate(-1px,-1px)}
+@media(max-width:720px){ .nav-links a:not(.nav-play){display:none} }
 
-h2{font-family:'Archivo Black',sans-serif;font-size:clamp(30px,5.5vw,58px);line-height:1;letter-spacing:.01em}
-.lead{color:#cfd6e4;font-size:17px;line-height:1.7;max-width:640px;margin-top:16px}
-.cta{display:inline-block;margin-top:34px;background:var(--red);color:#fff;text-decoration:none;font-family:'Archivo Black',sans-serif;
-  font-size:22px;letter-spacing:.14em;padding:22px 62px;border-radius:4px;box-shadow:0 0 0 2px #000,6px 6px 0 #7a1710;transition:transform .08s,box-shadow .08s}
-.cta:hover{transform:translate(-2px,-2px);box-shadow:0 0 0 2px #000,8px 8px 0 #7a1710}
-.cta:active{transform:translate(3px,3px);box-shadow:0 0 0 2px #000,2px 2px 0 #7a1710}
+/* HERO */
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding-top:120px}
+.hero h1{font-family:'Archivo Black',sans-serif;font-size:clamp(64px,15vw,168px);line-height:.84;letter-spacing:.02em;text-shadow:0 0 60px rgba(255,59,47,.35);display:flex;align-items:center;gap:2px;justify-content:center}
+.hero h1 .h{color:var(--red);text-shadow:0 0 40px rgba(255,59,47,.9);animation:beat 1.5s ease-in-out infinite}
+.hero .sub{color:#dfe6f2;max-width:600px;margin:20px auto 0;font-size:clamp(15px,2vw,18px);line-height:1.6}
+.hero .sub b{color:var(--gold)}
 
-/* loop */
-.loop{display:grid;gap:2px;margin-top:40px;border:2px solid rgba(255,255,255,.1);border-radius:8px;overflow:hidden}
-.beat{display:grid;grid-template-columns:110px 1fr;gap:22px;align-items:center;background:rgba(8,10,20,.66);backdrop-filter:blur(4px);padding:28px 26px}
-.beat .n{font-family:'Archivo Black',sans-serif;font-size:60px;color:var(--red);line-height:.8}
-.beat h3{font-family:'Archivo Black',sans-serif;font-size:19px;letter-spacing:.08em;margin-bottom:7px}
-.beat p{color:#b9c0cf;font-size:14.5px;line-height:1.6}
-.chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
-.chip{font-family:'Space Mono',monospace;font-size:12px;color:#cfd6e4;background:rgba(8,10,20,.6);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:9px 15px}
-.chip b{color:var(--gold)}
-@media(max-width:560px){ .beat{grid-template-columns:60px 1fr;gap:14px;padding:20px} .beat .n{font-size:40px} }
+/* CHEST */
+.chest-stage{position:relative;width:min(440px,88vw);margin:26px auto 0;display:flex;flex-direction:column;align-items:center}
+#chestCanvas{width:100%;max-width:420px;height:auto;cursor:pointer;filter:drop-shadow(0 30px 40px rgba(0,0,0,.6))}
+.chest-hint{font-family:'Space Mono',monospace;font-size:13px;letter-spacing:.18em;color:#ffe9a8;margin-top:6px;display:flex;align-items:center;gap:8px}
+.chest-hint .cursor{width:16px;height:16px}
+.pulse{animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.4}}
+.free-tag{position:absolute;top:-6px;right:calc(50% - 190px);background:var(--gold);color:#3a2a00;font-family:'Archivo Black',sans-serif;font-size:12px;letter-spacing:.1em;padding:6px 12px;border-radius:20px;transform:rotate(9deg);box-shadow:0 6px 16px rgba(0,0,0,.4)}
+@media(max-width:520px){ .free-tag{right:8px;top:0} }
 
-/* worlds */
-.worlds{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:38px}
-.world{position:relative;border-radius:12px;overflow:hidden;aspect-ratio:4/3;border:1px solid rgba(255,255,255,.1);box-shadow:0 10px 30px rgba(0,0,0,.4)}
-.world img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s}
-.world:hover img{transform:scale(1.07)}
-.world::after{content:'';position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.78),transparent 55%)}
-.world .lbl{position:absolute;left:12px;bottom:10px;z-index:2}
-.world .lbl b{font-family:'Archivo Black',sans-serif;font-size:15px;letter-spacing:.04em;display:block}
-.world .lbl span{font-family:'Space Mono',monospace;font-size:10px;color:#dfe6f2}
-@media(max-width:640px){ .worlds{grid-template-columns:1fr 1fr} }
+/* REWARD */
+.reward{position:relative;width:min(320px,86vw);margin:6px auto 0;opacity:0;transform:translateY(30px) scale(.8);pointer-events:none;transition:opacity .5s,transform .5s cubic-bezier(.2,1.3,.4,1)}
+.reward.show{opacity:1;transform:none;pointer-events:auto}
+.reward-card{position:relative;border-radius:20px;padding:18px 18px 22px;background:linear-gradient(180deg,rgba(30,26,12,.9),rgba(12,10,16,.94));
+  border:2px solid var(--legend);box-shadow:0 0 60px rgba(255,211,77,.4),0 24px 50px rgba(0,0,0,.6);overflow:hidden}
+.reward-card::before{content:'';position:absolute;top:-40%;left:-40%;width:180%;height:180%;
+  background:conic-gradient(from 0deg,transparent,rgba(255,211,77,.22),transparent 30%);animation:spin 6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.reward-inner{position:relative;z-index:2}
+.reward-rarity{font-family:'Archivo Black',sans-serif;font-size:13px;letter-spacing:.28em;color:var(--legend)}
+.reward-sprite{width:150px;height:150px;object-fit:contain;margin:6px auto 2px;display:block;filter:drop-shadow(0 8px 20px rgba(0,0,0,.5))}
+.reward-name{font-family:'Archivo Black',sans-serif;font-size:30px;letter-spacing:.04em}
+.reward-tier{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.14em;color:#efe4b0;margin-top:4px}
+.reward-note{font-family:'Space Mono',monospace;font-size:11px;color:#b9c0cf;margin-top:12px;line-height:1.5}
+.reward-cta{display:inline-block;margin-top:14px;background:var(--red);color:#fff;text-decoration:none;font-family:'Archivo Black',sans-serif;
+  font-size:15px;letter-spacing:.1em;padding:14px 30px;border-radius:6px;box-shadow:0 0 0 1px #000,4px 4px 0 #7a1710;transition:transform .08s}
+.reward-cta:hover{transform:translate(-1px,-1px)}
+#confetti{position:fixed;inset:0;z-index:60;pointer-events:none}
 
-/* reel + chests */
-.reel{overflow:hidden;margin:36px 0 0;-webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
-.reel .row{display:flex;gap:26px;width:max-content;animation:scrollx 34s linear infinite;align-items:flex-end}
-.reel img{height:118px;filter:drop-shadow(0 10px 18px rgba(0,0,0,.6))}
-@keyframes scrollx{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-.chests{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:30px}
-.chest{background:rgba(8,10,20,.6);border:1px solid rgba(255,255,255,.1);border-top:3px solid var(--c);border-radius:10px;padding:20px 12px;text-align:center}
-.chest img{height:74px;filter:drop-shadow(0 4px 14px var(--c))}
-.chest .nm{font-family:'Archivo Black',sans-serif;font-size:12px;letter-spacing:.06em;margin-top:8px}
-.chest .od{font-family:'Space Mono',monospace;font-size:10px;color:var(--grey);margin-top:4px}
-@media(max-width:560px){ .chests{grid-template-columns:repeat(2,1fr)} }
+/* generic panel + rows */
+.panel-grid{display:grid;gap:16px;margin-top:38px}
 
-/* economy */
-.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:38px}
-.step{background:rgba(8,10,20,.66);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:22px 16px}
-.step .st-n{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.2em;color:var(--gold)}
-.step h4{font-family:'Archivo Black',sans-serif;font-size:15px;letter-spacing:.04em;margin:8px 0 6px}
-.step p{color:#b9c0cf;font-size:13px;line-height:1.55}
-.step .amt{font-family:'Archivo Black',sans-serif;font-size:20px;margin-top:8px}
-.step.win .amt{color:var(--green)} .step.cost .amt{color:var(--red)} .step.buy .amt{color:var(--gold)} .step.cash .amt{color:var(--blue)}
-@media(max-width:760px){ .flow{grid-template-columns:1fr 1fr} }
-.numbers{display:flex;flex-wrap:wrap;gap:14px;margin-top:24px}
-.num-card{flex:1;min-width:150px;background:rgba(8,10,20,.6);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px 20px}
-.num-card .k{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.16em;color:var(--grey)}
-.num-card .v{font-family:'Archivo Black',sans-serif;font-size:26px;margin-top:4px}
-.num-card .v.g{color:var(--green)} .num-card .v.gd{color:var(--gold)}
+/* CHESTS / ODDS */
+.chest-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:36px}
+.chest-card{background:rgba(12,12,20,.6);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:18px 16px;text-align:center;backdrop-filter:blur(4px)}
+.chest-card .cn{font-family:'Archivo Black',sans-serif;font-size:14px;letter-spacing:.04em}
+.chest-card .cp{font-family:'Space Mono',monospace;font-size:11px;color:#9aa2b4;margin:2px 0 12px}
+.odd{display:flex;align-items:center;gap:8px;margin-top:7px}
+.odd .lbl{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.08em;width:76px;text-align:left;text-transform:uppercase}
+.odd .bar{flex:1;height:7px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden}
+.odd .fill{height:100%;border-radius:4px}
+.odd .pct{font-family:'Space Mono',monospace;font-size:11px;width:34px;text-align:right;color:#dfe6f2}
+.chest-card.wood{border-color:rgba(255,211,77,.5);box-shadow:0 0 40px rgba(255,211,77,.14)}
+.first-badge{display:inline-block;margin-top:12px;background:linear-gradient(90deg,var(--legend),#ffb347);color:#3a2a00;font-family:'Archivo Black',sans-serif;font-size:11px;letter-spacing:.06em;padding:8px 14px;border-radius:20px}
+@media(max-width:820px){ .chest-row{grid-template-columns:repeat(2,1fr)} }
 
-/* landing */
-.surface{align-items:center;text-align:center;min-height:100vh;justify-content:center}
-.prize{border:2px dashed rgba(255,255,255,.18);border-radius:14px;padding:40px 30px;max-width:640px;margin:0 auto;background:rgba(8,10,20,.5)}
-.prize .tag{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.3em;color:var(--gold)}
-.prize h3{font-family:'Archivo Black',sans-serif;font-size:clamp(22px,4vw,34px);margin:10px 0}
-.prize p{color:#b9c0cf;max-width:520px;margin:0 auto 20px;font-size:14px;line-height:1.7}
-.cta2{display:inline-block;background:#12220f;color:var(--green);border:1px solid #3f7d3a;text-decoration:none;font-family:'Archivo Black',sans-serif;font-size:13px;letter-spacing:.1em;padding:14px 30px;border-radius:6px}
-.fine{font-family:'Space Mono',monospace;font-size:9.5px;color:#8b93a6;margin-top:18px;line-height:1.6}
-footer{position:relative;z-index:3;padding:44px 6vw;text-align:center}
-footer p{font-family:'Space Mono',monospace;font-size:10px;color:#8b93a6;line-height:1.9}
+/* rarity legend cards */
+.rar-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:20px}
+.rar{border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.1);background:rgba(12,12,20,.6);text-align:center;padding:16px 10px}
+.rar img{width:76px;height:76px;object-fit:contain;filter:drop-shadow(0 6px 14px rgba(0,0,0,.5))}
+.rar .rn{font-family:'Archivo Black',sans-serif;font-size:12px;letter-spacing:.14em;margin-top:6px}
+.rar .rp{font-family:'Space Mono',monospace;font-size:11px;color:#c3c9d6}
+@media(max-width:640px){ .rar-row{grid-template-columns:repeat(2,1fr)} }
 
-/* ROSTER — carrusel infinito de peleadores */
-.mq{margin-top:38px;display:flex;flex-direction:column;gap:16px;overflow:hidden;
-  -webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);
-  mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
-.mq-row{display:flex;gap:14px;width:max-content;animation:scrollx 55s linear infinite}
-.mq-row.rev{animation-direction:reverse;animation-duration:68s}
-.mq:hover .mq-row{animation-play-state:paused}
-.pcard{display:flex;align-items:center;gap:12px;padding:9px 18px 9px 9px;border:1px solid rgba(255,255,255,.1);
-  border-radius:16px;background:rgba(10,12,22,.55);backdrop-filter:blur(4px)}
-.pcard.pred{border-color:rgba(255,59,47,.34)} .pcard.prey{border-color:rgba(47,180,255,.34)}
-.pcard img{height:70px;width:auto;filter:drop-shadow(0 7px 11px rgba(0,0,0,.55))}
-.pcard .nm{font-family:'Archivo Black',sans-serif;font-size:15px;letter-spacing:.03em;white-space:nowrap;line-height:1}
-.pcard .sd{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.16em;margin-top:5px;display:flex;align-items:center;gap:6px;color:var(--grey)}
-.pcard .dot{width:7px;height:7px;border-radius:50%}
-.pcard.pred .dot{background:var(--red)} .pcard.prey .dot{background:var(--blue)}
+/* ARENAS ladder */
+.arena-scroll{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(230px,1fr);gap:14px;overflow-x:auto;padding:30px 2px 14px;scroll-snap-type:x mandatory}
+.arena-scroll::-webkit-scrollbar{height:8px}.arena-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16);border-radius:8px}
+.arena-thumb{position:relative;scroll-snap-align:start;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.12);aspect-ratio:16/11;box-shadow:0 14px 30px rgba(0,0,0,.4)}
+.arena-thumb canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.arena-thumb img.mon{position:absolute;bottom:14%;left:50%;transform:translateX(-50%);height:44%;filter:drop-shadow(0 8px 12px rgba(0,0,0,.5));z-index:2}
+.arena-thumb .plate{position:absolute;left:12px;bottom:10px;z-index:3}
+.arena-thumb .plate .an{font-family:'Archivo Black',sans-serif;font-size:15px;letter-spacing:.03em;line-height:1;display:block;text-shadow:0 2px 6px rgba(0,0,0,.8)}
+.arena-thumb .plate .at{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em}
+.arena-thumb .num{position:absolute;top:10px;right:12px;z-index:3;font-family:'Archivo Black',sans-serif;font-size:13px;background:rgba(0,0,0,.5);padding:3px 9px;border-radius:8px}
+.arena-thumb::after{content:'';position:absolute;inset:0;z-index:1;background:linear-gradient(0deg,rgba(0,0,0,.6),transparent 46%)}
 
-/* ANNOUNCEMENT — anuncio teaser (sin mostrar gameplay) */
-.promo-card{position:relative;overflow:hidden;border-radius:20px;padding:min(9vw,76px) 6vw;text-align:center;margin-top:16px;
-  border:1px solid rgba(255,255,255,.12);
-  background:linear-gradient(180deg,rgba(4,6,14,.8),rgba(12,4,6,.9)),url('assets/maps/volcan.png') center/cover;
-  box-shadow:0 30px 90px rgba(0,0,0,.55),0 0 80px rgba(255,59,47,.12)}
-.promo-t{font-family:'Archivo Black',sans-serif;font-size:clamp(34px,6.5vw,70px);line-height:.92;margin:14px 0 12px;text-shadow:0 0 40px rgba(255,59,47,.4)}
-.promo-p{color:#cbd1dd;max-width:560px;margin:0 auto;font-size:15px;line-height:1.7}
-.promo-row{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:32px}
-.cta-ghost{display:inline-block;color:#e7ecf5;text-decoration:none;font-family:'Archivo Black',sans-serif;font-size:13px;letter-spacing:.08em;
-  padding:16px 30px;border-radius:6px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.04)}
-.cta-ghost:hover{background:rgba(255,255,255,.09)}
+/* ROSTER */
+.roster{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:12px;margin-top:30px}
+.mon-card{position:relative;border-radius:14px;padding:12px 6px 10px;text-align:center;background:rgba(12,12,20,.55);border:1px solid rgba(255,255,255,.08);transition:transform .12s,border-color .12s}
+.mon-card:hover{transform:translateY(-4px)}
+.mon-card img{width:100%;max-width:70px;height:70px;object-fit:contain;filter:drop-shadow(0 6px 10px rgba(0,0,0,.4))}
+.mon-card .mn{font-family:'Space Mono',monospace;font-size:9.5px;letter-spacing:.06em;color:#dfe6f2;margin-top:4px;display:block}
+.mon-card .dot{position:absolute;top:8px;right:8px;width:8px;height:8px;border-radius:50%}
 
-/* STORE: compra tu monito */
-.shop-grid{margin-top:34px;display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
-@media(max-width:820px){.shop-grid{grid-template-columns:repeat(2,1fr)}}
-.shop-card{background:rgba(12,14,24,.62);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:16px 12px 14px;text-align:center;backdrop-filter:blur(4px);transition:transform .12s,border-color .12s}
-.shop-card:hover{transform:translateY(-4px);border-color:rgba(255,255,255,.28)}
-.shop-card img{height:96px;width:auto;filter:drop-shadow(0 8px 12px rgba(0,0,0,.5))}
-.shop-card .sc-nm{font-family:'Archivo Black',sans-serif;font-size:16px;letter-spacing:.03em;margin-top:8px}
-.shop-card .sc-rar{font-family:'Space Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.12em;margin-top:3px}
-.shop-card .sc-h{font-family:'Archivo Black',sans-serif;font-size:20px;color:#ff5a6a;margin-top:8px}
-.shop-card .sc-buy{margin-top:12px;width:100%;padding:11px 0;border:0;border-radius:9px;cursor:pointer;font-family:'Archivo Black',sans-serif;font-size:14px;color:#08160c;background:#57d977}
-.shop-card .sc-buy:hover{filter:brightness(1.08)}
-/* credenciales */
-.cred-back{position:fixed;inset:0;z-index:60;background:rgba(4,5,12,.82);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:20px}
-.cred-back.show{display:flex}
-.cred-card{position:relative;background:linear-gradient(180deg,#171a24,#0e1018);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:30px 28px;width:min(400px,94vw);text-align:center;box-shadow:0 30px 90px rgba(0,0,0,.6)}
-.cred-card img{height:120px;filter:drop-shadow(0 10px 14px rgba(0,0,0,.55))}
-.cred-card h3{font-family:'Archivo Black',sans-serif;font-size:26px;margin:8px 0 4px}
-.cred-card p{color:#c9cfdb;font-size:13px;line-height:1.6;margin-bottom:14px}
-.cred-box{display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:11px 14px;margin:8px 0}
-.cred-box span{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.18em;color:#8b93a6}
-.cred-box b{font-family:'Space Mono',monospace;font-size:17px;letter-spacing:.14em;color:#fff}
-.cred-card .cta{margin-top:18px}
-.cred-note{font-family:'Space Mono',monospace;font-size:9.5px;color:#8b93a6;margin-top:16px;line-height:1.6}
-.cred-x{position:absolute;top:12px;right:16px;background:none;border:0;color:#8b93a6;font-size:26px;cursor:pointer;line-height:1}
+/* MODES + metrics */
+.mode-row,.metric-row{display:grid;gap:14px;margin-top:30px}
+.mode-row{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.mode{background:rgba(12,12,20,.6);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:20px 18px}
+.mode .mi{font-size:26px}
+.mode h3{font-family:'Archivo Black',sans-serif;font-size:15px;letter-spacing:.04em;margin:8px 0 6px}
+.mode p{color:#aab1c1;font-size:13px;line-height:1.5}
+.metric-row{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.metric{background:rgba(12,12,20,.6);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:24px 20px;text-align:center}
+.metric .mv{font-family:'Archivo Black',sans-serif;font-size:clamp(28px,4vw,42px);color:var(--gold);line-height:1}
+.metric .ml{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.1em;color:#aab1c1;margin-top:8px}
+
+/* INVEST */
+.invest{background:linear-gradient(180deg,rgba(255,59,47,.08),transparent);border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.08)}
+.raise{font-family:'Archivo Black',sans-serif;font-size:clamp(48px,11vw,120px);line-height:.9;color:var(--gold);text-shadow:0 0 50px rgba(255,211,77,.3)}
+.uof{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:30px}
+.uof .u{background:rgba(12,12,20,.6);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:18px}
+.uof .u b{font-family:'Archivo Black',sans-serif;font-size:14px;display:block;margin-bottom:6px}
+.uof .u p{color:#aab1c1;font-size:13px;line-height:1.5}
+.big-cta{display:flex;gap:14px;flex-wrap:wrap;margin-top:36px}
+.btn{font-family:'Archivo Black',sans-serif;font-size:16px;letter-spacing:.08em;padding:18px 40px;border-radius:8px;text-decoration:none;transition:transform .08s}
+.btn.primary{background:var(--red);color:#fff;box-shadow:0 0 0 2px #000,6px 6px 0 #7a1710}
+.btn.ghost{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.25)}
+.btn:hover{transform:translate(-2px,-2px)}
+
+footer{padding:40px 6vw;border-top:1px solid rgba(255,255,255,.08);display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px;align-items:center}
+footer .mono{font-size:11px;color:#8b8f9c;letter-spacing:.1em}
+.reveal{opacity:0;transform:translateY(26px);transition:opacity .7s,transform .7s}
+.reveal.in{opacity:1;transform:none}
+.disc{font-family:'Space Mono',monospace;font-size:10.5px;color:#6c7080;line-height:1.6;margin-top:26px;max-width:720px}
 </style>
 </head>
 <body>
+<div id="amb"></div>
+<canvas id="confetti"></canvas>
 
-<!-- ENVIRONMENT LAYERS (fixed, cross-fade on scroll) -->
-<div class="bg" id="bgWorld"></div>
-<div id="stars"></div>
-<div id="globe"></div>
-<div class="bg" id="bgEverest"></div>
-<div class="bg" id="bgCerro"></div>
-<div class="bg" id="bgDesierto"></div>
-<div class="bg" id="bgVolcan"></div>
-<div id="scrim"></div>
-
-<!-- HERO (in the stratosphere) -->
-<section class="hero"><div class="wrap">
-  <div class="kick">AI GAME · BLOCKCHAIN · $HEARTS MEMECOIN</div>
-  <h1 class="title">HEARTS</h1>
-  <div class="slash">AI BATTLE ROYALE.</div>
-  <p>An <b>AI-powered battle royale</b> on <b>blockchain</b>. Fight <b>AI champions</b> across 9 AI-crafted worlds and win <b>$HEARTS</b> — our memecoin.
-  Play to earn: shoot, survive, take the pot. <b>Scroll down</b> — we're dropping you into the arena.</p>
-  <a class="cta" href="#shop">COMPRA TU MONITO</a>
-  <div class="scrollhint">DESCEND</div>
-</div></section>
-
-<!-- STORE: compra tu monito (recibes credenciales y entras al juego) -->
-<section id="shop"><div class="wrap">
-  <div class="kick">PASO 1 · COMPRA TU MONITO</div>
-  <h2>Elige tu monito.</h2>
-  <div class="lead">Cada monito viene con sus <b>corazones</b>. Cómpralo, recibe tu <b>usuario y contraseña</b>, y entra al juego — tu monito ya estará en tu cuenta, listo para pelear.</div>
-  <div class="shop-grid" id="shop-grid"></div>
-</div></section>
-
-<!-- ROSTER (infinite scroll of fighters) -->
-<section id="roster">
-  <div class="wrap">
-    <div class="kick">28 AI FIGHTERS · NFT</div>
-    <h2>Meet the roster.</h2>
-    <div class="lead">Predators vs prey — every fighter is a real character with its own speed, weight and a signature power. Minted on-chain; you crack chests to collect them.</div>
+<nav>
+  <div class="logo">HE<span class="h">♥</span>RTS</div>
+  <div class="nav-links">
+    <a href="#chest">Open a chest</a>
+    <a href="#arenas">Arenas</a>
+    <a href="#roster">Fighters</a>
+    <a href="#invest">Invest</a>
+    <a class="nav-play" href="index.html">PLAY FREE</a>
   </div>
-  <div class="mq">
-    <div class="mq-row" id="mqA"></div>
-    <div class="mq-row rev" id="mqB"></div>
+</nav>
+
+<div class="content">
+
+<!-- HERO / CHEST -->
+<section class="hero" id="chest">
+  <div class="kick">Browser battle royale · collectible NFT animals</div>
+  <h1>HE<span class="h">♥</span>RTS</h1>
+  <div class="sub">28 collectible fighters. 8 ranked arenas. 5 modes. Open your <b>first chest free</b> — right here.</div>
+
+  <div class="chest-stage">
+    <span class="free-tag">FREE · 1st CHEST</span>
+    <canvas id="chestCanvas" width="440" height="360" aria-label="Wooden chest — click to open"></canvas>
+    <div class="chest-hint pulse" id="chestHint">
+      <svg class="cursor" viewBox="0 0 24 24" fill="#ffe9a8"><path d="M4 2l14 8-6 1.5L15 18l-3 1.5-3-7L4 15z"/></svg>
+      CLICK THE CHEST TO OPEN
+    </div>
+    <div class="reward" id="reward">
+      <div class="reward-card"><div class="reward-inner">
+        <div class="reward-rarity">★ LEGENDARY ★</div>
+        <img class="reward-sprite" id="rewardImg" alt="">
+        <div class="reward-name" id="rewardName">LION</div>
+        <div class="reward-tier">POWER: LIFESTEAL · ULT: FRENZY</div>
+        <div class="reward-note">Odds of a Legendary from a wooden chest: <b style="color:#fff">0%</b>.<br>Your first chest is <b style="color:var(--legend)">always</b> a Legendary. Welcome to HEARTS.</div>
+        <a class="reward-cta" href="index.html">CLAIM &amp; PLAY FREE →</a>
+      </div></div>
+    </div>
   </div>
 </section>
 
-<!-- HOW YOU EARN (play-to-earn money explanation) -->
-<section id="earn"><div class="wrap">
-  <div class="kick">PLAY TO EARN</div>
-  <h2>How you make money.</h2>
-  <div class="lead">$HEARTS is real money you can cash out. You don't grind for coins — you <b>win them off other players</b>. Turn a small stack into a big one with skill.</div>
-  <div class="loop">
-    <div class="beat"><div class="n">1</div><div><h3>BUY A STACK</h3><p>Load about <b>$10</b> in $HEARTS — a 40♥ bankroll. That's what you play with.</p></div></div>
-    <div class="beat"><div class="n">2</div><div><h3>WIN THE POT</h3><p>Four players ante up; last one standing takes the pot. <b>Win and your ♥ grow.</b></p></div></div>
-    <div class="beat"><div class="n">3</div><div><h3>CLIMB</h3><p>Level up + save to unlock pricier <b>tables</b>. A win at the <b>Elite</b> table pays $3,400.</p></div></div>
-    <div class="beat"><div class="n">4</div><div><h3>CASH OUT</h3><p>Swap your ♥ back to crypto whenever. <b>What you win is yours.</b></p></div></div>
+<!-- ODDS / GACHA -->
+<section id="odds">
+  <div class="wrap content reveal">
+    <div class="kick">The economy</div>
+    <h2>Every chest is a real roll.<br>Except your first.</h2>
+    <p class="lead">Four chest tiers, four probability tables. Pricier chests mean better odds at <b style="color:var(--epic)">Epic</b> and <b style="color:var(--legend)">Legendary</b> fighters — the ones that win. The wooden chest almost never drops a Legendary… so the <b style="color:var(--legend)">guaranteed-legendary first pull</b> is the hook that turns a curious click into a hooked player.</p>
+    <div class="chest-row" id="chestRow"></div>
+    <div class="kick" style="margin-top:44px">What you can pull</div>
+    <div class="rar-row" id="rarRow"></div>
   </div>
-  <div class="lead" style="margin-top:22px;font-size:15px">The catch: the house takes a <b>15% rake</b>, so you only grow if you <b>win more than 1 in 4</b>. This is <b>skill money</b>, not a slot machine — the better archer walks away richer.</div>
-</div></section>
+</section>
 
-<!-- ANNOUNCEMENT (teaser ad — no live gameplay) -->
-<section id="promo"><div class="wrap">
-  <div class="promo-card">
-    <div class="kick" style="color:var(--red)">SEASON 0 · COMING SOON</div>
-    <h2 class="promo-t">Drop in early.</h2>
-    <p class="promo-p">The first $HEARTS season is almost here. Claim your fighter, get on the whitelist, and be in the arena before the crowd.</p>
-    <div class="promo-row">
-      <a class="cta" href="https://wa.me/?text=I%20want%20on%20the%20HEARTS%20whitelist" target="_blank">JOIN THE WHITELIST</a>
-      <a class="cta-ghost" href="index.html">TRY THE DEMO</a>
+<!-- ARENAS -->
+<section id="arenas">
+  <div class="wrap content reveal">
+    <div class="kick">The climb</div>
+    <h2>8 ranked arenas. Win to rise.</h2>
+    <p class="lead">Your home screen <b>is</b> the arena you're in. Every heart you win pushes you up the ladder — from the starter forest to the champion's lava throne. Clash-Royale-style progression, built for retention.</p>
+  </div>
+  <div class="wrap content"><div class="arena-scroll" id="arenaScroll"></div></div>
+</section>
+
+<!-- ROSTER -->
+<section id="roster">
+  <div class="wrap content reveal">
+    <div class="kick">The fighters</div>
+    <h2>28 hand-drawn animals.<br>Predators vs. prey.</h2>
+    <p class="lead">Each fighter is a real, ownable character with its own size, speed, power and ultimate. Tiny mouse or giant elephant — every one plays differently.</p>
+    <div class="roster" id="rosterGrid"></div>
+  </div>
+</section>
+
+<!-- MODES -->
+<section id="modes">
+  <div class="wrap content reveal">
+    <div class="kick">The game</div>
+    <h2>5 arena modes.</h2>
+    <div class="mode-row">
+      <div class="mode"><div class="mi">☠</div><h3>LAST MAN STANDING</h3><p>3 lives each. Last fighter breathing takes the round.</p></div>
+      <div class="mode"><div class="mi">💀</div><h3>HEADHUNTERS</h3><p>Collect the skulls of who you drop. Most skulls wins.</p></div>
+      <div class="mode"><div class="mi">⚔</div><h3>TEAM DEATHMATCH</h3><p>2v2 to the score. Friendly fire off, chaos on.</p></div>
+      <div class="mode"><div class="mi">🛡</div><h3>CO-OP QUEST</h3><p>Team up and survive escalating waves together.</p></div>
+      <div class="mode"><div class="mi">🎯</div><h3>TRIALS</h3><p>Solo gauntlet. Beat the clock, chase the leaderboard.</p></div>
     </div>
   </div>
-</div></section>
+</section>
 
-<!-- WORLDS -->
-<section><div class="wrap">
-  <div class="kick">AI-CRAFTED WORLDS</div>
-  <h2>9 worlds. Built by AI.</h2>
-  <div class="lead">Every round drops into a different arena, each one generated with AI — from jungle and volcano to neon Tokyo, Egypt, Greece and imperial China.</div>
-  <div class="worlds">
-    <div class="world"><img src="assets/maps/selva.png" alt="Jungle"><div class="lbl"><b>THORNWOOD</b><span>Jungle temple</span></div></div>
-    <div class="world"><img src="assets/maps/desierto.png" alt="Desert"><div class="lbl"><b>MIRAGE</b><span>Desert ruins</span></div></div>
-    <div class="world"><img src="assets/maps/nieve.png" alt="Ice"><div class="lbl"><b>FROSTFANG</b><span>Ice caverns</span></div></div>
-    <div class="world"><img src="assets/maps/volcan.png" alt="Volcano"><div class="lbl"><b>TOWERFORGE</b><span>Lava keep</span></div></div>
-    <div class="world"><img src="assets/maps/japon.png" alt="Sakura"><div class="lbl"><b>SAKURA</b><span>Cherry-blossom temple</span></div></div>
-    <div class="world"><img src="assets/maps/tokyo.png" alt="Neo-Tokyo"><div class="lbl"><b>NEO-TOKYO</b><span>Neon city</span></div></div>
-    <div class="world"><img src="assets/maps/egipto.png" alt="Giza"><div class="lbl"><b>GIZA</b><span>Egyptian pyramids</span></div></div>
-    <div class="world"><img src="assets/maps/grecia.png" alt="Olympus"><div class="lbl"><b>OLYMPUS</b><span>The Parthenon</span></div></div>
-    <div class="world"><img src="assets/maps/china.png" alt="Dragon"><div class="lbl"><b>DRAGON</b><span>The Great Wall</span></div></div>
-  </div>
-</div></section>
+<!-- INVEST -->
+<section class="invest" id="invest">
+  <div class="wrap content reveal">
+    <div class="kick">The raise</div>
+    <div class="raise">$100M</div>
+    <p class="lead">To turn a live, playable browser demo into the default on-chain battle royale: a studio, an on-chain economy of ownable fighters, and global user acquisition.</p>
 
-<!-- HOW IT WORKS (3 arrows) -->
-<section><div class="wrap">
-  <div class="kick">THE GAME</div>
-  <h2>3 arrows. One life.</h2>
-  <div class="lead">TowerFall-style archer combat: no respawns, and every heart on the map is up for grabs — including yours. Your rivals are <b>AI</b> that dodge, catch arrows and hunt you down. Each fighter has its own <b>ultimate on the R key</b>.</div>
-  <div class="loop">
-    <div class="beat"><div class="n">1</div><div><h3>SHOOT</h3><p>You start with 3 arrows. They stick where they land: go pick them up, or <b>DODGE into an arrow to catch it</b> mid-air. Aim in 8 directions.</p></div></div>
-    <div class="beat"><div class="n">2</div><div><h3>STEAL</h3><p>Hit someone and they drop a heart on the floor. Scoop it up. The richer you get, the bigger the target on your back.</p></div></div>
-    <div class="beat"><div class="n">3</div><div><h3>SURVIVE</h3><p>The storm shrinks the safe zone round after round until it's a 1v1. Whoever's left banks everything they're carrying.</p></div></div>
-  </div>
-  <div class="chips">
-    <span class="chip"><b>Dodge</b> &amp; catch arrows</span>
-    <span class="chip"><b>Stomp</b> on the head</span>
-    <span class="chip"><b>R</b> = ultimate per animal</span>
-    <span class="chip">Arrows: <b>bomb · laser · bramble</b></span>
-    <span class="chip"><b>Wrap tunnels</b>: drop off the bottom, appear on top</span>
-  </div>
-</div></section>
+    <div class="metric-row">
+      <div class="metric"><div class="mv">28</div><div class="ml">FIGHTERS LIVE</div></div>
+      <div class="metric"><div class="mv">8</div><div class="ml">RANKED ARENAS</div></div>
+      <div class="metric"><div class="mv">5</div><div class="ml">GAME MODES</div></div>
+      <div class="metric"><div class="mv">0-install</div><div class="ml">PLAYS IN BROWSER</div></div>
+    </div>
 
-<!-- FIGHTERS -->
-<section><div class="wrap">
-  <div class="kick">COLLECT · NFT CHESTS</div>
-  <h2>Crack chests. Collect all 28.</h2>
-  <div class="lead">You don't buy fighters — you <b>crack chests</b> and hope. Each one is minted on-chain with its own rarity and signature power. The pricier the chest, the better the odds.</div>
-  <div class="chests">
-    <div class="chest" style="--c:#b07b3a"><img src="assets/chests/wood.png"><div class="nm">WOOD</div><div class="od">commons</div></div>
-    <div class="chest" style="--c:#c7ccd6"><img src="assets/chests/silver.png"><div class="nm">SILVER</div><div class="od">rares show up</div></div>
-    <div class="chest" style="--c:#ffd34d"><img src="assets/chests/gold.png"><div class="nm">GOLD</div><div class="od">epics likely</div></div>
-    <div class="chest" style="--c:#7ef0ff"><img src="assets/chests/diamond.png"><div class="nm">DIAMOND</div><div class="od">legendary shot</div></div>
-  </div>
-</div></section>
+    <div class="uof">
+      <div class="u"><b>Studio &amp; live-ops</b><p>Full-time team, new arenas, seasons and events on a live cadence.</p></div>
+      <div class="u"><b>On-chain economy</b><p>Ownable fighters &amp; chests, wallet, and the $HEARTS token — with real custody &amp; compliance.</p></div>
+      <div class="u"><b>User acquisition</b><p>The free-first-chest hook is built for virality. Fuel it with paid + creator UA.</p></div>
+      <div class="u"><b>Infra &amp; anti-cheat</b><p>Netcode, matchmaking and server authority to scale to millions of matches.</p></div>
+    </div>
 
-<!-- ECONOMY / TOKENOMICS -->
-<section><div class="wrap">
-  <div class="kick">PLAY TO EARN · $HEARTS · TABLES</div>
-  <h2>Pick a table. Just like pool.</h2>
-  <div class="lead">Same format as <b>8 Ball Pool</b>: a lineup of <b>tables</b> with rising buy-ins. Start in Morelia with a <b>~$10 stack</b>. The pricier tables are <b>locked</b> — you <b>level up</b> and <b>save</b> to unlock them. Win the table, bank the pot.</div>
-  <div class="flow">
-    <div class="step buy"><div class="st-n">STEP 1</div><h4>BUY $HEARTS</h4><p>Load your wallet. Each heart is <b>$0.25</b> (demo). $10 = a 40♥ stack.</p><div class="amt">$0.25 / ♥</div></div>
-    <div class="step cost"><div class="st-n">STEP 2</div><h4>PICK A TABLE</h4><p>Higher tables cost more and need a <b>level</b> to enter. 4 players ante up.</p><div class="amt">8 tables</div></div>
-    <div class="step win"><div class="st-n">STEP 3</div><h4>WIN THE POT</h4><p>Last one standing banks the pot minus the <b>15%</b> rake.</p><div class="amt">+ pot</div></div>
-    <div class="step cash"><div class="st-n">STEP 4</div><h4>LEVEL UP</h4><p>Every match earns XP. Level up + save to unlock the big tables.</p><div class="amt">↑ unlock</div></div>
-  </div>
-  <div class="numbers">
-    <div class="num-card"><div class="k">MORELIA · Lv1 · $1.50</div><div class="v g">win $5</div></div>
-    <div class="num-card"><div class="k">MIAMI · Lv6 · $10</div><div class="v g">win $34</div></div>
-    <div class="num-card"><div class="k">TOKYO · Lv10 · $25</div><div class="v g">win $85</div></div>
-    <div class="num-card"><div class="k">LAS VEGAS · Lv21 · $150</div><div class="v g">win $510</div></div>
-    <div class="num-card"><div class="k">🔒 SHANGHÁI · Lv28 · $375</div><div class="v g">win $1,275</div></div>
-    <div class="num-card"><div class="k">🔒 ELITE · Lv36 · $1,000</div><div class="v gd">win $3,400</div></div>
-  </div>
-  <div class="lead" style="margin-top:20px;font-size:15px">You can't buy your way to more lives — every rank gives the same <b>3 lives</b>, so higher stakes reward <b>skill, not spending</b>. The house earns on the <b>15% rake</b>, the buy/sell spread, and chest sales.</div>
-</div></section>
+    <div class="big-cta">
+      <a class="btn primary" href="index.html">▶ PLAY THE DEMO</a>
+      <a class="btn ghost" href="mailto:andremacouzetruiz@gmail.com?subject=HEARTS%20%E2%80%94%20Investment">INVEST / CONTACT</a>
+    </div>
 
-<!-- LANDING -->
-<section class="surface"><div class="wrap">
-  <div class="kick">YOU LANDED</div>
-  <h1 class="title" style="font-size:clamp(48px,10vw,110px)">THE ARENA</h1>
-  <div class="prize" style="margin-top:20px">
-    <div class="tag">COMING SOON</div>
-    <h3>$HEARTS <span style="color:var(--gold)">token launch</span> + prize tournaments</h3>
-    <p>Skill tournaments with an entry and a pot for the sharpest archers, settled in $HEARTS on-chain. Join the whitelist and you're first in line.</p>
-    <a class="cta2" href="https://wa.me/?text=I%20want%20on%20the%20HEARTS%20whitelist" target="_blank">JOIN THE WHITELIST</a>
-    <div class="fine">Token &amp; prize tournaments roll out in stages, in line with applicable regulations. Today HEARTS is free with a simulated in-game economy.</div>
+    <p class="disc">Playable demo. Purchases, chests, hearts and the token shown are a simulated preview — no real payments are processed and no blockchain is live yet. Metrics above describe the current build; funding-round figures and projections are targets, not guarantees or an offer of securities.</p>
   </div>
-  <div style="margin-top:40px"><a class="cta" href="index.html">PLAY NOW</a></div>
-</div></section>
+</section>
 
-<div class="cred-back" id="cred-back">
-  <div class="cred-card">
-    <img id="cred-img" src="" alt="">
-    <h3>¡<span id="cred-monito">—</span> es tuyo!</h3>
-    <p>Viene con <b><span id="cred-h">0</span> ♥</b>. Guarda tus credenciales para entrar al juego:</p>
-    <div class="cred-box"><span>USUARIO</span><b id="cred-user">—</b></div>
-    <div class="cred-box"><span>CONTRASEÑA</span><b id="cred-pass">—</b></div>
-    <a class="cta" id="cred-enter" href="index.html">ENTRAR AL JUEGO</a>
-    <div class="cred-note">Compra <b>demo</b> — no se cobra dinero real. Tu monito y credenciales quedan guardados en este navegador; al entrar al juego tu monito ya estará en tu cuenta.</div>
-    <button class="cred-x" id="cred-close">×</button>
-  </div>
-</div>
+<footer>
+  <div class="logo" style="font-size:18px">HE<span class="h">♥</span>RTS</div>
+  <div class="mono">On-chain battle royale · playable demo · © 2026</div>
+  <a class="nav-play" href="index.html">PLAY FREE</a>
+</footer>
 
-<footer><p>HEARTS · AI Battle Royale on Blockchain — made in Morelia, Mexico<br>
-Sound &amp; music: Juhani Junkala (CC0, OpenGameArt) · A game by André</p></footer>
+</div><!-- /content -->
 
 <script>
+/* ---------- DATA (mirrors the game) ---------- */
+const RAR={common:{n:'COMMON',c:'#b8b2a6'},rare:{n:'RARE',c:'#4dd2ff'},epic:{n:'EPIC',c:'#c77dff'},legendary:{n:'LEGENDARY',c:'#ffd34d'}};
+const ANIMALS=[
+  {id:'lion',n:'LION',r:'legendary'},{id:'orca',n:'ORCA',r:'legendary'},{id:'eagle',n:'EAGLE',r:'legendary'},
+  {id:'shark',n:'SHARK',r:'epic'},{id:'tiger',n:'TIGER',r:'epic'},{id:'bear',n:'BEAR',r:'epic'},{id:'darkpanda',n:'DARK PANDA',r:'epic'},{id:'leopard',n:'LEOPARD',r:'epic'},
+  {id:'croc',n:'CROC',r:'rare'},{id:'vulture',n:'VULTURE',r:'rare'},{id:'hippo',n:'HIPPO',r:'rare'},{id:'snake',n:'SNAKE',r:'rare'},{id:'chameleon',n:'CHAMELEON',r:'rare'},{id:'cat',n:'CAT',r:'rare'},{id:'panda',n:'PANDA',r:'rare'},{id:'elephant',n:'ELEPHANT',r:'rare'},
+  {id:'otter',n:'OTTER',r:'common'},{id:'penguin',n:'PENGUIN',r:'common'},{id:'seal',n:'SEAL',r:'common'},{id:'toucan',n:'TOUCAN',r:'common'},{id:'monkey',n:'MONKEY',r:'common'},{id:'dog',n:'DOG',r:'common'},{id:'pigeon',n:'PIGEON',r:'common'},{id:'mouse',n:'MOUSE',r:'common'},{id:'giraffe',n:'GIRAFFE',r:'common'},{id:'platypus',n:'PLATYPUS',r:'common'},{id:'goose',n:'GOOSE',r:'common'}
+];
+const spr=id=>'assets/'+id+'.png';
+const CHESTS=[
+  {id:'wood',n:'WOODEN',price:'FREE 1st',color:'#b07b3a',wood:true,odds:{common:82,rare:16,epic:2,legendary:0}},
+  {id:'silver',n:'SILVER',price:'15 ♥',color:'#c7ccd6',odds:{common:52,rare:34,epic:11,legendary:3}},
+  {id:'gold',n:'GOLD',price:'35 ♥',color:'#ffd34d',odds:{common:26,rare:38,epic:27,legendary:9}},
+  {id:'diamond',n:'DIAMOND',price:'80 ♥',color:'#7ef0ff',odds:{common:6,rare:30,epic:42,legendary:22}},
+];
+
+/* ---------- ODDS cards ---------- */
 (function(){
-  // ---- TIENDA: compra tu monito → credenciales → entra al juego (mismo localStorage) ----
-  var SHOP=[
-    {id:'mouse',    name:'RATÓN',    rar:'COMÚN',      rc:'#b8b2a6', hearts:25,  price:0.99},
-    {id:'penguin',  name:'PINGÜINO', rar:'COMÚN',      rc:'#b8b2a6', hearts:25,  price:0.99},
-    {id:'wolf',     name:'LOBO',     rar:'RARO',       rc:'#4dd2ff', hearts:50,  price:2.99},
-    {id:'chameleon',name:'CAMALEÓN', rar:'RARO',       rc:'#4dd2ff', hearts:50,  price:2.99},
-    {id:'tiger',    name:'TIGRE',    rar:'ÉPICO',      rc:'#c77dff', hearts:90,  price:6.99},
-    {id:'shark',    name:'TIBURÓN',  rar:'ÉPICO',      rc:'#c77dff', hearts:90,  price:6.99},
-    {id:'lion',     name:'LEÓN',     rar:'LEGENDARIO', rc:'#ffd34d', hearts:150, price:14.99},
-    {id:'orca',     name:'ORCA',     rar:'LEGENDARIO', rc:'#ffd34d', hearts:150, price:14.99}
-  ];
-  var sgrid=document.getElementById('shop-grid');
-  if(sgrid) SHOP.forEach(function(m){
-    var card=document.createElement('div'); card.className='shop-card';
-    card.innerHTML='<img loading="lazy" src="assets/'+m.id+'.png" alt="'+m.name+'">'
-      +'<div class="sc-nm">'+m.name+'</div>'
-      +'<div class="sc-rar" style="color:'+m.rc+'">'+m.rar+'</div>'
-      +'<div class="sc-h">'+m.hearts+' ♥</div>'
-      +'<button class="sc-buy">COMPRAR · $'+m.price.toFixed(2)+'</button>';
-    card.querySelector('.sc-buy').onclick=function(){ buyMonito(m); };
-    sgrid.appendChild(card);
+  const row=document.getElementById('chestRow');
+  CHESTS.forEach(c=>{
+    const el=document.createElement('div'); el.className='chest-card'+(c.wood?' wood':'');
+    let odds='';
+    ['legendary','epic','rare','common'].forEach(k=>{
+      const v=c.odds[k];
+      odds+=`<div class="odd"><span class="lbl" style="color:${RAR[k].c}">${RAR[k].n}</span>
+        <span class="bar"><span class="fill" style="width:${v}%;background:${RAR[k].c}"></span></span>
+        <span class="pct">${v}%</span></div>`;
+    });
+    el.innerHTML=`<div class="cn" style="color:${c.color}">${c.n} CHEST</div><div class="cp">${c.price}</div>${odds}`
+      + (c.wood?`<div class="first-badge">1st pull → LEGENDARY guaranteed</div>`:'');
+    row.appendChild(el);
   });
-  function buyMonito(m){
-    var user='PLAYER'+Math.floor(1000+Math.random()*9000);
-    var pass=Math.random().toString(36).slice(2,7).toUpperCase();
-    var tok='#'+Math.floor(1000+Math.random()*9000);
-    var owned={}; owned[m.id]=tok;
-    var save={ name:user, hearts:m.hearts, owned:owned, selected:m.id, tut:true };
-    try{ localStorage.setItem('hearts-save', JSON.stringify(save)); }catch(e){}
-    var img=document.getElementById('cred-img'); img.src='assets/'+m.id+'.png';
-    document.getElementById('cred-monito').textContent=m.name;
-    document.getElementById('cred-h').textContent=m.hearts;
-    document.getElementById('cred-user').textContent=user;
-    document.getElementById('cred-pass').textContent=pass;
-    document.getElementById('cred-back').classList.add('show');
-  }
-  var cx=document.getElementById('cred-close'), cb=document.getElementById('cred-back');
-  if(cx) cx.onclick=function(){ cb.classList.remove('show'); };
-  if(cb) cb.addEventListener('click',function(e){ if(e.target===cb) cb.classList.remove('show'); });
-
-  // ---- ROSTER: carrusel infinito con los stickers reales de los 28 peleadores ----
-  var ROSTER=[
-    ['shark','SHARK','pred'],['orca','ORCA','pred'],['croc','CROC','pred'],['vulture','VULTURE','pred'],
-    ['lion','LION','pred'],['tiger','TIGER','pred'],['wolf','WOLF','pred'],['hippo','HIPPO','pred'],
-    ['bear','BEAR','pred'],['darkpanda','DARK PANDA','pred'],['eagle','EAGLE','pred'],['otter','OTTER','pred'],
-    ['snake','SNAKE','pred'],['leopard','LEOPARD','pred'],
-    ['penguin','PENGUIN','prey'],['seal','SEAL','prey'],['toucan','TOUCAN','prey'],['chameleon','CHAMELEON','prey'],
-    ['monkey','MONKEY','prey'],['dog','DOG','prey'],['pigeon','PIGEON','prey'],['cat','CAT','prey'],
-    ['mouse','MOUSE','prey'],['panda','PANDA','prey'],['giraffe','GIRAFFE','prey'],['elephant','ELEPHANT','prey'],
-    ['platypus','PLATYPUS','prey'],['goose','GOOSE','prey']
-  ];
-  function card(a){
-    return '<div class="pcard '+a[2]+'"><img loading="lazy" src="assets/'+a[0]+'.png?v=7" alt="'+a[1]+'">'+
-      '<div><div class="nm">'+a[1]+'</div><div class="sd"><span class="dot"></span>'+(a[2]==='pred'?'PREDATOR':'PREY')+'</div></div></div>';
-  }
-  function fill(el, list){ if(!el) return; var h=list.map(card).join(''); el.innerHTML=h+h; } // ×2 para loop continuo
-  var shuffled=ROSTER.slice().reverse();
-  fill(document.getElementById('mqA'), ROSTER);
-  fill(document.getElementById('mqB'), shuffled);
-
-  // starfield for the world stage
-  var stars=document.getElementById('stars'), frag=document.createDocumentFragment();
-  for(var i=0;i<130;i++){ var s=document.createElement('i');
-    s.style.left=(Math.random()*100)+'%'; s.style.top=(Math.random()*72)+'%';
-    var sz=Math.random()<0.15?2.5:1.3; s.style.width=s.style.height=sz+'px';
-    s.style.opacity=(0.4+Math.random()*0.6); frag.appendChild(s); }
-  stars.appendChild(frag);
-  var globe=document.getElementById('globe');
-
-  // etapas: cross-fade  MUNDO → EVEREST (rápido) → CERRO → DESIERTO → VOLCÁN
-  var stages=[
-    {id:'bgWorld',   c:0.00, w:0.11},
-    {id:'bgEverest', c:0.13, w:0.16},
-    {id:'bgCerro',   c:0.42, w:0.24},
-    {id:'bgDesierto',c:0.71, w:0.24},
-    {id:'bgVolcan',  c:1.00, w:0.24},
-  ].map(function(s){ s.el=document.getElementById(s.id); return s; });
-  function band(p,c,w){ var v=1-Math.abs(p-c)/w; return v<0?0:(v>1?1:v); }
-  var ticking=false;
-  function render(){
-    ticking=false;
-    var max=document.body.scrollHeight-innerHeight;
-    var p=max>0?Math.min(1,Math.max(0,scrollY/max)):0;
-    stages.forEach(function(s){ var o=band(p,s.c,s.w);
-      s.el.style.opacity=o; s.el.style.transform='scale('+(1.05-o*0.05)+')'; });
-    // DEL ESPACIO AL EVEREST (RÁPIDO): el planeta se acerca de golpe y te mete al punto más alto
-    var dive=band(p,0,0.11);                      // el MUNDO (planeta+estrellas) se va rapidísimo
-    globe.style.opacity=dive; stars.style.opacity=dive;
-    globe.style.transform='translateX(-50%) translateY('+(-p*46)+'vh) scale('+(1+p*7)+')'; // zoom fuerte y veloz
-  }
-  function onScroll(){ if(!ticking){ ticking=true; requestAnimationFrame(render); } }
-  addEventListener('scroll',onScroll,{passive:true});
-  addEventListener('resize',render); render();
+  // rarity legend cards (one example each)
+  const rr=document.getElementById('rarRow');
+  const ex={legendary:'lion',epic:'tiger',rare:'panda',common:'mouse'};
+  const pct={legendary:'~0–22%',epic:'2–42%',rare:'16–38%',common:'6–82%'};
+  ['legendary','epic','rare','common'].forEach(k=>{
+    const el=document.createElement('div'); el.className='rar'; el.style.borderColor=RAR[k].c+'66';
+    el.innerHTML=`<img src="${spr(ex[k])}" alt=""><div class="rn" style="color:${RAR[k].c}">${RAR[k].n}</div><div class="rp">drop rate ${pct[k]}</div>`;
+    rr.appendChild(el);
+  });
 })();
+
+/* ---------- ROSTER ---------- */
+(function(){
+  const g=document.getElementById('rosterGrid');
+  ANIMALS.forEach(a=>{
+    const el=document.createElement('div'); el.className='mon-card'; el.style.borderColor=RAR[a.r].c+'44';
+    el.innerHTML=`<span class="dot" style="background:${RAR[a.r].c};box-shadow:0 0 8px ${RAR[a.r].c}"></span>
+      <img src="${spr(a.id)}" alt="${a.n}" loading="lazy"><span class="mn">${a.n}</span>`;
+    g.appendChild(el);
+  });
+})();
+
+/* ================= ARENA SCENES (same engine as the game) ================= */
+function ridge(c,W,H,topY,rough,color,snow,seed){const step=W/9,pts=[];c.fillStyle=color;c.beginPath();c.moveTo(0,H);
+  for(let i=0;i*step<=W+step;i++){const x=i*step;const n=Math.sin((i+seed)*1.7)*0.5+Math.sin((i+seed)*0.9+1)*0.5;const y=topY-n*rough;if(i===0)c.lineTo(0,y);c.lineTo(x,y);pts.push([x,y]);}
+  c.lineTo(W,H);c.closePath();c.fill();
+  if(snow){c.fillStyle=snow;for(const[x,y]of pts){c.beginPath();c.moveTo(x-16,y+22);c.lineTo(x,y-2);c.lineTo(x+16,y+22);c.closePath();c.fill();}}}
+function dune(c,W,H,baseY,amp,color,seed){c.fillStyle=color;c.beginPath();c.moveTo(0,H);c.lineTo(0,baseY);
+  for(let x=0;x<=W;x+=10)c.lineTo(x,baseY+Math.sin(x*0.007+seed)*amp+Math.sin(x*0.02+seed*2)*amp*0.35);c.lineTo(W,H);c.closePath();c.fill();}
+function treeline(c,W,H,baseY,hgt,color,seed){c.fillStyle=color;const step=W/22;
+  for(let i=0;i*step<W+step;i++){const x=i*step+((seed*13)%step);const h=hgt*(0.6+0.6*(Math.sin((i+seed)*2.3)*.5+.5));
+    c.beginPath();c.moveTo(x-step*0.62,baseY);c.lineTo(x,baseY-h);c.lineTo(x+step*0.62,baseY);c.closePath();c.fill();}c.fillRect(0,baseY,W,H-baseY);}
+function canopy(c,W,H,baseY,hgt,color,seed){c.fillStyle=color;const step=W/12;
+  for(let i=0;i*step<W+step;i++){const x=i*step+((seed*7)%step);const r=hgt*(0.7+0.5*(Math.sin((i+seed)*1.9)*.5+.5));
+    c.beginPath();c.arc(x,baseY,r,Math.PI,2*Math.PI);c.fill();c.fillRect(x-r,baseY,2*r,H-baseY);}}
+const SCENES=[
+  (c,W,H)=>{const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#08160f');g.addColorStop(.55,'#123122');g.addColorStop(1,'#1e4a30');c.fillStyle=g;c.fillRect(0,0,W,H);
+    c.fillStyle='rgba(214,255,224,.5)';c.beginPath();c.arc(W*.24,H*.26,18,0,6.28);c.fill();
+    treeline(c,W,H,H*.56,H*.14,'#0f2b1c',1);treeline(c,W,H,H*.66,H*.2,'#0a2015',3);treeline(c,W,H,H*.8,H*.26,'#05130c',6);},
+  (c,W,H)=>{const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#0a1f18');g.addColorStop(.5,'#134026');g.addColorStop(1,'#256b3e');c.fillStyle=g;c.fillRect(0,0,W,H);
+    c.fillStyle='#0c2417';const px=W*.5,pw=W*.26,py=H*.44,ph=H*.36;for(let s=0;s<5;s++){const f=1-s/6;c.fillRect(px-pw*f/2,py+ph*s/5,pw*f,ph/5+1);}
+    canopy(c,W,H,H*.58,H*.09,'#0f3020',1);canopy(c,W,H,H*.7,H*.13,'#0a2417',4);canopy(c,W,H,H*.84,H*.16,'#061a10',9);},
+  (c,W,H)=>{const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#3a1e3a');g.addColorStop(.5,'#8a4030');g.addColorStop(.8,'#c9743a');g.addColorStop(1,'#e0a35a');c.fillStyle=g;c.fillRect(0,0,W,H);
+    c.fillStyle='rgba(255,226,150,.92)';c.beginPath();c.arc(W*.3,H*.42,20,0,6.28);c.fill();
+    dune(c,W,H,H*.6,H*.05,'#b45f2e',.5);dune(c,W,H,H*.68,H*.06,'#93481f',1.7);dune(c,W,H,H*.78,H*.07,'#6d3416',3.1);},
+  (c,W,H)=>{const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#2a1636');g.addColorStop(.45,'#7a3a2e');g.addColorStop(.8,'#d08a3a');g.addColorStop(1,'#e8b95e');c.fillStyle=g;c.fillRect(0,0,W,H);
+    c.fillStyle='rgba(255,232,170,.95)';c.beginPath();c.arc(W*.5,H*.5,24,0,6.28);c.fill();
+    const pyr=(cx,base,w,col)=>{c.fillStyle=col;c.beginPath();c.moveTo(cx,base-w*.95);c.lineTo(cx-w,base);c.lineTo(cx+w,base);c.closePath();c.fill();};
+    pyr(W*.3,H*.74,W*.15,'#6e3c1f');pyr(W*.7,H*.74,W*.19,'#5a3018');pyr(W*.5,H*.8,W*.26,'#43230f');c.fillStyle='#43230f';c.fillRect(0,H*.8,W,H*.2);},
+  (c,W,H)=>{const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#0b1430');g.addColorStop(.55,'#1b2c52');g.addColorStop(1,'#32507e');c.fillStyle=g;c.fillRect(0,0,W,H);
+    c.fillStyle='rgba(228,238,255,.92)';c.beginPath();c.arc(W*.8,H*.22,16,0,6.28);c.fill();
+    ridge(c,W,H,H*.52,H*.16,'#243a63',null,1);ridge(c,W,H,H*.6,H*.2,'#182b4c','rgba(236,244,255,.85)',5);ridge(c,W,H,H*.72,H*.16,'#0f1d38','rgba(220,232,250,.7)',11);},
+  (c,W,H)=>{const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#241132');g.addColorStop(.5,'#54244a');g.addColorStop(1,'#8a4a5e');c.fillStyle=g;c.fillRect(0,0,W,H);
+    c.fillStyle='rgba(255,236,242,.95)';c.beginPath();c.arc(W*.5,H*.28,22,0,6.28);c.fill();ridge(c,W,H,H*.64,H*.12,'#3a1e3e',null,3);
+    const tree=(x,base,s)=>{c.strokeStyle='#2a1418';c.lineWidth=6*s;c.lineCap='round';c.beginPath();c.moveTo(x,base);c.lineTo(x,base-40*s);c.moveTo(x,base-24*s);c.lineTo(x-20*s,base-48*s);c.moveTo(x,base-30*s);c.lineTo(x+22*s,base-52*s);c.stroke();
+      c.fillStyle='rgba(255,170,200,.9)';[[0,-58],[-24,-50],[24,-54],[-12,-66],[14,-64]].forEach(([dx,dy])=>{c.beginPath();c.arc(x+dx*s,base+dy*s,18*s,0,6.28);c.fill();});};
+    c.fillStyle='#3a1c2a';c.fillRect(0,H*.82,W,H*.18);tree(W*.15,H*.86,1.1);tree(W*.85,H*.85,1.2);},
+  (c,W,H)=>{const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#0a1030');g.addColorStop(.5,'#1a2a5e');g.addColorStop(1,'#2e4a86');c.fillStyle=g;c.fillRect(0,0,W,H);
+    const gl=c.createRadialGradient(W*.5,H*.2,10,W*.5,H*.2,H*.6);gl.addColorStop(0,'rgba(120,200,255,.22)');gl.addColorStop(1,'rgba(120,200,255,0)');c.fillStyle=gl;c.fillRect(0,0,W,H);
+    const cr=(x,base,w,h2,col)=>{c.fillStyle=col;c.beginPath();c.moveTo(x,base-h2);c.lineTo(x-w,base-h2*.42);c.lineTo(x-w*.6,base);c.lineTo(x+w*.6,base);c.lineTo(x+w,base-h2*.42);c.closePath();c.fill();};
+    cr(W*.2,H*.82,W*.05,H*.42,'#20407a');cr(W*.8,H*.82,W*.055,H*.46,'#1a3568');cr(W*.5,H*.84,W*.08,H*.52,'#152a58');c.fillStyle='#0f1f44';c.fillRect(0,H*.82,W,H*.18);},
+  (c,W,H)=>{const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#160607');g.addColorStop(.5,'#3a0f0c');g.addColorStop(1,'#651c10');c.fillStyle=g;c.fillRect(0,0,W,H);
+    const gl=c.createRadialGradient(W*.5,H*.36,4,W*.5,H*.36,H*.42);gl.addColorStop(0,'rgba(255,140,40,.5)');gl.addColorStop(1,'rgba(255,80,20,0)');c.fillStyle=gl;c.fillRect(0,0,W,H);
+    ridge(c,W,H,H*.6,H*.14,'#2a0d0a',null,7);c.fillStyle='#1a0806';c.beginPath();c.moveTo(W*.5,H*.28);c.lineTo(W*.2,H*.84);c.lineTo(W*.8,H*.84);c.closePath();c.fill();
+    c.strokeStyle='rgba(255,130,40,.85)';c.lineWidth=3;c.lineCap='round';c.beginPath();c.moveTo(W*.5,H*.3);c.lineTo(W*.46,H*.5);c.lineTo(W*.5,H*.66);c.lineTo(W*.44,H*.82);c.stroke();
+    c.fillStyle='rgba(255,180,80,.9)';c.beginPath();c.ellipse(W*.5,H*.29,W*.05,H*.015,0,0,6.28);c.fill();}
+];
+const ARENAS=[
+  {n:'STARTER FOREST',t:'COPPER',c:'#c07a45',mon:'monkey'},
+  {n:'LOST JUNGLE',t:'BRONZE',c:'#d29a55',mon:'chameleon'},
+  {n:'DUNE SEA',t:'SILVER',c:'#d7dde5',mon:'lion'},
+  {n:'GOLDEN SANDS',t:'GOLD',c:'#f3ce5b',mon:'vulture'},
+  {n:'FROST PEAKS',t:'PLATINUM',c:'#5fe0da',mon:'penguin'},
+  {n:'SAKURA GARDEN',t:'EMERALD',c:'#57e07f',mon:'cat'},
+  {n:'CRYSTAL TEMPLE',t:'DIAMOND',c:'#9fd0ff',mon:'orca'},
+  {n:'LAVA THRONE',t:'CHAMPION',c:'#ecb6ff',mon:'tiger'},
+];
+(function(){
+  const box=document.getElementById('arenaScroll');
+  ARENAS.forEach((a,i)=>{
+    const t=document.createElement('div');t.className='arena-thumb';
+    t.innerHTML=`<canvas width="460" height="316"></canvas>
+      <img class="mon" src="${spr(a.mon)}" alt="">
+      <div class="num">${i+1}/8</div>
+      <div class="plate"><span class="an">${a.n}</span><span class="at" style="color:${a.c}">${a.t} · ARENA ${i+1}</span></div>`;
+    box.appendChild(t);
+    const cv=t.querySelector('canvas');SCENES[i](cv.getContext('2d'),cv.width,cv.height);
+  });
+})();
+
+/* ================= HERO CHEST ================= */
+(function(){
+  const cv=document.getElementById('chestCanvas'),ctx=cv.getContext('2d');
+  const W=cv.width,H=cv.height,cx=W/2,cy=H*0.62;
+  let phase='closed',t0=0,opened=false;
+  function drawChest(now){
+    ctx.clearRect(0,0,W,H);
+    let shake=0,lid=0,burst=0;
+    if(phase==='opening'){const e=(now-t0)/1400;
+      shake=e<0.35?Math.sin(e*60)*6*(1-e/0.35):0;
+      lid=Math.max(0,Math.min(1,(e-0.32)/0.5));
+      burst=Math.max(0,Math.min(1,(e-0.4)/0.6));
+      if(e>=1){phase='open';reveal();}
+    } else if(phase==='open'){lid=1;burst=1;}
+    ctx.save();ctx.translate(cx+shake,cy);
+    // glow behind
+    const bg=Math.max(0.25,burst);
+    const rg=ctx.createRadialGradient(0,-30,4,0,-30,180);
+    rg.addColorStop(0,`rgba(255,220,120,${0.55*bg})`);rg.addColorStop(1,'rgba(255,180,60,0)');
+    ctx.fillStyle=rg;ctx.fillRect(-200,-220,400,300);
+    // light rays on burst
+    if(burst>0){ctx.save();ctx.globalAlpha=burst*0.8;ctx.translate(0,-34);
+      for(let i=0;i<12;i++){ctx.rotate(Math.PI/6);ctx.fillStyle='rgba(255,225,140,'+(0.5*burst)+')';
+        const len=60+burst*120+Math.sin(now/300+i)*8;ctx.beginPath();ctx.moveTo(-7,0);ctx.lineTo(7,0);ctx.lineTo(0,-len);ctx.closePath();ctx.fill();}
+      ctx.restore();}
+    // chest body (wood)
+    const bw=150,bh=92;
+    roundRect(ctx,-bw/2,-6,bw,bh,10);
+    const wood=ctx.createLinearGradient(0,-6,0,bh);wood.addColorStop(0,'#9c6b34');wood.addColorStop(1,'#6e451e');ctx.fillStyle=wood;ctx.fill();
+    // planks
+    ctx.strokeStyle='rgba(40,24,8,.5)';ctx.lineWidth=2;
+    for(let x=-bw/2+24;x<bw/2;x+=26){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,bh-8);ctx.stroke();}
+    // metal bands
+    ctx.fillStyle='#3a3f47';ctx.fillRect(-bw/2,20,bw,8);ctx.fillRect(-10,-6,20,bh);
+    // lock
+    ctx.fillStyle='#d9a53a';roundRect(ctx,-12,26,24,20,4);ctx.fill();
+    ctx.fillStyle='#5a3a12';ctx.fillRect(-3,32,6,8);
+    // lid (opens by rotating up)
+    ctx.save();ctx.translate(0,-6);ctx.rotate(-lid*1.15);
+    const lidGrad=ctx.createLinearGradient(0,-46,0,4);lidGrad.addColorStop(0,'#a9763b');lidGrad.addColorStop(1,'#7c5122');
+    ctx.fillStyle=lidGrad;
+    ctx.beginPath();ctx.moveTo(-bw/2,2);ctx.lineTo(-bw/2,-26);ctx.quadraticCurveTo(0,-58,bw/2,-26);ctx.lineTo(bw/2,2);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#3a3f47';ctx.fillRect(-14,-46,28,48);
+    ctx.strokeStyle='rgba(40,24,8,.4)';ctx.lineWidth=2;ctx.stroke();
+    ctx.restore();
+    ctx.restore();
+    if(phase==='opening'||(phase==='closed')) requestAnimationFrame(drawChest);
+  }
+  function roundRect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+  function open(){ if(phase!=='closed')return; phase='opening';t0=performance.now();requestAnimationFrame(drawChest);}
+  function reveal(){
+    if(opened)return;opened=true;
+    const legends=ANIMALS.filter(a=>a.r==='legendary');
+    const a=legends[Math.floor(Math.random()*legends.length)];
+    document.getElementById('rewardImg').src=spr(a.id);
+    document.getElementById('rewardName').textContent=a.n;
+    document.getElementById('reward').classList.add('show');
+    const hint=document.getElementById('chestHint');hint.classList.remove('pulse');hint.innerHTML='<span style="color:var(--legend)">★ LEGENDARY! ★</span>';
+    confetti();
+    requestAnimationFrame(drawChest); // final frame
+  }
+  cv.addEventListener('click',open);
+  drawChest(performance.now());
+})();
+
+/* ================= CONFETTI ================= */
+function confetti(){
+  const cv=document.getElementById('confetti'),ctx=cv.getContext('2d');
+  const W=cv.width=innerWidth,H=cv.height=innerHeight;
+  const cols=['#ffd34d','#ff3b2f','#4dd2ff','#c77dff','#7dff8a','#fff'];
+  const P=[];for(let i=0;i<180;i++)P.push({x:W/2+(Math.random()-.5)*160,y:H*0.42,vx:(Math.random()-.5)*10,vy:-6-Math.random()*11,g:.28,r:Math.random()*Math.PI,vr:(Math.random()-.5)*.3,s:5+Math.random()*7,c:cols[i%cols.length],life:1});
+  let n=0;(function loop(){ctx.clearRect(0,0,W,H);n++;let alive=false;
+    for(const p of P){p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;p.life-=0.006;if(p.life>0&&p.y<H+20){alive=true;
+      ctx.save();ctx.globalAlpha=Math.max(0,p.life);ctx.translate(p.x,p.y);ctx.rotate(p.r);ctx.fillStyle=p.c;ctx.fillRect(-p.s/2,-p.s/2,p.s,p.s*0.6);ctx.restore();}}
+    if(alive&&n<420)requestAnimationFrame(loop);else ctx.clearRect(0,0,W,H);
+  })();
+}
+
+/* ================= scroll reveal ================= */
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('in');}),{threshold:.14});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
 </script>
 </body>
 </html>

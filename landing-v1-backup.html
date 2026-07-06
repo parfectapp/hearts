@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HEARTS — AI Battle Royale on Blockchain</title>
+<meta name="description" content="HEARTS is an AI-powered play-to-earn battle royale on blockchain. Fight AI champions across 9 AI-crafted worlds. $HEARTS is our memecoin — win it, cash out on-chain.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800;900&family=Archivo+Black&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{ --red:#ff3b2f; --blue:#2fb4ff; --gold:#ffd34d; --green:#7dff8a; --paper:#f4f0e6; --grey:#8b867b; --p:0; }
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{color:var(--paper);font-family:'Archivo',system-ui,sans-serif;overflow-x:hidden;background:#04040a}
+.mono{font-family:'Space Mono',monospace}
+.blk{font-family:'Archivo Black',sans-serif}
+.wrap{max-width:1000px;margin:0 auto;padding:0 6vw;position:relative;z-index:3}
+
+/* ===== FIXED ENVIRONMENT LAYERS (cross-fade on scroll: world → everest → cerro → desert → volcano) ===== */
+.bg{position:fixed;inset:0;z-index:0;opacity:0;background-position:center;background-size:cover;background-repeat:no-repeat;will-change:opacity;transform:scale(1.04)}
+#bgWorld{opacity:1;background:radial-gradient(ellipse at 50% 125%,#132444,#05060f 68%)}
+#bgEverest{background-image:url('assets/everest.png')}
+#bgCerro{background-image:url('assets/cerro.png')}
+#bgDesierto{background-image:url('assets/desierto.png')}
+#bgVolcan{background-image:url('assets/volcan.png')}
+#stars{position:fixed;inset:0;z-index:0;pointer-events:none}
+#stars i{position:absolute;width:2px;height:2px;border-radius:50%;background:#fff;box-shadow:0 0 4px #fff}
+#globe{position:fixed;left:50%;bottom:-40vh;width:104vh;height:104vh;transform:translateX(-50%);border-radius:50%;z-index:0;pointer-events:none;
+  background:url('assets/planet.png') center 58%/138% no-repeat;box-shadow:inset -30px -28px 120px rgba(0,0,0,.5),inset 0 22px 60px rgba(5,6,15,.9)}
+#scrim{position:fixed;inset:0;z-index:1;pointer-events:none;background:linear-gradient(180deg,rgba(4,5,12,.42),rgba(4,5,12,.26) 42%,rgba(4,5,12,.6))}
+
+/* ===== CONTENT (descends over the sky) ===== */
+section{position:relative;z-index:3;min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:14vh 0}
+.kick{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.4em;color:var(--gold);font-weight:700}
+h1.title{font-family:'Archivo Black',sans-serif;font-size:clamp(70px,16vw,190px);line-height:.82;letter-spacing:.02em;text-align:center;margin:16px 0 4px;text-shadow:0 0 50px rgba(255,59,47,.4)}
+.slash{font-family:'Archivo Black',sans-serif;font-size:clamp(22px,5vw,46px);color:var(--red);text-align:center;letter-spacing:.02em}
+.hero{align-items:center;text-align:center;min-height:100vh;justify-content:center}
+.hero p{color:#dfe6f2;max-width:580px;margin:22px auto 0;font-size:16px;line-height:1.65}
+.scrollhint{position:absolute;bottom:5vh;left:50%;transform:translateX(-50%);font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.25em;color:#aeb8cc;opacity:.85}
+.scrollhint::after{content:'';display:block;width:1px;height:34px;margin:12px auto 0;background:linear-gradient(#aeb8cc,transparent);animation:down 1.6s ease-in-out infinite}
+@keyframes down{0%,100%{opacity:.3;transform:translateY(-6px)}50%{opacity:1;transform:translateY(6px)}}
+
+h2{font-family:'Archivo Black',sans-serif;font-size:clamp(30px,5.5vw,58px);line-height:1;letter-spacing:.01em}
+.lead{color:#cfd6e4;font-size:17px;line-height:1.7;max-width:640px;margin-top:16px}
+.cta{display:inline-block;margin-top:34px;background:var(--red);color:#fff;text-decoration:none;font-family:'Archivo Black',sans-serif;
+  font-size:22px;letter-spacing:.14em;padding:22px 62px;border-radius:4px;box-shadow:0 0 0 2px #000,6px 6px 0 #7a1710;transition:transform .08s,box-shadow .08s}
+.cta:hover{transform:translate(-2px,-2px);box-shadow:0 0 0 2px #000,8px 8px 0 #7a1710}
+.cta:active{transform:translate(3px,3px);box-shadow:0 0 0 2px #000,2px 2px 0 #7a1710}
+
+/* loop */
+.loop{display:grid;gap:2px;margin-top:40px;border:2px solid rgba(255,255,255,.1);border-radius:8px;overflow:hidden}
+.beat{display:grid;grid-template-columns:110px 1fr;gap:22px;align-items:center;background:rgba(8,10,20,.66);backdrop-filter:blur(4px);padding:28px 26px}
+.beat .n{font-family:'Archivo Black',sans-serif;font-size:60px;color:var(--red);line-height:.8}
+.beat h3{font-family:'Archivo Black',sans-serif;font-size:19px;letter-spacing:.08em;margin-bottom:7px}
+.beat p{color:#b9c0cf;font-size:14.5px;line-height:1.6}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+.chip{font-family:'Space Mono',monospace;font-size:12px;color:#cfd6e4;background:rgba(8,10,20,.6);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:9px 15px}
+.chip b{color:var(--gold)}
+@media(max-width:560px){ .beat{grid-template-columns:60px 1fr;gap:14px;padding:20px} .beat .n{font-size:40px} }
+
+/* worlds */
+.worlds{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:38px}
+.world{position:relative;border-radius:12px;overflow:hidden;aspect-ratio:4/3;border:1px solid rgba(255,255,255,.1);box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.world img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s}
+.world:hover img{transform:scale(1.07)}
+.world::after{content:'';position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.78),transparent 55%)}
+.world .lbl{position:absolute;left:12px;bottom:10px;z-index:2}
+.world .lbl b{font-family:'Archivo Black',sans-serif;font-size:15px;letter-spacing:.04em;display:block}
+.world .lbl span{font-family:'Space Mono',monospace;font-size:10px;color:#dfe6f2}
+@media(max-width:640px){ .worlds{grid-template-columns:1fr 1fr} }
+
+/* reel + chests */
+.reel{overflow:hidden;margin:36px 0 0;-webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
+.reel .row{display:flex;gap:26px;width:max-content;animation:scrollx 34s linear infinite;align-items:flex-end}
+.reel img{height:118px;filter:drop-shadow(0 10px 18px rgba(0,0,0,.6))}
+@keyframes scrollx{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.chests{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:30px}
+.chest{background:rgba(8,10,20,.6);border:1px solid rgba(255,255,255,.1);border-top:3px solid var(--c);border-radius:10px;padding:20px 12px;text-align:center}
+.chest img{height:74px;filter:drop-shadow(0 4px 14px var(--c))}
+.chest .nm{font-family:'Archivo Black',sans-serif;font-size:12px;letter-spacing:.06em;margin-top:8px}
+.chest .od{font-family:'Space Mono',monospace;font-size:10px;color:var(--grey);margin-top:4px}
+@media(max-width:560px){ .chests{grid-template-columns:repeat(2,1fr)} }
+
+/* economy */
+.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:38px}
+.step{background:rgba(8,10,20,.66);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:22px 16px}
+.step .st-n{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.2em;color:var(--gold)}
+.step h4{font-family:'Archivo Black',sans-serif;font-size:15px;letter-spacing:.04em;margin:8px 0 6px}
+.step p{color:#b9c0cf;font-size:13px;line-height:1.55}
+.step .amt{font-family:'Archivo Black',sans-serif;font-size:20px;margin-top:8px}
+.step.win .amt{color:var(--green)} .step.cost .amt{color:var(--red)} .step.buy .amt{color:var(--gold)} .step.cash .amt{color:var(--blue)}
+@media(max-width:760px){ .flow{grid-template-columns:1fr 1fr} }
+.numbers{display:flex;flex-wrap:wrap;gap:14px;margin-top:24px}
+.num-card{flex:1;min-width:150px;background:rgba(8,10,20,.6);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px 20px}
+.num-card .k{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.16em;color:var(--grey)}
+.num-card .v{font-family:'Archivo Black',sans-serif;font-size:26px;margin-top:4px}
+.num-card .v.g{color:var(--green)} .num-card .v.gd{color:var(--gold)}
+
+/* landing */
+.surface{align-items:center;text-align:center;min-height:100vh;justify-content:center}
+.prize{border:2px dashed rgba(255,255,255,.18);border-radius:14px;padding:40px 30px;max-width:640px;margin:0 auto;background:rgba(8,10,20,.5)}
+.prize .tag{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.3em;color:var(--gold)}
+.prize h3{font-family:'Archivo Black',sans-serif;font-size:clamp(22px,4vw,34px);margin:10px 0}
+.prize p{color:#b9c0cf;max-width:520px;margin:0 auto 20px;font-size:14px;line-height:1.7}
+.cta2{display:inline-block;background:#12220f;color:var(--green);border:1px solid #3f7d3a;text-decoration:none;font-family:'Archivo Black',sans-serif;font-size:13px;letter-spacing:.1em;padding:14px 30px;border-radius:6px}
+.fine{font-family:'Space Mono',monospace;font-size:9.5px;color:#8b93a6;margin-top:18px;line-height:1.6}
+footer{position:relative;z-index:3;padding:44px 6vw;text-align:center}
+footer p{font-family:'Space Mono',monospace;font-size:10px;color:#8b93a6;line-height:1.9}
+
+/* ROSTER — carrusel infinito de peleadores */
+.mq{margin-top:38px;display:flex;flex-direction:column;gap:16px;overflow:hidden;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);
+  mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
+.mq-row{display:flex;gap:14px;width:max-content;animation:scrollx 55s linear infinite}
+.mq-row.rev{animation-direction:reverse;animation-duration:68s}
+.mq:hover .mq-row{animation-play-state:paused}
+.pcard{display:flex;align-items:center;gap:12px;padding:9px 18px 9px 9px;border:1px solid rgba(255,255,255,.1);
+  border-radius:16px;background:rgba(10,12,22,.55);backdrop-filter:blur(4px)}
+.pcard.pred{border-color:rgba(255,59,47,.34)} .pcard.prey{border-color:rgba(47,180,255,.34)}
+.pcard img{height:70px;width:auto;filter:drop-shadow(0 7px 11px rgba(0,0,0,.55))}
+.pcard .nm{font-family:'Archivo Black',sans-serif;font-size:15px;letter-spacing:.03em;white-space:nowrap;line-height:1}
+.pcard .sd{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.16em;margin-top:5px;display:flex;align-items:center;gap:6px;color:var(--grey)}
+.pcard .dot{width:7px;height:7px;border-radius:50%}
+.pcard.pred .dot{background:var(--red)} .pcard.prey .dot{background:var(--blue)}
+
+/* ANNOUNCEMENT — anuncio teaser (sin mostrar gameplay) */
+.promo-card{position:relative;overflow:hidden;border-radius:20px;padding:min(9vw,76px) 6vw;text-align:center;margin-top:16px;
+  border:1px solid rgba(255,255,255,.12);
+  background:linear-gradient(180deg,rgba(4,6,14,.8),rgba(12,4,6,.9)),url('assets/maps/volcan.png') center/cover;
+  box-shadow:0 30px 90px rgba(0,0,0,.55),0 0 80px rgba(255,59,47,.12)}
+.promo-t{font-family:'Archivo Black',sans-serif;font-size:clamp(34px,6.5vw,70px);line-height:.92;margin:14px 0 12px;text-shadow:0 0 40px rgba(255,59,47,.4)}
+.promo-p{color:#cbd1dd;max-width:560px;margin:0 auto;font-size:15px;line-height:1.7}
+.promo-row{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:32px}
+.cta-ghost{display:inline-block;color:#e7ecf5;text-decoration:none;font-family:'Archivo Black',sans-serif;font-size:13px;letter-spacing:.08em;
+  padding:16px 30px;border-radius:6px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.04)}
+.cta-ghost:hover{background:rgba(255,255,255,.09)}
+
+/* STORE: compra tu monito */
+.shop-grid{margin-top:34px;display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+@media(max-width:820px){.shop-grid{grid-template-columns:repeat(2,1fr)}}
+.shop-card{background:rgba(12,14,24,.62);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:16px 12px 14px;text-align:center;backdrop-filter:blur(4px);transition:transform .12s,border-color .12s}
+.shop-card:hover{transform:translateY(-4px);border-color:rgba(255,255,255,.28)}
+.shop-card img{height:96px;width:auto;filter:drop-shadow(0 8px 12px rgba(0,0,0,.5))}
+.shop-card .sc-nm{font-family:'Archivo Black',sans-serif;font-size:16px;letter-spacing:.03em;margin-top:8px}
+.shop-card .sc-rar{font-family:'Space Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.12em;margin-top:3px}
+.shop-card .sc-h{font-family:'Archivo Black',sans-serif;font-size:20px;color:#ff5a6a;margin-top:8px}
+.shop-card .sc-buy{margin-top:12px;width:100%;padding:11px 0;border:0;border-radius:9px;cursor:pointer;font-family:'Archivo Black',sans-serif;font-size:14px;color:#08160c;background:#57d977}
+.shop-card .sc-buy:hover{filter:brightness(1.08)}
+/* credenciales */
+.cred-back{position:fixed;inset:0;z-index:60;background:rgba(4,5,12,.82);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:20px}
+.cred-back.show{display:flex}
+.cred-card{position:relative;background:linear-gradient(180deg,#171a24,#0e1018);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:30px 28px;width:min(400px,94vw);text-align:center;box-shadow:0 30px 90px rgba(0,0,0,.6)}
+.cred-card img{height:120px;filter:drop-shadow(0 10px 14px rgba(0,0,0,.55))}
+.cred-card h3{font-family:'Archivo Black',sans-serif;font-size:26px;margin:8px 0 4px}
+.cred-card p{color:#c9cfdb;font-size:13px;line-height:1.6;margin-bottom:14px}
+.cred-box{display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:11px 14px;margin:8px 0}
+.cred-box span{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.18em;color:#8b93a6}
+.cred-box b{font-family:'Space Mono',monospace;font-size:17px;letter-spacing:.14em;color:#fff}
+.cred-card .cta{margin-top:18px}
+.cred-note{font-family:'Space Mono',monospace;font-size:9.5px;color:#8b93a6;margin-top:16px;line-height:1.6}
+.cred-x{position:absolute;top:12px;right:16px;background:none;border:0;color:#8b93a6;font-size:26px;cursor:pointer;line-height:1}
+</style>
+</head>
+<body>
+
+<!-- ENVIRONMENT LAYERS (fixed, cross-fade on scroll) -->
+<div class="bg" id="bgWorld"></div>
+<div id="stars"></div>
+<div id="globe"></div>
+<div class="bg" id="bgEverest"></div>
+<div class="bg" id="bgCerro"></div>
+<div class="bg" id="bgDesierto"></div>
+<div class="bg" id="bgVolcan"></div>
+<div id="scrim"></div>
+
+<!-- HERO (in the stratosphere) -->
+<section class="hero"><div class="wrap">
+  <div class="kick">AI GAME · BLOCKCHAIN · $HEARTS MEMECOIN</div>
+  <h1 class="title">HEARTS</h1>
+  <div class="slash">AI BATTLE ROYALE.</div>
+  <p>An <b>AI-powered battle royale</b> on <b>blockchain</b>. Fight <b>AI champions</b> across 9 AI-crafted worlds and win <b>$HEARTS</b> — our memecoin.
+  Play to earn: shoot, survive, take the pot. <b>Scroll down</b> — we're dropping you into the arena.</p>
+  <a class="cta" href="#shop">COMPRA TU MONITO</a>
+  <div class="scrollhint">DESCEND</div>
+</div></section>
+
+<!-- STORE: compra tu monito (recibes credenciales y entras al juego) -->
+<section id="shop"><div class="wrap">
+  <div class="kick">PASO 1 · COMPRA TU MONITO</div>
+  <h2>Elige tu monito.</h2>
+  <div class="lead">Cada monito viene con sus <b>corazones</b>. Cómpralo, recibe tu <b>usuario y contraseña</b>, y entra al juego — tu monito ya estará en tu cuenta, listo para pelear.</div>
+  <div class="shop-grid" id="shop-grid"></div>
+</div></section>
+
+<!-- ROSTER (infinite scroll of fighters) -->
+<section id="roster">
+  <div class="wrap">
+    <div class="kick">28 AI FIGHTERS · NFT</div>
+    <h2>Meet the roster.</h2>
+    <div class="lead">Predators vs prey — every fighter is a real character with its own speed, weight and a signature power. Minted on-chain; you crack chests to collect them.</div>
+  </div>
+  <div class="mq">
+    <div class="mq-row" id="mqA"></div>
+    <div class="mq-row rev" id="mqB"></div>
+  </div>
+</section>
+
+<!-- HOW YOU EARN (play-to-earn money explanation) -->
+<section id="earn"><div class="wrap">
+  <div class="kick">PLAY TO EARN</div>
+  <h2>How you make money.</h2>
+  <div class="lead">$HEARTS is real money you can cash out. You don't grind for coins — you <b>win them off other players</b>. Turn a small stack into a big one with skill.</div>
+  <div class="loop">
+    <div class="beat"><div class="n">1</div><div><h3>BUY A STACK</h3><p>Load about <b>$10</b> in $HEARTS — a 40♥ bankroll. That's what you play with.</p></div></div>
+    <div class="beat"><div class="n">2</div><div><h3>WIN THE POT</h3><p>Four players ante up; last one standing takes the pot. <b>Win and your ♥ grow.</b></p></div></div>
+    <div class="beat"><div class="n">3</div><div><h3>CLIMB</h3><p>Level up + save to unlock pricier <b>tables</b>. A win at the <b>Elite</b> table pays $3,400.</p></div></div>
+    <div class="beat"><div class="n">4</div><div><h3>CASH OUT</h3><p>Swap your ♥ back to crypto whenever. <b>What you win is yours.</b></p></div></div>
+  </div>
+  <div class="lead" style="margin-top:22px;font-size:15px">The catch: the house takes a <b>15% rake</b>, so you only grow if you <b>win more than 1 in 4</b>. This is <b>skill money</b>, not a slot machine — the better archer walks away richer.</div>
+</div></section>
+
+<!-- ANNOUNCEMENT (teaser ad — no live gameplay) -->
+<section id="promo"><div class="wrap">
+  <div class="promo-card">
+    <div class="kick" style="color:var(--red)">SEASON 0 · COMING SOON</div>
+    <h2 class="promo-t">Drop in early.</h2>
+    <p class="promo-p">The first $HEARTS season is almost here. Claim your fighter, get on the whitelist, and be in the arena before the crowd.</p>
+    <div class="promo-row">
+      <a class="cta" href="https://wa.me/?text=I%20want%20on%20the%20HEARTS%20whitelist" target="_blank">JOIN THE WHITELIST</a>
+      <a class="cta-ghost" href="index.html">TRY THE DEMO</a>
+    </div>
+  </div>
+</div></section>
+
+<!-- WORLDS -->
+<section><div class="wrap">
+  <div class="kick">AI-CRAFTED WORLDS</div>
+  <h2>9 worlds. Built by AI.</h2>
+  <div class="lead">Every round drops into a different arena, each one generated with AI — from jungle and volcano to neon Tokyo, Egypt, Greece and imperial China.</div>
+  <div class="worlds">
+    <div class="world"><img src="assets/maps/selva.png" alt="Jungle"><div class="lbl"><b>THORNWOOD</b><span>Jungle temple</span></div></div>
+    <div class="world"><img src="assets/maps/desierto.png" alt="Desert"><div class="lbl"><b>MIRAGE</b><span>Desert ruins</span></div></div>
+    <div class="world"><img src="assets/maps/nieve.png" alt="Ice"><div class="lbl"><b>FROSTFANG</b><span>Ice caverns</span></div></div>
+    <div class="world"><img src="assets/maps/volcan.png" alt="Volcano"><div class="lbl"><b>TOWERFORGE</b><span>Lava keep</span></div></div>
+    <div class="world"><img src="assets/maps/japon.png" alt="Sakura"><div class="lbl"><b>SAKURA</b><span>Cherry-blossom temple</span></div></div>
+    <div class="world"><img src="assets/maps/tokyo.png" alt="Neo-Tokyo"><div class="lbl"><b>NEO-TOKYO</b><span>Neon city</span></div></div>
+    <div class="world"><img src="assets/maps/egipto.png" alt="Giza"><div class="lbl"><b>GIZA</b><span>Egyptian pyramids</span></div></div>
+    <div class="world"><img src="assets/maps/grecia.png" alt="Olympus"><div class="lbl"><b>OLYMPUS</b><span>The Parthenon</span></div></div>
+    <div class="world"><img src="assets/maps/china.png" alt="Dragon"><div class="lbl"><b>DRAGON</b><span>The Great Wall</span></div></div>
+  </div>
+</div></section>
+
+<!-- HOW IT WORKS (3 arrows) -->
+<section><div class="wrap">
+  <div class="kick">THE GAME</div>
+  <h2>3 arrows. One life.</h2>
+  <div class="lead">TowerFall-style archer combat: no respawns, and every heart on the map is up for grabs — including yours. Your rivals are <b>AI</b> that dodge, catch arrows and hunt you down. Each fighter has its own <b>ultimate on the R key</b>.</div>
+  <div class="loop">
+    <div class="beat"><div class="n">1</div><div><h3>SHOOT</h3><p>You start with 3 arrows. They stick where they land: go pick them up, or <b>DODGE into an arrow to catch it</b> mid-air. Aim in 8 directions.</p></div></div>
+    <div class="beat"><div class="n">2</div><div><h3>STEAL</h3><p>Hit someone and they drop a heart on the floor. Scoop it up. The richer you get, the bigger the target on your back.</p></div></div>
+    <div class="beat"><div class="n">3</div><div><h3>SURVIVE</h3><p>The storm shrinks the safe zone round after round until it's a 1v1. Whoever's left banks everything they're carrying.</p></div></div>
+  </div>
+  <div class="chips">
+    <span class="chip"><b>Dodge</b> &amp; catch arrows</span>
+    <span class="chip"><b>Stomp</b> on the head</span>
+    <span class="chip"><b>R</b> = ultimate per animal</span>
+    <span class="chip">Arrows: <b>bomb · laser · bramble</b></span>
+    <span class="chip"><b>Wrap tunnels</b>: drop off the bottom, appear on top</span>
+  </div>
+</div></section>
+
+<!-- FIGHTERS -->
+<section><div class="wrap">
+  <div class="kick">COLLECT · NFT CHESTS</div>
+  <h2>Crack chests. Collect all 28.</h2>
+  <div class="lead">You don't buy fighters — you <b>crack chests</b> and hope. Each one is minted on-chain with its own rarity and signature power. The pricier the chest, the better the odds.</div>
+  <div class="chests">
+    <div class="chest" style="--c:#b07b3a"><img src="assets/chests/wood.png"><div class="nm">WOOD</div><div class="od">commons</div></div>
+    <div class="chest" style="--c:#c7ccd6"><img src="assets/chests/silver.png"><div class="nm">SILVER</div><div class="od">rares show up</div></div>
+    <div class="chest" style="--c:#ffd34d"><img src="assets/chests/gold.png"><div class="nm">GOLD</div><div class="od">epics likely</div></div>
+    <div class="chest" style="--c:#7ef0ff"><img src="assets/chests/diamond.png"><div class="nm">DIAMOND</div><div class="od">legendary shot</div></div>
+  </div>
+</div></section>
+
+<!-- ECONOMY / TOKENOMICS -->
+<section><div class="wrap">
+  <div class="kick">PLAY TO EARN · $HEARTS · TABLES</div>
+  <h2>Pick a table. Just like pool.</h2>
+  <div class="lead">Same format as <b>8 Ball Pool</b>: a lineup of <b>tables</b> with rising buy-ins. Start in Morelia with a <b>~$10 stack</b>. The pricier tables are <b>locked</b> — you <b>level up</b> and <b>save</b> to unlock them. Win the table, bank the pot.</div>
+  <div class="flow">
+    <div class="step buy"><div class="st-n">STEP 1</div><h4>BUY $HEARTS</h4><p>Load your wallet. Each heart is <b>$0.25</b> (demo). $10 = a 40♥ stack.</p><div class="amt">$0.25 / ♥</div></div>
+    <div class="step cost"><div class="st-n">STEP 2</div><h4>PICK A TABLE</h4><p>Higher tables cost more and need a <b>level</b> to enter. 4 players ante up.</p><div class="amt">8 tables</div></div>
+    <div class="step win"><div class="st-n">STEP 3</div><h4>WIN THE POT</h4><p>Last one standing banks the pot minus the <b>15%</b> rake.</p><div class="amt">+ pot</div></div>
+    <div class="step cash"><div class="st-n">STEP 4</div><h4>LEVEL UP</h4><p>Every match earns XP. Level up + save to unlock the big tables.</p><div class="amt">↑ unlock</div></div>
+  </div>
+  <div class="numbers">
+    <div class="num-card"><div class="k">MORELIA · Lv1 · $1.50</div><div class="v g">win $5</div></div>
+    <div class="num-card"><div class="k">MIAMI · Lv6 · $10</div><div class="v g">win $34</div></div>
+    <div class="num-card"><div class="k">TOKYO · Lv10 · $25</div><div class="v g">win $85</div></div>
+    <div class="num-card"><div class="k">LAS VEGAS · Lv21 · $150</div><div class="v g">win $510</div></div>
+    <div class="num-card"><div class="k">🔒 SHANGHÁI · Lv28 · $375</div><div class="v g">win $1,275</div></div>
+    <div class="num-card"><div class="k">🔒 ELITE · Lv36 · $1,000</div><div class="v gd">win $3,400</div></div>
+  </div>
+  <div class="lead" style="margin-top:20px;font-size:15px">You can't buy your way to more lives — every rank gives the same <b>3 lives</b>, so higher stakes reward <b>skill, not spending</b>. The house earns on the <b>15% rake</b>, the buy/sell spread, and chest sales.</div>
+</div></section>
+
+<!-- LANDING -->
+<section class="surface"><div class="wrap">
+  <div class="kick">YOU LANDED</div>
+  <h1 class="title" style="font-size:clamp(48px,10vw,110px)">THE ARENA</h1>
+  <div class="prize" style="margin-top:20px">
+    <div class="tag">COMING SOON</div>
+    <h3>$HEARTS <span style="color:var(--gold)">token launch</span> + prize tournaments</h3>
+    <p>Skill tournaments with an entry and a pot for the sharpest archers, settled in $HEARTS on-chain. Join the whitelist and you're first in line.</p>
+    <a class="cta2" href="https://wa.me/?text=I%20want%20on%20the%20HEARTS%20whitelist" target="_blank">JOIN THE WHITELIST</a>
+    <div class="fine">Token &amp; prize tournaments roll out in stages, in line with applicable regulations. Today HEARTS is free with a simulated in-game economy.</div>
+  </div>
+  <div style="margin-top:40px"><a class="cta" href="index.html">PLAY NOW</a></div>
+</div></section>
+
+<div class="cred-back" id="cred-back">
+  <div class="cred-card">
+    <img id="cred-img" src="" alt="">
+    <h3>¡<span id="cred-monito">—</span> es tuyo!</h3>
+    <p>Viene con <b><span id="cred-h">0</span> ♥</b>. Guarda tus credenciales para entrar al juego:</p>
+    <div class="cred-box"><span>USUARIO</span><b id="cred-user">—</b></div>
+    <div class="cred-box"><span>CONTRASEÑA</span><b id="cred-pass">—</b></div>
+    <a class="cta" id="cred-enter" href="index.html">ENTRAR AL JUEGO</a>
+    <div class="cred-note">Compra <b>demo</b> — no se cobra dinero real. Tu monito y credenciales quedan guardados en este navegador; al entrar al juego tu monito ya estará en tu cuenta.</div>
+    <button class="cred-x" id="cred-close">×</button>
+  </div>
+</div>
+
+<footer><p>HEARTS · AI Battle Royale on Blockchain — made in Morelia, Mexico<br>
+Sound &amp; music: Juhani Junkala (CC0, OpenGameArt) · A game by André</p></footer>
+
+<script>
+(function(){
+  // ---- TIENDA: compra tu monito → credenciales → entra al juego (mismo localStorage) ----
+  var SHOP=[
+    {id:'mouse',    name:'RATÓN',    rar:'COMÚN',      rc:'#b8b2a6', hearts:25,  price:0.99},
+    {id:'penguin',  name:'PINGÜINO', rar:'COMÚN',      rc:'#b8b2a6', hearts:25,  price:0.99},
+    {id:'wolf',     name:'LOBO',     rar:'RARO',       rc:'#4dd2ff', hearts:50,  price:2.99},
+    {id:'chameleon',name:'CAMALEÓN', rar:'RARO',       rc:'#4dd2ff', hearts:50,  price:2.99},
+    {id:'tiger',    name:'TIGRE',    rar:'ÉPICO',      rc:'#c77dff', hearts:90,  price:6.99},
+    {id:'shark',    name:'TIBURÓN',  rar:'ÉPICO',      rc:'#c77dff', hearts:90,  price:6.99},
+    {id:'lion',     name:'LEÓN',     rar:'LEGENDARIO', rc:'#ffd34d', hearts:150, price:14.99},
+    {id:'orca',     name:'ORCA',     rar:'LEGENDARIO', rc:'#ffd34d', hearts:150, price:14.99}
+  ];
+  var sgrid=document.getElementById('shop-grid');
+  if(sgrid) SHOP.forEach(function(m){
+    var card=document.createElement('div'); card.className='shop-card';
+    card.innerHTML='<img loading="lazy" src="assets/'+m.id+'.png" alt="'+m.name+'">'
+      +'<div class="sc-nm">'+m.name+'</div>'
+      +'<div class="sc-rar" style="color:'+m.rc+'">'+m.rar+'</div>'
+      +'<div class="sc-h">'+m.hearts+' ♥</div>'
+      +'<button class="sc-buy">COMPRAR · $'+m.price.toFixed(2)+'</button>';
+    card.querySelector('.sc-buy').onclick=function(){ buyMonito(m); };
+    sgrid.appendChild(card);
+  });
+  function buyMonito(m){
+    var user='PLAYER'+Math.floor(1000+Math.random()*9000);
+    var pass=Math.random().toString(36).slice(2,7).toUpperCase();
+    var tok='#'+Math.floor(1000+Math.random()*9000);
+    var owned={}; owned[m.id]=tok;
+    var save={ name:user, hearts:m.hearts, owned:owned, selected:m.id, tut:true };
+    try{ localStorage.setItem('hearts-save', JSON.stringify(save)); }catch(e){}
+    var img=document.getElementById('cred-img'); img.src='assets/'+m.id+'.png';
+    document.getElementById('cred-monito').textContent=m.name;
+    document.getElementById('cred-h').textContent=m.hearts;
+    document.getElementById('cred-user').textContent=user;
+    document.getElementById('cred-pass').textContent=pass;
+    document.getElementById('cred-back').classList.add('show');
+  }
+  var cx=document.getElementById('cred-close'), cb=document.getElementById('cred-back');
+  if(cx) cx.onclick=function(){ cb.classList.remove('show'); };
+  if(cb) cb.addEventListener('click',function(e){ if(e.target===cb) cb.classList.remove('show'); });
+
+  // ---- ROSTER: carrusel infinito con los stickers reales de los 28 peleadores ----
+  var ROSTER=[
+    ['shark','SHARK','pred'],['orca','ORCA','pred'],['croc','CROC','pred'],['vulture','VULTURE','pred'],
+    ['lion','LION','pred'],['tiger','TIGER','pred'],['wolf','WOLF','pred'],['hippo','HIPPO','pred'],
+    ['bear','BEAR','pred'],['darkpanda','DARK PANDA','pred'],['eagle','EAGLE','pred'],['otter','OTTER','pred'],
+    ['snake','SNAKE','pred'],['leopard','LEOPARD','pred'],
+    ['penguin','PENGUIN','prey'],['seal','SEAL','prey'],['toucan','TOUCAN','prey'],['chameleon','CHAMELEON','prey'],
+    ['monkey','MONKEY','prey'],['dog','DOG','prey'],['pigeon','PIGEON','prey'],['cat','CAT','prey'],
+    ['mouse','MOUSE','prey'],['panda','PANDA','prey'],['giraffe','GIRAFFE','prey'],['elephant','ELEPHANT','prey'],
+    ['platypus','PLATYPUS','prey'],['goose','GOOSE','prey']
+  ];
+  function card(a){
+    return '<div class="pcard '+a[2]+'"><img loading="lazy" src="assets/'+a[0]+'.png?v=7" alt="'+a[1]+'">'+
+      '<div><div class="nm">'+a[1]+'</div><div class="sd"><span class="dot"></span>'+(a[2]==='pred'?'PREDATOR':'PREY')+'</div></div></div>';
+  }
+  function fill(el, list){ if(!el) return; var h=list.map(card).join(''); el.innerHTML=h+h; } // ×2 para loop continuo
+  var shuffled=ROSTER.slice().reverse();
+  fill(document.getElementById('mqA'), ROSTER);
+  fill(document.getElementById('mqB'), shuffled);
+
+  // starfield for the world stage
+  var stars=document.getElementById('stars'), frag=document.createDocumentFragment();
+  for(var i=0;i<130;i++){ var s=document.createElement('i');
+    s.style.left=(Math.random()*100)+'%'; s.style.top=(Math.random()*72)+'%';
+    var sz=Math.random()<0.15?2.5:1.3; s.style.width=s.style.height=sz+'px';
+    s.style.opacity=(0.4+Math.random()*0.6); frag.appendChild(s); }
+  stars.appendChild(frag);
+  var globe=document.getElementById('globe');
+
+  // etapas: cross-fade  MUNDO → EVEREST (rápido) → CERRO → DESIERTO → VOLCÁN
+  var stages=[
+    {id:'bgWorld',   c:0.00, w:0.11},
+    {id:'bgEverest', c:0.13, w:0.16},
+    {id:'bgCerro',   c:0.42, w:0.24},
+    {id:'bgDesierto',c:0.71, w:0.24},
+    {id:'bgVolcan',  c:1.00, w:0.24},
+  ].map(function(s){ s.el=document.getElementById(s.id); return s; });
+  function band(p,c,w){ var v=1-Math.abs(p-c)/w; return v<0?0:(v>1?1:v); }
+  var ticking=false;
+  function render(){
+    ticking=false;
+    var max=document.body.scrollHeight-innerHeight;
+    var p=max>0?Math.min(1,Math.max(0,scrollY/max)):0;
+    stages.forEach(function(s){ var o=band(p,s.c,s.w);
+      s.el.style.opacity=o; s.el.style.transform='scale('+(1.05-o*0.05)+')'; });
+    // DEL ESPACIO AL EVEREST (RÁPIDO): el planeta se acerca de golpe y te mete al punto más alto
+    var dive=band(p,0,0.11);                      // el MUNDO (planeta+estrellas) se va rapidísimo
+    globe.style.opacity=dive; stars.style.opacity=dive;
+    globe.style.transform='translateX(-50%) translateY('+(-p*46)+'vh) scale('+(1+p*7)+')'; // zoom fuerte y veloz
+  }
+  function onScroll(){ if(!ticking){ ticking=true; requestAnimationFrame(render); } }
+  addEventListener('scroll',onScroll,{passive:true});
+  addEventListener('resize',render); render();
+})();
+</script>
+</body>
+</html>
