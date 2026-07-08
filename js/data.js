@@ -157,18 +157,22 @@ const ECON = {
   START_COINS: 60,
   COIN_REWARD: {1:60,2:35,3:22,4:14},
   RARITY_HEARTS: {common:25, rare:50, epic:90, legendary:150}, // ♥ con los que VIENE el monito según rareza
-  RARITY_PRICE:  {common:0.99, rare:2.99, epic:6.99, legendary:14.99}, // precio de compra (demo)
+  RARITY_PRICE:  {common:0.99, rare:2.99, epic:6.99, legendary:14.99}, // (cofres) precio en dinero real (demo)
+  RARITY_GOLD:   {common:40, rare:120, epic:350, legendary:800}, // ORO: precio del monito en el mercado del juego
 };
 function animalHearts(a){ return (ECON.RARITY_HEARTS[a.rarity]||25); }
 function animalPrice(a){ return (ECON.RARITY_PRICE[a.rarity]||0.99); }
-// COMPRAR un monito: lo posees, te lo seleccionas y te trae SUS corazones (compra demo)
+function animalGold(a){ return (ECON.RARITY_GOLD[a.rarity]||40); }   // precio en ORO
+// COMPRAR un monito con ORO: si te alcanza, lo posees y te lo seleccionas
 function buyAnimal(id){
   const a=byId[id]; if(!a) return null;
   if(S.owned[id]) return {already:true, animal:a};
-  const h=animalHearts(a);
-  mint(id); S.selected=id; S.hearts += h; save();
-  return {animal:a, hearts:h};
+  const cost=animalGold(a);
+  if((S.coins|0) < cost) return {ok:false, need:cost, have:S.coins|0, animal:a};   // no te alcanza el oro
+  S.coins -= cost; mint(id); S.selected=id; save();
+  return {ok:true, animal:a, cost:cost};
 }
+function gainGold(n){ S.coins=Math.max(0,(S.coins|0)+(n|0)); save(); return S.coins; }
 
 // ---- PAQUETES DE CORAZONES (tienda) — compra simulada (demo, sin pago real) ----
 const HEART_PACKS = [
@@ -378,7 +382,7 @@ function statPips(a){
   return {dif,spd,hp,r};
 }
 
-window.DATA = { ANIMALS, byId, WEAPONS, byWeapon, ECON, MODES, byMode, HEART_PACKS, buyPack, animalHearts, animalPrice, buyAnimal, RANKS, rankAt, curRank, setRank, maxAffordableRank, mesaPlayable,
+window.DATA = { ANIMALS, byId, WEAPONS, byWeapon, ECON, MODES, byMode, HEART_PACKS, buyPack, animalHearts, animalPrice, animalGold, gainGold, buyAnimal, RANKS, rankAt, curRank, setRank, maxAffordableRank, mesaPlayable,
   RARITY, POWERS, CHESTS, byChest, byRarity, openTreasure,
   state:()=>S, load, save, reset, level, levelProgress, TITLES, playerRank, nextRank, gainXP,
   RANK_TIERS, rankFromRP, playerRankR6, gainRP, rankFromHearts, playerRankHearts, rankFromCups, playerRankCups, gainCups, mint, randomBots, leaderboard, BOT_NAMES, statPips, buyWeapon, equipWeapon, equipped };

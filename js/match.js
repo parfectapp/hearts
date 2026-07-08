@@ -402,6 +402,7 @@ function showModeResult(r){
   const beforeIdx=DATA.playerRankCups().idx;
   DATA.gainCups(dcups);
   const afterIdx=DATA.playerRankCups().idx;
+  const dgold = win?60:20; DATA.gainGold(dgold);   // ORO: para comprar monitos en el mercado
   const xp=win?60:25, lu=DATA.gainXP(xp); DATA.save(); UI.updateHearts();
   $('#results-title').textContent = win?'¡GANASTE!':(mode.id==='trials'?'¡TIEMPO!':'FIN');
   $('#results-place').textContent = mode.icon+' '+mode.name;
@@ -416,7 +417,7 @@ function showModeResult(r){
   $('#results-cash').className=''; $('#results-cash').style.color=win?'#57d977':'#b7b1a4'; $('#results-cash').textContent=s2;
   const cupTxt=(dcups>=0?'+':'')+dcups+' 🏆 · '+(st.cups|0)+' 🏆 total'
     + (afterIdx>beforeIdx?'  ↑ ¡SUBISTE DE ARENA!':(afterIdx<beforeIdx?'  ↓ bajaste de arena':''));
-  $('#results-xp').innerHTML='<b style="color:'+(dcups>=0?'#ffd34d':'#ff8a7a')+'">'+cupTxt+'</b><br><span style="opacity:.7">+'+xp+' XP · Nivel '+DATA.level()+(lu.up?'  ★ ¡NIVEL '+lu.level+'!':'')+'</span>';
+  $('#results-xp').innerHTML='<b style="color:'+(dcups>=0?'#ffd34d':'#ff8a7a')+'">'+cupTxt+'</b><br><span style="opacity:.85;color:#ffcf5a">+'+dgold+' 🪙 oro · '+(st.coins|0)+' 🪙 total</span><br><span style="opacity:.7">+'+xp+' XP · Nivel '+DATA.level()+(lu.up?'  ★ ¡NIVEL '+lu.level+'!':'')+'</span>';
   const cvs=$('#results-sprite'), c=cvs.getContext('2d'); c.clearRect(0,0,cvs.width,cvs.height);
   if(me){ const sp=Sprites.spriteCanvas(me.animal); c.imageSmoothingEnabled=true; const k=Math.min(150/sp.height,130/sp.width); c.drawImage(sp,(cvs.width-sp.width*k)/2,(cvs.height-sp.height*k)/2,sp.width*k,sp.height*k); }
   $('#results').classList.add('show');

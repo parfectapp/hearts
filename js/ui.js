@@ -141,7 +141,8 @@ function showOnboarding(){
 function updateHearts(){
   const st=DATA.state();
   { const el=$('#wallet-hearts'); if(el) el.textContent=st.cups|0; }   // monedero del lobby = COPAS 🏆
-  ['#market-hearts','#chests-hearts'].forEach(s=>{ const el=$(s); if(el) el.textContent=st.hearts; });
+  { const el=$('#market-hearts'); if(el) el.textContent=st.coins|0; }   // mercado = ORO 🪙 (compras monitos)
+  { const el=$('#chests-hearts'); if(el) el.textContent=st.coins|0; }
 }
 function popHeart(){
   const h=$('#wallet-heart'); if(!h) return; h.classList.remove('pop'); void h.offsetWidth; h.classList.add('pop');
@@ -202,9 +203,12 @@ function openBuy(a){    // "ver tarjeta" estilo mockup: header HEARTS · pips ·
   // ULTIMATE del animal (tecla R), personalizado
   $('#buy-ult').innerHTML = (pw&&pw.ult) ? ('<b>R · '+pw.ult+'</b> — '+(pw.ultDesc||pw.blurb)) : (pw?pw.blurb:'');
   $('#btn-buy-select').style.display = owned&&st.selected!==a.id?'':'none';
-  // COMPRAR visible si NO lo tienes (compra demo, dentro del juego); si ya es tuyo, oculto
-  if(owned){ $('#btn-buy-buy').style.display='none'; }
-  else { $('#btn-buy-buy').style.display=''; $('#btn-buy-buy').textContent='COMPRAR · $'+DATA.animalPrice(a); }
+  // COMPRAR visible si NO lo tienes: precio en ORO. Se desactiva si no te alcanza.
+  const bb=$('#btn-buy-buy');
+  if(owned){ bb.style.display='none'; }
+  else { bb.style.display=''; const g=DATA.animalGold(a), can=(st.coins|0)>=g;
+    bb.textContent=(can?'COMPRAR · ':'FALTA ORO · ')+g+' 🪙';
+    bb.disabled=!can; bb.style.opacity=can?1:.55; bb.style.cursor=can?'pointer':'not-allowed'; }
   $('#modal-buy').classList.add('show');
   if(window.TUT) TUT.onBuyModal();
 }
@@ -220,10 +224,12 @@ function initMarket(){
     st.selected=buyTarget.id; DATA.save();
     SFX.click(); toast(buyTarget.name+' equipado'); closeBuy(); renderMarket();
   });
-  $('#btn-buy-buy').addEventListener('click',()=>{         // COMPRAR el monito (trae sus ♥)
-    const r=DATA.buyAnimal(buyTarget.id); if(!r || r.already){ SFX.deny(); return; }
-    SFX.coin(); popHeart(); updateHearts();
-    toast('¡'+r.animal.name+' es TUYO! Viene con +'+r.hearts+' ♥');
+  $('#btn-buy-buy').addEventListener('click',()=>{         // COMPRAR el monito con ORO
+    const r=DATA.buyAnimal(buyTarget.id);
+    if(!r || r.already){ SFX.deny(); return; }
+    if(r.ok===false){ SFX.deny(); toast('Necesitas '+r.need+' 🪙 — gana partidas para juntar oro'); return; }
+    SFX.coin(); updateHearts();
+    toast('¡'+r.animal.name+' es TUYO! (−'+r.cost+' 🪙)');
     renderMarket(); openBuy(buyTarget);                    // re-abre la carta ya como TUYO
     if(window.TUT && TUT.onBought) TUT.onBought();
   });
