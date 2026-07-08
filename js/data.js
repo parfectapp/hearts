@@ -204,10 +204,10 @@ const DEFAULT = ()=>({
   hearts:ECON.START_HEARTS,
   cups:0,             // COPAS: puntos de RANGO estilo Clash Royale — el nuevo usuario empieza en 0
   coins:ECON.START_COINS,
-  owned:{},           // SIN monito de arranque: el guerrero se consigue comprando un cofre en la LANDING
+  owned:{mouse:'#0000'},  // arranca SOLO con el RATÓN (gratis); los mejores se compran en la landing
   weapons:['bow_wood'],   // armas que posees
   weapon:'bow_wood',      // arma equipada
-  selected:null,
+  selected:'mouse',
   xp:0,
   wins:0, matches:0, heartsWon:0, cupsWon:0,
   rp:0,               // RANK POINTS (ranked estilo R6): COBRE V → CAMPEÓN

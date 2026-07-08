@@ -26,12 +26,16 @@ h2{font-family:'Archivo Black',sans-serif;font-size:clamp(28px,5vw,52px);line-he
 section{position:relative;padding:clamp(70px,11vh,130px) 0}
 
 /* ambient background */
-#amb{position:fixed;inset:0;z-index:0;background:
-  radial-gradient(1100px 700px at 78% -8%,rgba(255,59,47,.16),transparent 60%),
-  radial-gradient(900px 700px at 10% 12%,rgba(120,80,255,.12),transparent 60%),
-  #06060c;}
-#amb::after{content:'';position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.05) 1px,transparent 1px);background-size:46px 46px;mask-image:linear-gradient(180deg,#000,transparent 70%)}
+.bg-arena{position:fixed;inset:0;width:100vw;height:100vh;z-index:0;display:block}
 .content{position:relative;z-index:2}
+.hero-cta{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:34px}
+/* showcase de todos los fighters por rareza */
+.rarity-showcase{display:flex;flex-direction:column;gap:26px;margin-top:24px}
+.rar-group .rar-head{display:flex;align-items:center;gap:10px;padding:0 0 10px;margin-bottom:14px;border-bottom:1px solid rgba(255,255,255,.1)}
+.rar-head .rar-dot{width:10px;height:10px;border-radius:50%}
+.rar-head b{font-family:'Archivo Black',sans-serif;font-size:15px;letter-spacing:.1em}
+.rar-head em{font-family:'Space Mono',monospace;font-style:normal;font-size:11px;letter-spacing:.08em;color:#8b8f9c}
+.rar-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:12px}
 
 /* NAV */
 nav{position:fixed;top:0;left:0;right:0;z-index:40;display:flex;align-items:center;justify-content:space-between;
@@ -161,15 +165,13 @@ footer .mono{font-size:11px;color:#8b8f9c;letter-spacing:.1em}
 </style>
 </head>
 <body>
-<div id="amb"></div>
-<canvas id="confetti"></canvas>
+<canvas id="bgArena" class="bg-arena"></canvas>
 
 <nav>
   <div class="logo">HE<span class="h">♥</span>RTS</div>
   <div class="nav-links">
-    <a href="#chest">Open a chest</a>
+    <a href="#chests">Chests</a>
     <a href="#arenas">Arenas</a>
-    <a href="#roster">Fighters</a>
     <a href="#invest">Invest</a>
     <a class="nav-play" href="index.html">PLAY FREE</a>
   </div>
@@ -177,41 +179,26 @@ footer .mono{font-size:11px;color:#8b8f9c;letter-spacing:.1em}
 
 <div class="content">
 
-<!-- HERO / CHEST -->
-<section class="hero" id="chest">
+<!-- HERO -->
+<section class="hero" id="top">
   <div class="kick">Browser battle royale · collectible NFT animals</div>
   <h1>HE<span class="h">♥</span>RTS</h1>
-  <div class="sub">28 collectible fighters. 8 ranked arenas. 5 modes. Open your <b>first chest free</b> — right here.</div>
-
-  <div class="chest-stage">
-    <span class="free-tag">FREE · 1st CHEST</span>
-    <canvas id="chestCanvas" width="440" height="360" aria-label="Wooden chest — click to open"></canvas>
-    <div class="chest-hint pulse" id="chestHint">
-      <svg class="cursor" viewBox="0 0 24 24" fill="#ffe9a8"><path d="M4 2l14 8-6 1.5L15 18l-3 1.5-3-7L4 15z"/></svg>
-      CLICK THE CHEST TO OPEN
-    </div>
-    <div class="reward" id="reward">
-      <div class="reward-card"><div class="reward-inner">
-        <div class="reward-rarity">★ LEGENDARY ★</div>
-        <img class="reward-sprite" id="rewardImg" alt="">
-        <div class="reward-name" id="rewardName">LION</div>
-        <div class="reward-tier">POWER: LIFESTEAL · ULT: FRENZY</div>
-        <div class="reward-note">Odds of a Legendary from a wooden chest: <b style="color:#fff">0%</b>.<br>Your first chest is <b style="color:var(--legend)">always</b> a Legendary. Welcome to HEARTS.</div>
-        <a class="reward-cta" href="index.html">CLAIM &amp; PLAY FREE →</a>
-      </div></div>
-    </div>
+  <div class="sub">28 collectible fighters. 8 ranked arenas. 5 modes. Buy a chest, pull your fighter, and climb the trophy ladder.</div>
+  <div class="hero-cta">
+    <a class="btn primary" href="index.html">▶ PLAY FREE</a>
+    <a class="btn ghost" href="#chests">SEE THE CHESTS</a>
   </div>
 </section>
 
-<!-- ODDS / GACHA -->
-<section id="odds">
+<!-- CHESTS / GACHA -->
+<section id="chests">
   <div class="wrap content reveal">
-    <div class="kick">The economy</div>
-    <h2>Every chest is a real roll.<br>Except your first.</h2>
-    <p class="lead">Four chest tiers, four probability tables. Pricier chests mean better odds at <b style="color:var(--epic)">Epic</b> and <b style="color:var(--legend)">Legendary</b> fighters — the ones that win. The wooden chest almost never drops a Legendary… so the <b style="color:var(--legend)">guaranteed-legendary first pull</b> is the hook that turns a curious click into a hooked player.</p>
+    <div class="kick">The chests</div>
+    <h2>Buy a chest.<br>Pull a fighter.</h2>
+    <p class="lead">Four chest tiers, four probability tables. Pricier chests mean far better odds at <b style="color:var(--epic)">Epic</b> and <b style="color:var(--legend)">Legendary</b> fighters — the ones that win. Below: <b>every fighter</b> you can pull, grouped by rarity.</p>
     <div class="chest-row" id="chestRow"></div>
-    <div class="kick" style="margin-top:44px">What you can pull</div>
-    <div class="rar-row" id="rarRow"></div>
+    <div class="kick" style="margin-top:48px">Every fighter you can pull · 28 collectibles</div>
+    <div class="rarity-showcase" id="rarityShowcase"></div>
   </div>
 </section>
 
@@ -223,16 +210,6 @@ footer .mono{font-size:11px;color:#8b8f9c;letter-spacing:.1em}
     <p class="lead">Your home screen <b>is</b> the arena you're in. Every heart you win pushes you up the ladder — from the starter forest to the champion's lava throne. Clash-Royale-style progression, built for retention.</p>
   </div>
   <div class="wrap content"><div class="arena-scroll" id="arenaScroll"></div></div>
-</section>
-
-<!-- ROSTER -->
-<section id="roster">
-  <div class="wrap content reveal">
-    <div class="kick">The fighters</div>
-    <h2>28 hand-drawn animals.<br>Predators vs. prey.</h2>
-    <p class="lead">Each fighter is a real, ownable character with its own size, speed, power and ultimate. Tiny mouse or giant elephant — every one plays differently.</p>
-    <div class="roster" id="rosterGrid"></div>
-  </div>
 </section>
 
 <!-- MODES -->
@@ -299,10 +276,10 @@ const ANIMALS=[
 ];
 const spr=id=>'assets/'+id+'.png';
 const CHESTS=[
-  {id:'wood',n:'WOODEN',price:'FREE 1st',color:'#b07b3a',wood:true,odds:{common:82,rare:16,epic:2,legendary:0}},
-  {id:'silver',n:'SILVER',price:'15 ♥',color:'#c7ccd6',odds:{common:52,rare:34,epic:11,legendary:3}},
-  {id:'gold',n:'GOLD',price:'35 ♥',color:'#ffd34d',odds:{common:26,rare:38,epic:27,legendary:9}},
-  {id:'diamond',n:'DIAMOND',price:'80 ♥',color:'#7ef0ff',odds:{common:6,rare:30,epic:42,legendary:22}},
+  {id:'wood',n:'WOODEN',price:'$0.99',color:'#b07b3a',odds:{common:82,rare:16,epic:2,legendary:0}},
+  {id:'silver',n:'SILVER',price:'$2.99',color:'#c7ccd6',odds:{common:52,rare:34,epic:11,legendary:3}},
+  {id:'gold',n:'GOLD',price:'$6.99',color:'#ffd34d',odds:{common:26,rare:38,epic:27,legendary:9}},
+  {id:'diamond',n:'DIAMOND',price:'$14.99',color:'#7ef0ff',odds:{common:6,rare:30,epic:42,legendary:22}},
 ];
 
 /* ---------- ODDS cards ---------- */
@@ -317,29 +294,25 @@ const CHESTS=[
         <span class="bar"><span class="fill" style="width:${v}%;background:${RAR[k].c}"></span></span>
         <span class="pct">${v}%</span></div>`;
     });
-    el.innerHTML=`<div class="cn" style="color:${c.color}">${c.n} CHEST</div><div class="cp">${c.price}</div>${odds}`
-      + (c.wood?`<div class="first-badge">1st pull → LEGENDARY guaranteed</div>`:'');
+    el.innerHTML=`<div class="cn" style="color:${c.color}">${c.n} CHEST</div><div class="cp">${c.price}</div>${odds}`;
     row.appendChild(el);
   });
-  // rarity legend cards (one example each)
-  const rr=document.getElementById('rarRow');
-  const ex={legendary:'lion',epic:'tiger',rare:'panda',common:'mouse'};
-  const pct={legendary:'~0–22%',epic:'2–42%',rare:'16–38%',common:'6–82%'};
-  ['legendary','epic','rare','common'].forEach(k=>{
-    const el=document.createElement('div'); el.className='rar'; el.style.borderColor=RAR[k].c+'66';
-    el.innerHTML=`<img src="${spr(ex[k])}" alt=""><div class="rn" style="color:${RAR[k].c}">${RAR[k].n}</div><div class="rp">drop rate ${pct[k]}</div>`;
-    rr.appendChild(el);
-  });
-})();
-
-/* ---------- ROSTER ---------- */
-(function(){
-  const g=document.getElementById('rosterGrid');
-  ANIMALS.forEach(a=>{
-    const el=document.createElement('div'); el.className='mon-card'; el.style.borderColor=RAR[a.r].c+'44';
-    el.innerHTML=`<span class="dot" style="background:${RAR[a.r].c};box-shadow:0 0 8px ${RAR[a.r].c}"></span>
-      <img src="${spr(a.id)}" alt="${a.n}" loading="lazy"><span class="mn">${a.n}</span>`;
-    g.appendChild(el);
+  // TODOS los fighters agrupados por rareza — se presentan todos los que pueden salir
+  const show=document.getElementById('rarityShowcase');
+  const order=['legendary','epic','rare','common'];
+  const pct={legendary:'drop 0–22%',epic:'drop 2–42%',rare:'drop 16–38%',common:'drop 6–82%'};
+  order.forEach(k=>{
+    const list=ANIMALS.filter(a=>a.r===k);
+    const grp=document.createElement('div'); grp.className='rar-group';
+    grp.innerHTML=`<div class="rar-head" style="border-color:${RAR[k].c}55"><span class="rar-dot" style="background:${RAR[k].c};box-shadow:0 0 10px ${RAR[k].c}"></span>`
+      +`<b style="color:${RAR[k].c}">${RAR[k].n}</b><em>${pct[k]} · ${list.length} fighters</em></div>`;
+    const cards=document.createElement('div'); cards.className='rar-cards';
+    list.forEach(a=>{
+      const el=document.createElement('div'); el.className='mon-card'; el.style.borderColor=RAR[k].c+'55';
+      el.innerHTML=`<img src="${spr(a.id)}" alt="${a.n}" loading="lazy"><span class="mn">${a.n}</span>`;
+      cards.appendChild(el);
+    });
+    grp.appendChild(cards); show.appendChild(grp);
   });
 })();
 
@@ -413,7 +386,8 @@ const ARENAS=[
 
 /* ================= HERO CHEST ================= */
 (function(){
-  const cv=document.getElementById('chestCanvas'),ctx=cv.getContext('2d');
+  const cv=document.getElementById('chestCanvas'); if(!cv) return;   // cofre-hero eliminado
+  const ctx=cv.getContext('2d');
   const W=cv.width,H=cv.height,cx=W/2,cy=H*0.62;
   let phase='closed',t0=0,opened=false;
   function drawChest(now){
@@ -476,18 +450,31 @@ const ARENAS=[
   drawChest(performance.now());
 })();
 
-/* ================= CONFETTI ================= */
-function confetti(){
-  const cv=document.getElementById('confetti'),ctx=cv.getContext('2d');
-  const W=cv.width=innerWidth,H=cv.height=innerHeight;
-  const cols=['#ffd34d','#ff3b2f','#4dd2ff','#c77dff','#7dff8a','#fff'];
-  const P=[];for(let i=0;i<180;i++)P.push({x:W/2+(Math.random()-.5)*160,y:H*0.42,vx:(Math.random()-.5)*10,vy:-6-Math.random()*11,g:.28,r:Math.random()*Math.PI,vr:(Math.random()-.5)*.3,s:5+Math.random()*7,c:cols[i%cols.length],life:1});
-  let n=0;(function loop(){ctx.clearRect(0,0,W,H);n++;let alive=false;
-    for(const p of P){p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;p.life-=0.006;if(p.life>0&&p.y<H+20){alive=true;
-      ctx.save();ctx.globalAlpha=Math.max(0,p.life);ctx.translate(p.x,p.y);ctx.rotate(p.r);ctx.fillStyle=p.c;ctx.fillRect(-p.s/2,-p.s/2,p.s,p.s*0.6);ctx.restore();}}
-    if(alive&&n<420)requestAnimationFrame(loop);else ctx.clearRect(0,0,W,H);
-  })();
-}
+/* ================= ANIMATED ARENA BACKGROUND (cycles the 8 arenas + embers, dimmed) ================= */
+(function(){
+  const cv=document.getElementById('bgArena'); if(!cv) return;
+  const ctx=cv.getContext('2d');
+  let W=0,H=0,t=0,cur=(Math.random()*SCENES.length)|0,next=0,fade=0,hold=7,last=0,parts=[];
+  const HOLD=7, FADE=2.4;
+  function fit(){ W=cv.width=Math.max(360,innerWidth); H=cv.height=Math.max(560,innerHeight);
+    parts=[]; const n=Math.round(W/24);
+    for(let i=0;i<n;i++) parts.push({x:Math.random()*W,y:Math.random()*H,vy:-(8+Math.random()*22),ph:Math.random()*6.28,r:.7+Math.random()*1.8}); }
+  function frame(now){ if(!last)last=now; const dt=Math.min(.05,(now-last)/1000); last=now; t+=dt;
+    if(fade>0){ fade-=dt/FADE; if(fade<=0){fade=0;cur=next;} }
+    else { hold-=dt; if(hold<=0){ next=(cur+1)%SCENES.length; fade=1; hold=HOLD; } }
+    ctx.clearRect(0,0,W,H);
+    SCENES[cur](ctx,W,H);
+    if(fade>0){ ctx.save(); ctx.globalAlpha=1-fade; SCENES[next](ctx,W,H); ctx.restore(); }
+    for(const p of parts){ p.y+=p.vy*dt; p.x+=Math.sin(t*.6+p.ph)*.3; if(p.y<-6){p.y=H+6;p.x=Math.random()*W;}
+      ctx.fillStyle='rgba(255,175,95,'+(0.28+0.4*Math.abs(Math.sin(t*2+p.ph)))+')'; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.28); ctx.fill(); }
+    // scrim oscuro para legibilidad del texto
+    const sc=ctx.createLinearGradient(0,0,0,H); sc.addColorStop(0,'rgba(6,6,12,.52)'); sc.addColorStop(.5,'rgba(6,6,12,.66)'); sc.addColorStop(1,'rgba(6,6,12,.9)');
+    ctx.fillStyle=sc; ctx.fillRect(0,0,W,H);
+    requestAnimationFrame(frame);
+  }
+  fit(); addEventListener('resize',()=>{ clearTimeout(cv._rz); cv._rz=setTimeout(fit,180); });
+  requestAnimationFrame(frame);
+})();
 
 /* ================= scroll reveal ================= */
 const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('in');}),{threshold:.14});

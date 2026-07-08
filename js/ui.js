@@ -123,7 +123,7 @@ function showOnboarding(){
   if(!ov||!card){ st.onboarded=true; DATA.save(); enterLobby(); return; }
   const slides=[
     {t:'GANA COPAS · SUBE DE ARENA', b:'Ganas partidas → ganas <b>COPAS 🏆</b>. Entre más copas, mejor tu <b>rango</b> y tu <b>ARENA</b> (hay 8). Si pierdes, bajas copas — como Clash Royale.', ladder:true, btn:'SIGUIENTE'},
-    {t:'CÓMO SE JUEGA', b:'En la partida tienes <b>3 ♥ vidas</b>. Muévete, salta y dispara. <b>Sobrevive</b>: el último en pie gana. ¡No pierdas tus ♥!<br><br>Tu <b>guerrero</b> lo consigues comprando un <b>cofre en la landing</b> — con tus credenciales aparece aquí.', keys:true, btn:'ENTRAR'}
+    {t:'CÓMO SE JUEGA', b:'En la partida tienes <b>3 ♥ vidas</b>. Muévete, salta y dispara. <b>Sobrevive</b>: el último en pie gana. ¡No pierdas tus ♥!<br><br>Empiezas con el <b>RATÓN</b> 🐭. Consigue <b>mejores guerreros</b> comprando cofres en la <b>landing</b>.', keys:true, btn:'ENTRAR'}
   ];
   let i=0;
   function finish(){ st.onboarded=true; DATA.save(); ov.classList.remove('show'); enterLobby(); }
