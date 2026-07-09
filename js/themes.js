@@ -385,12 +385,16 @@ TF_ARENAS.china={ name:'DRAGON', wrapY:false,
 // compila un grid a rects sólidos + antorchas + spawns automáticos
 function compileArena(a,gi,cols){
   let grid=a.grids[gi||0];
-  // MAPAS MÁS GRANDES: si el monitor es ancho, la arena gana columnas —
-  // cada fila se extiende con el carácter de su borde ('#' alarga pisos/repisas, '.' alarga aire)
+  // MAPAS MÁS GRANDES: el mundo se arma ENLOSANDO las variantes una tras otra
+  // (16 columnas por losa) — plataformas por todo lo ancho, no un solo cúmulo al centro
   const C=Math.max(16, (cols|0)||16);
   if(C>16){
-    const padL=Math.floor((C-16)/2), padR=C-16-padL;
-    grid=grid.map(row=>(row[0]==='#'?'#':'.').repeat(padL)+row+(row[15]==='#'?'#':'.').repeat(padR));
+    const n=a.grids.length, tiles=Math.ceil(C/16);
+    grid=grid.map((row,r)=>{
+      let s=row;
+      for(let k=1;k<tiles;k++) s+=a.grids[(gi+k)%n][r];
+      return s.slice(0,C);
+    });
   }
   const plats=[], torches=[];
   grid.forEach((row,r)=>{
@@ -615,10 +619,10 @@ function makeTFRender(eco,layout){
     // marco del escenario (anillo decorado)
     ctx.fillStyle=pal.mortar;
     ctx.fillRect(0,0,PW,10); ctx.fillRect(0,630,PW,10);
-    ctx.fillRect(0,0,10,640); ctx.fillRect(822,0,10,640);
+    ctx.fillRect(0,0,10,640); ctx.fillRect(PW-10,0,10,640);
     ctx.fillStyle=pal.block;
     for(let x=0;x<PW;x+=52){ ctx.fillRect(x+4,2,44,6); ctx.fillRect(x+4,632,44,6); }
-    for(let y=0;y<640;y+=52){ ctx.fillRect(2,y+4,6,44); ctx.fillRect(824,y+4,6,44); }
+    for(let y=0;y<640;y+=52){ ctx.fillRect(2,y+4,6,44); ctx.fillRect(PW-8,y+4,6,44); }
     if(eco==='desierto'){ ctx.fillStyle='#c92a2a';
       for(let x=26;x<PW;x+=104){ ctx.beginPath(); ctx.arc(x,5,4,0,7); ctx.arc(x,635,4,0,7); ctx.fill(); } }
 
@@ -648,7 +652,7 @@ function makeTFRender(eco,layout){
     });
 
     // PUENTES / TRONCOS flotantes delgados (18px) — ya no bloques macizos de 52px
-    for(let r2=0;r2<12;r2++)for(let c=0;c<16;c++){
+    for(let r2=0;r2<12;r2++)for(let c=0;c<COLS;c++){
       if(!at(c,r2)) continue;
       const x=c*CELL, y=GRID_OY+r2*CELL, H=18;
       const left=!at(c-1,r2), right=!at(c+1,r2);

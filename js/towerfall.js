@@ -1,6 +1,7 @@
 /* HEARTS FALL — arqueros battle royale: mueres y sueltas tus corazones */
 (function(){
-let W=832,H=640;               // dinámicos: la arena se ensancha según el monitor (se fijan en start)
+let W=832,H=640;               // dimensiones del MUNDO (4 pantallas de ancho — se fijan en start)
+let VW=832,VH=640,camX=0;      // dimensiones de la VISTA (el canvas) + cámara que sigue al jugador
 const GRAV=1500, RUN=265, JUMP=-565;
 // tipos de flecha especiales (se consiguen en cofres)
 const ARROW_TYPES={
@@ -17,14 +18,18 @@ function start(canvas, players, cfg, onEnd, eco){
   const ctx=canvas.getContext('2d');
   const K=window.KIT;
   const M=window.MAPART;
-  // EL MAPA LLENA TODA LA PANTALLA: la arena gana COLUMNAS según lo ancho del monitor
+  // MAPA 4 VECES MÁS GRANDE: la VISTA llena tu pantalla y el MUNDO mide 4 pantallas de ancho.
+  // La cámara te sigue; el minimapa de abajo muestra el mapa completo.
   let cols=16;
   { const stEl=canvas.parentElement;
     const sw=(stEl&&stEl.clientWidth)||window.innerWidth||screen.width||0;
     const sh=(stEl&&stEl.clientHeight)||window.innerHeight||screen.height||0;
-    if(sw>0&&sh>0) cols=Math.max(16, Math.min(28, Math.round((640*(sw/sh))/52)));
-    canvas.width=cols*52; canvas.height=640;
-    W=canvas.width; H=canvas.height; }         // el motor entero usa el ancho real
+    let vc=16;
+    if(sw>0&&sh>0) vc=Math.max(16, Math.min(28, Math.round((640*(sw/sh))/52)));
+    canvas.width=vc*52; canvas.height=640;
+    VW=canvas.width; VH=canvas.height;         // vista = tu pantalla
+    cols=Math.min(112, vc*4);                  // mundo = 4 pantallas
+    W=cols*52; H=640; camX=Math.max(0,(W-VW)/2); }
   const layout=THEMES.getFallLayout(eco||'selva',(cfg&&cfg.variant)||0, cols);
   const PLATS=layout.plats;
   const tf=THEMES.makeTFRender(layout.arena||'selva',layout);
@@ -543,6 +548,10 @@ function start(canvas, players, cfg, onEnd, eco){
       if(endTimer<=0){ cancelAnimationFrame(raf); computeResult(); onEnd(result); return; }
     }
 
+    // CÁMARA: sigue a tu monito (o al líder vivo si caíste), con suavizado
+    { const meC=ents.find(e=>!e.p.bot&&!e.dead) || living()[0] || ents[0];
+      if(meC){ const tx=Math.max(0, Math.min(W-VW, meC.x-VW/2));
+        camX += (tx-camX)*Math.min(1, dt*5); } }
     parts.update(dt);
     draw();
     raf=requestAnimationFrame(frame);
@@ -551,13 +560,14 @@ function start(canvas, players, cfg, onEnd, eco){
   function draw(){
     ctx.save(); K.applyShake(ctx);
     const bd=BACKDROPS[eco||'selva'];
-    if(bd){   // fondo atmosférico estilo TowerFall (cubre la arena)
-      const s=Math.max(W/bd.width,H/bd.height), bw=bd.width*s, bh=bd.height*s;
-      ctx.drawImage(bd,(W-bw)/2,(H-bh)/2,bw,bh);
-      ctx.fillStyle='rgba(6,8,16,.18)'; ctx.fillRect(0,0,W,H);   // apenas oscurece: deja lucir el arte pixel
-    } else {
-      tf.bg(ctx,time);
+    if(bd){   // fondo atmosférico en la VISTA (parallax suave contra el mundo)
+      const s=Math.max(VW/bd.width,VH/bd.height)*1.12, bw=bd.width*s, bh=bd.height*s;
+      const px=(W>VW)?(camX/(W-VW)):(0.5);                       // 0..1 según dónde está la cámara
+      ctx.drawImage(bd,(VW-bw)*px,(VH-bh)/2,bw,bh);
+      ctx.fillStyle='rgba(6,8,16,.18)'; ctx.fillRect(0,0,VW,VH); // apenas oscurece: deja lucir el arte pixel
     }
+    ctx.save(); ctx.translate(-camX,0);                          // ===== MUNDO (con cámara) =====
+    if(!bd) tf.bg(ctx,time);
     tf.blocks(ctx,time);
     // cofres del tesoro (estilo TowerFall)
     chests.forEach(ch=>{
@@ -700,31 +710,46 @@ function start(canvas, players, cfg, onEnd, eco){
       ctx.strokeText(f.txt,f.x,f.y); ctx.fillText(f.txt,f.x,f.y);
       ctx.globalAlpha=1;
     }
+    ctx.restore();                                               // ===== fin del MUNDO =====
+    // ===== UI en pantalla (fija) =====
     // timer
-    ctx.fillStyle='rgba(20,25,35,.75)'; ctx.fillRect(376,4,80,26);
+    ctx.fillStyle='rgba(20,25,35,.75)'; ctx.fillRect(VW/2-40,4,80,26);
     ctx.fillStyle=time>DUR-15?'#ff8a80':'#e8f2f8';
     ctx.font='bold 14px "Space Mono"'; ctx.textAlign='center';
-    ctx.fillText(Math.max(0,Math.ceil(DUR-time))+'s',416,22);
+    ctx.fillText(Math.max(0,Math.ceil(DUR-time))+'s',VW/2,22);
     // MARCADOR del modo
     ctx.font='900 14px "Space Mono"'; ctx.textAlign='center';
     if(GMID==='hunt'){ const me=ents.find(e=>!e.p.bot);
-      ctx.fillStyle='#d9a6ff'; ctx.fillText('💀 '+(me?(me.p.skulls||0):0)+' / '+(GM.goal||10)+'  · líder '+topSkulls(),W/2,48); }
-    else if(GMID==='tdm'){ ctx.fillStyle='#7fd0ff'; ctx.fillText('AZUL '+teamKills(0)+'  —  '+teamKills(1)+' ROJO  (meta '+(GM.goal||15)+')',W/2,48); }
-    else if(GMID==='quest'){ ctx.fillStyle='#7fe0a0'; ctx.fillText('OLEADA '+wave+'/'+(GM.waves||3)+'  ·  kills '+teamKills(0)+'/'+(GM.questGoal||18),W/2,48); }
-    else if(GMID==='trials'){ const me=ents[0]; ctx.fillStyle='#ffc078'; ctx.fillText('🎯 BLANCOS '+(me?(me.p.score||0):0)+' / '+(GM.goal||20),W/2,48); }
-    else if(GMID==='lms'&&time>DUR-15){ ctx.fillStyle='#ff8a80'; ctx.font='bold 13px "Space Mono"'; ctx.fillText('¡MUERTE SÚBITA!',W/2,48); }
+      ctx.fillStyle='#d9a6ff'; ctx.fillText('💀 '+(me?(me.p.skulls||0):0)+' / '+(GM.goal||10)+'  · líder '+topSkulls(),VW/2,48); }
+    else if(GMID==='tdm'){ ctx.fillStyle='#7fd0ff'; ctx.fillText('AZUL '+teamKills(0)+'  —  '+teamKills(1)+' ROJO  (meta '+(GM.goal||15)+')',VW/2,48); }
+    else if(GMID==='quest'){ ctx.fillStyle='#7fe0a0'; ctx.fillText('OLEADA '+wave+'/'+(GM.waves||3)+'  ·  kills '+teamKills(0)+'/'+(GM.questGoal||18),VW/2,48); }
+    else if(GMID==='trials'){ const me=ents[0]; ctx.fillStyle='#ffc078'; ctx.fillText('🎯 BLANCOS '+(me?(me.p.score||0):0)+' / '+(GM.goal||20),VW/2,48); }
+    else if(GMID==='lms'&&time>DUR-15){ ctx.fillStyle='#ff8a80'; ctx.font='bold 13px "Space Mono"'; ctx.fillText('¡MUERTE SÚBITA!',VW/2,48); }
     const meE=ents.find(e=>!e.p.bot);
     if(meE&&meE.dead&&!over){
-      ctx.fillStyle='rgba(10,10,14,.55)'; ctx.fillRect(0,72,W,54);
+      ctx.fillStyle='rgba(10,10,14,.55)'; ctx.fillRect(0,72,VW,54);
       ctx.fillStyle='#f2ede2'; ctx.font='900 22px Archivo, sans-serif'; ctx.textAlign='center';
-      ctx.fillText('CAÍSTE — REGRESAS LA SIGUIENTE RONDA',W/2,100);
+      ctx.fillText('CAÍSTE — REGRESAS LA SIGUIENTE RONDA',VW/2,100);
       ctx.fillStyle='#b7b1a4'; ctx.font='bold 11px "Space Mono"';
-      ctx.fillText('viendo el final de la ronda · te quedan ♥'+meE.p.hp,W/2,120);
+      ctx.fillText('viendo el final de la ronda · te quedan ♥'+meE.p.hp,VW/2,120);
+    }
+    // ===== MINIMAPA: todo el mapa en pequeño (abajo al centro) =====
+    { const mw=Math.min(250, VW*0.24), mh=Math.max(34, mw*(H/W)), mx=(VW-mw)/2, my=VH-mh-10, k=mw/W;
+      ctx.fillStyle='rgba(8,10,16,.68)'; ctx.fillRect(mx-3,my-3,mw+6,mh+6);
+      ctx.strokeStyle='rgba(255,255,255,.28)'; ctx.lineWidth=1.5; ctx.strokeRect(mx-3,my-3,mw+6,mh+6);
+      ctx.fillStyle='rgba(255,255,255,.30)';
+      PLATS.forEach(p=>ctx.fillRect(mx+p.x*k, my+p.y*(mh/H), Math.max(2,p.w*k), 2));
+      ents.forEach(e=>{ if(e.dead) return;
+        ctx.fillStyle=e.p.color||'#fff';
+        ctx.beginPath(); ctx.arc(mx+e.x*k, my+e.y*(mh/H), e.p.bot?2.5:3.5, 0, 7); ctx.fill();
+        if(!e.p.bot){ ctx.strokeStyle='#fff'; ctx.lineWidth=1; ctx.stroke(); } });
+      ctx.strokeStyle='rgba(255,211,77,.85)'; ctx.lineWidth=1.5;
+      ctx.strokeRect(mx+camX*k, my, VW*k, mh);                   // lo que estás viendo
     }
     if(meE&&!meE.dead&&ULTCD[meE.pow]){   // MEDIDOR de ULTIMATE del jugador (tecla R)
       const U=(DATA.POWERS&&DATA.POWERS[meE.pow])||{}, uc=U.color||'#ffd34d';
       const cd=ULTCD[meE.pow], ready=ultReady(meE), frac=ready?1:1-Math.min(1,(meE.ultCd||0)/cd);
-      const bx=16, by=H-26, bw=162, bh=13;
+      const bx=16, by=VH-26, bw=162, bh=13;
       ctx.textAlign='left';
       ctx.fillStyle='rgba(8,10,16,.62)'; ctx.fillRect(bx-7,by-20,bw+14,35);
       ctx.fillStyle=ready?uc:'#cdc6ba'; ctx.font='900 11px "Space Mono"';
