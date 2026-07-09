@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Archivo+Black&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=124">
+<link rel="stylesheet" href="css/style.css?v=125">
 </head>
 <body>
 
@@ -88,24 +88,64 @@
     </div>
   </div>
 
-  <!-- PANEL 2 · BATALLA (centro, la casa) -->
+  <!-- PANEL 2 · BATALLA (home LITERAL estilo Clash Royale, arte propio) -->
   <div class="cr-panel" id="panel-battle">
-    <div class="lobby-wrap">
-      <header class="lobby-top">
-        <div class="brand"><span class="brand-kicker">BATTLE ROYALE</span><span class="brand-name">HEARTS</span></div>
-        <div class="top-actions">
-          <button class="btn-mute" id="btn-mute" title="música y sonido">SONIDO ON</button>
-          <div class="wallet mini"><i class="cico coin"></i><span class="cup-n" id="wallet-gold">0</span></div>
-          <div class="wallet mini"><i class="cico gem"></i><span class="cup-n gem" id="wallet-gems">0</span></div>
-          <div class="wallet" id="wallet-chip">
-            <i class="cico cup"></i><span class="cup-n" id="wallet-hearts">0</span>
-            <span class="wallet-label">COPAS</span>
-          </div>
+    <div class="cr-home">
+
+      <!-- barra superior: nivel de rey + monedas con "+" -->
+      <div class="crh-top">
+        <div class="crh-lvl">
+          <b id="king-lvl">1</b>
+          <div class="crh-xp"><i class="xp-fill" id="xp-fill"></i><span id="xp-txt">0/100</span></div>
         </div>
-      </header>
-      <main class="lobby-grid">
+        <div class="crh-cur"><i class="cico coin"></i><span class="cup-n" id="wallet-gold">0</span><button class="plus" title="conseguir oro">+</button></div>
+        <div class="crh-cur"><i class="cico gem"></i><span class="cup-n gem" id="wallet-gems">0</span><button class="plus" title="conseguir gemas">+</button></div>
+      </div>
+
+      <!-- placa de nombre + rango -->
+      <div class="crh-name">
+        <div class="crh-plate">
+          <div class="user-plate" id="lobby-username" title="toca para cambiar tu nombre">JUGADOR</div>
+          <div class="crh-rank" id="lobby-lvl">COBRE · 0 🏆</div>
+        </div>
+        <button class="crh-mini" id="btn-leaderboard">TOP</button>
+        <button class="crh-mini" id="btn-mute">SONIDO ON</button>
+      </div>
+
+      <!-- PASE HEARTS (candado) -->
+      <button class="crh-pass" id="crh-pass">
+        <span class="pass-tag">PASE<br>HEARTS</span>
+        <span class="pass-txt">🔒 Se desbloquea en la ARENA 4</span>
+      </button>
+
+      <!-- LA ARENA como diorama 3D + tu monito parado encima -->
+      <div class="crh-arena">
+        <div class="arena-diorama"><img id="diorama-img" src="assets/maps/selva.png?v=4" alt="tu arena"></div>
+        <canvas id="lobby-avatar" width="320" height="360"></canvas>
+        <div class="animal-lives" id="animal-lives"></div>
+        <div class="crh-arena-row">
+          <button class="arena-banner" id="arena-banner">
+            <span class="ab-num" id="ab-num">ARENA 1 / 8</span>
+            <span class="ab-name" id="ab-name">BOSQUE INICIAL</span>
+          </button>
+          <button class="crh-cups" id="wallet-chip"><i class="cico cup"></i><span class="cup-n" id="wallet-hearts">0</span></button>
+        </div>
+      </div>
+
+      <!-- botones 3D estilo CR -->
+      <div class="crh-btns">
+        <button class="cr3d yellow" id="btn-ranked">¡Batalla!</button>
+        <button class="cr3d blue" id="btn-party">¡Party!</button>
+      </div>
+
+      <!-- SLOTS DE COFRES -->
+      <div class="chest-slots" id="chest-slots"></div>
+
+      <!-- debajo del fold: tu guerrero + colección + feed -->
+      <div class="crh-extras">
         <section class="panel">
           <div class="panel-head">TU GUERRERO</div>
+          <div class="avatar-meta"><span id="avatar-name">—</span><span class="token-id" id="avatar-token">#—</span></div>
           <div class="stats-card" id="stats-card">
             <div class="sc-row"><label>DIFICULTAD</label><div class="pips" id="sc-dif"></div></div>
             <div class="sc-row"><label>VELOCIDAD</label><div class="pips" id="sc-spd"></div></div>
@@ -114,32 +154,6 @@
           </div>
           <div class="avatar-value" id="avatar-value"></div>
         </section>
-        <section class="lobby-hero">
-          <button class="arena-banner" id="arena-banner">
-            <span class="ab-num" id="ab-num">ARENA 1 / 8</span>
-            <span class="ab-name" id="ab-name">BOSQUE INICIAL</span>
-            <span class="ab-hint">toca para ver la escalera ›</span>
-          </button>
-          <div class="user-plate" id="lobby-username" title="toca para cambiar tu nombre">*USUARIO*</div>
-          <div class="lobby-stats">
-            <div class="lvl" id="lobby-lvl">LVL. 1</div>
-            <div class="xp-bar"><div class="xp-fill" id="xp-fill"></div></div>
-          </div>
-          <div class="pedestal-wrap">
-            <canvas id="lobby-avatar" width="320" height="360"></canvas>
-            <div class="pedestal"></div>
-            <div class="avatar-meta"><span id="avatar-name">—</span><span class="token-id" id="avatar-token">#—</span></div>
-            <div class="animal-lives" id="animal-lives"></div>
-          </div>
-          <button class="btn-flat btn-ranked" id="btn-ranked">JUGAR<small>gana cofres 🎁 y copas 🏆</small></button>
-          <div class="lobby-actions">
-            <button class="btn-flat" id="btn-party">AMIGOS</button>
-            <button class="btn-flat" id="btn-arenas">ARENAS</button>
-            <button class="btn-flat" id="btn-leaderboard">TOP</button>
-          </div>
-          <!-- SLOTS DE COFRES (estilo Clash Royale): ganas cofres jugando, se abren con TIEMPO -->
-          <div class="chest-slots" id="chest-slots"></div>
-        </section>
         <section class="panel">
           <div class="panel-head">TUS GUERREROS</div>
           <div class="own-row" id="own-row"></div>
@@ -147,7 +161,8 @@
           <div class="lobby-record" id="lobby-record"></div>
           <div class="live-feed" id="live-feed"></div>
         </section>
-      </main>
+      </div>
+
     </div>
   </div>
 
@@ -434,20 +449,20 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/audio.js?v=124"></script>
-<script src="js/sprites.js?v=124"></script>
-<script src="js/mapart.js?v=124"></script>
-<script src="js/intro.js?v=124"></script>
-<script src="js/tutorial.js?v=124"></script>
-<script src="js/themes.js?v=124"></script>
-<script src="js/data.js?v=124"></script>
-<script src="js/weapons.js?v=124"></script>
-<script src="js/ui.js?v=124"></script>
-<script src="js/bomberman.js?v=124"></script>
-<script src="js/towerfall.js?v=124"></script>
-<script src="js/showdown.js?v=124"></script>
-<script src="js/bros.js?v=124"></script>
-<script src="js/match.js?v=124"></script>
-<script src="js/main.js?v=124"></script>
+<script src="js/audio.js?v=125"></script>
+<script src="js/sprites.js?v=125"></script>
+<script src="js/mapart.js?v=125"></script>
+<script src="js/intro.js?v=125"></script>
+<script src="js/tutorial.js?v=125"></script>
+<script src="js/themes.js?v=125"></script>
+<script src="js/data.js?v=125"></script>
+<script src="js/weapons.js?v=125"></script>
+<script src="js/ui.js?v=125"></script>
+<script src="js/bomberman.js?v=125"></script>
+<script src="js/towerfall.js?v=125"></script>
+<script src="js/showdown.js?v=125"></script>
+<script src="js/bros.js?v=125"></script>
+<script src="js/match.js?v=125"></script>
+<script src="js/main.js?v=125"></script>
 </body>
 </html>

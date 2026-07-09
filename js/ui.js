@@ -59,7 +59,9 @@ function enterLobby(){
   $('#lobby-username').textContent='*'+(st.name||'USUARIO').toUpperCase()+'*';
   const r6=DATA.playerRankCups();
   $('#lobby-lvl').innerHTML='<b style="color:'+r6.tier.c1+'">'+r6.name+'</b> · '+(st.cups|0)+' 🏆';
-  $('#xp-fill').style.width=(DATA.levelProgress()*100).toFixed(0)+'%';
+  { const k=$('#king-lvl'); if(k) k.textContent=DATA.level(); }                        // nivel de rey (arriba-izq)
+  { const xf=$('#xp-fill'); if(xf) xf.style.width=(DATA.levelProgress()*100).toFixed(0)+'%'; }
+  { const xt=$('#xp-txt'); if(xt) xt.textContent=Math.round(DATA.levelProgress()*100)+'/100'; }
   updateHearts();
   const an=DATA.byId[st.selected];
   const cv=$('#lobby-avatar'), c=cv.getContext('2d');
@@ -130,8 +132,7 @@ function enterLobby(){
   renderMarket(); renderShop(); renderSlots();   // los 3 paneles siempre listos (estilo CR)
   show('#screen-main');
   initPager();
-  startLobbyBG();
-  renderArena();
+  renderArena();                                 // (el fondo ahora es el acolchado azul; la arena vive en el diorama)
   updateLocks();
   startFeed();
   maybeFTUE();
@@ -160,7 +161,7 @@ function updateLocks(){
   // AMIGOS: se abre en ARENA 2 (60 copas)
   const bp=$('#btn-party');
   if(bp){ const locked=(st.cups|0)<60; bp.classList.toggle('locked-btn',locked);
-    bp.textContent = locked ? 'AMIGOS 🔒' : 'AMIGOS';
+    bp.textContent = locked ? '¡Party! 🔒' : '¡Party!';
     if(!bp.__lockWired){ bp.__lockWired=true;
       bp.addEventListener('click',(e)=>{ if((DATA.state().cups|0)<60){ e.stopImmediatePropagation(); SFX.deny(); toast('🔒 AMIGOS se desbloquea en ARENA 2 (60 🏆) — ¡sigue ganando!'); } }, true);
     }
@@ -218,6 +219,9 @@ function initPager(){
     const n=prompt('Tu nombre:', st.name||'JUGADOR');
     if(n&&n.trim()){ st.name=n.trim().slice(0,14); DATA.save(); enterLobby(); }
   });
+  // "+" de oro/gemas → a la TIENDA (como CR) · PASE bloqueado (curiosidad)
+  document.querySelectorAll('.crh-cur .plus').forEach(b=>b.addEventListener('click',()=>{ SFX.click(); goPanel(0); }));
+  const pass=$('#crh-pass'); if(pass) pass.addEventListener('click',()=>{ SFX.deny(); toast('🔒 El PASE HEARTS se desbloquea en la ARENA 4 — ¡sigue subiendo copas!'); });
   // reloj del modelo CR: refresca slots + cofre gratis cada segundo
   setInterval(()=>{ if($('#screen-main').classList.contains('active')){ renderSlots(); tickFree(); } },1000);
   // modal de recompensas
@@ -233,7 +237,7 @@ function renderSlots(){
   box.innerHTML='';
   sl.forEach((s,i)=>{
     const d=document.createElement('div');
-    if(!s){ d.className='cslot empty'; d.innerHTML='<span class="cs-ic">·</span><small>gana cofres<br>jugando</small>'; box.appendChild(d); return; }
+    if(!s){ d.className='cslot empty'; d.innerHTML='<small>ESPACIO<br>DE COFRE</small>'; box.appendChild(d); return; }
     const ch=DATA.byChest[s.chest];
     if(s.state==='idle'){
       d.className='cslot idle'; d.style.setProperty('--cc',ch.color);
@@ -860,6 +864,7 @@ function initTouch(){
 // reutilizable: se le pasa el canvas y la pantalla (menú o lobby). Cada canvas guarda su instancia en cv.__bg
 // nombres de las 8 arenas (una por rango COBRE→CAMPEÓN) — estilo Clash Royale
 const ARENA_NAMES=['BOSQUE INICIAL','SELVA PERDIDA','MAR DE DUNAS','ARENAS DORADAS','PICOS HELADOS','JARDÍN SAKURA','TEMPLO DE CRISTAL','TRONO DE LAVA'];
+const ARENA_ECO=['selva','china','desierto','egipto','nieve','japon','grecia','volcan'];   // arte del diorama por arena
 function startBiomeBG(cv, menu){
   if(!cv||!menu) return;
   const ctx=cv.getContext('2d');
@@ -1092,6 +1097,7 @@ function renderArena(){
   const num=$('#ab-num'), nm=$('#ab-name'), banner=$('#arena-banner');
   if(num) num.textContent='ARENA '+(idx+1)+' / '+ARENA_NAMES.length;
   if(nm){ nm.textContent=ARENA_NAMES[idx]||'ARENA'; nm.style.color=r.tier.c1; }
+  const di=$('#diorama-img'); if(di){ const src='assets/maps/'+(ARENA_ECO[idx]||'selva')+'.png?v=4'; if(!di.src.endsWith(src)) di.src=src; }
   if(banner && !banner.__wired){ banner.__wired=true;
     const openLadder=()=>{ SFX.click(); renderArenaLadder(); $('#modal-arenas').classList.add('show'); };
     banner.addEventListener('click',openLadder);

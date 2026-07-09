@@ -403,6 +403,119 @@ body{
 .cr-tabs button{position:relative}
 .btn-flat.locked-btn{opacity:.55}
 
+/* ============================================================
+   HOME estilo CLASH ROYALE (fondo acolchado azul + 3D con bisel)
+   ============================================================ */
+#screen-main>.menu-bg,#screen-main>.menu-scrim{display:none}   /* fuera el fondo viejo */
+#panel-battle{
+  background:
+    repeating-linear-gradient(45deg, rgba(255,255,255,.05) 0 2px, transparent 2px 48px),
+    repeating-linear-gradient(-45deg, rgba(6,20,40,.28) 0 2px, transparent 2px 48px),
+    radial-gradient(120% 90% at 50% 0%, #4a8ec4 0%, #2f6aa8 46%, #1c4076 100%);
+}
+.cr-home{max-width:520px;margin:0 auto;padding:12px 14px 30px;display:flex;flex-direction:column;gap:10px}
+
+/* --- barra superior: nivel de rey + monedas con "+" --- */
+.crh-top{display:flex;align-items:center;gap:8px}
+.crh-lvl{display:flex;align-items:center;gap:7px;flex:1;min-width:0}
+.crh-lvl b{width:34px;height:34px;flex:none;display:flex;align-items:center;justify-content:center;
+  font-family:'Archivo Black',sans-serif;font-size:16px;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.5);
+  background:linear-gradient(180deg,#5fb0ff,#1f66c0);border:2px solid #0c2a52;border-radius:10px;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.35),0 3px 0 #0c2a52}
+.crh-xp{position:relative;flex:1;max-width:130px;height:15px;border-radius:8px;background:#122b50;
+  border:2px solid #0c2a52;overflow:hidden}
+.crh-xp .xp-fill{position:absolute;inset:0 auto 0 0;background:linear-gradient(180deg,#8fd4ff,#2f8de4);border-radius:6px}
+.crh-xp span{position:relative;display:block;text-align:center;font-family:'Archivo Black',sans-serif;
+  font-size:9px;color:#fff;line-height:12px;text-shadow:0 1px 2px rgba(0,0,0,.7)}
+.crh-cur{display:flex;align-items:center;gap:6px;background:linear-gradient(180deg,#14355e,#0d2547);
+  border:2px solid #0c2a52;border-radius:11px;padding:5px 6px 5px 9px;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.12),0 3px 0 #0c2141}
+.crh-cur .cup-n{font-size:14px;text-shadow:0 1px 0 rgba(0,0,0,.6)}
+.plus{width:22px;height:22px;border:none;border-radius:7px;cursor:pointer;
+  font-family:'Archivo Black',sans-serif;font-size:16px;line-height:1;color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.45);
+  background:linear-gradient(180deg,#8fe06a,#3aa832);box-shadow:inset 0 2px 0 rgba(255,255,255,.4),0 2px 0 #1e6a1a}
+.plus:active{transform:translateY(1px)}
+
+/* --- placa de nombre --- */
+.crh-name{display:flex;align-items:center;gap:8px}
+.crh-plate{flex:1;background:linear-gradient(180deg,#17395f,#0f2748);border:2px solid #0c2a52;border-radius:12px;
+  padding:6px 12px;box-shadow:inset 0 2px 0 rgba(255,255,255,.12),0 3px 0 #0c2141}
+.crh-plate .user-plate{background:none;box-shadow:none;padding:0;color:#fff;font-size:17px;letter-spacing:.05em;
+  cursor:pointer;text-shadow:0 2px 0 rgba(0,0,0,.5);text-align:left}
+.crh-rank{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.08em;color:#bcd6f2;margin-top:1px}
+.crh-mini{border:2px solid #0c2a52;border-radius:10px;cursor:pointer;padding:8px 10px;
+  font-family:'Archivo Black',sans-serif;font-size:9.5px;letter-spacing:.08em;color:#dff;
+  background:linear-gradient(180deg,#2c5b90,#1a3c68);box-shadow:inset 0 2px 0 rgba(255,255,255,.18),0 3px 0 #0c2141}
+.crh-mini:active{transform:translateY(2px);box-shadow:inset 0 2px 0 rgba(255,255,255,.18)}
+
+/* --- PASE HEARTS (banner dorado con candado) --- */
+.crh-pass{display:flex;align-items:center;gap:12px;border:2px solid #5a3a00;border-radius:14px;cursor:pointer;
+  padding:8px 12px;text-align:left;
+  background:linear-gradient(100deg,#f7b32a 0%,#e08a12 34%,#233c63 34.5%,#152b4c 100%);
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.28),0 4px 0 #3a2600,0 8px 18px rgba(0,0,0,.3)}
+.crh-pass:active{transform:translateY(2px);box-shadow:inset 0 2px 0 rgba(255,255,255,.28),0 2px 0 #3a2600}
+.pass-tag{font-family:'Archivo Black',sans-serif;font-size:13px;line-height:1.05;color:#5a3a00;
+  text-shadow:0 1px 0 rgba(255,255,255,.35);letter-spacing:.02em;flex:none}
+.pass-txt{font-family:'Archivo',sans-serif;font-weight:800;font-size:12px;color:#e7effc;letter-spacing:.04em;
+  text-shadow:0 1px 2px rgba(0,0,0,.6)}
+
+/* --- LA ARENA como diorama 3D --- */
+.crh-arena{position:relative;display:flex;flex-direction:column;align-items:center;margin-top:26px}
+.arena-diorama{width:min(330px,82vw);aspect-ratio:16/10.6;border-radius:16px;overflow:hidden;
+  transform:perspective(760px) rotateX(13deg);
+  border:3px solid #0c2a52;
+  box-shadow:0 14px 0 -4px #12325c, 0 18px 0 -3px #0a1f3d, 0 30px 34px rgba(0,0,0,.5),
+             inset 0 0 0 2px rgba(255,255,255,.14);
+}
+.arena-diorama img{width:100%;height:100%;object-fit:cover;display:block}
+.crh-arena #lobby-avatar{position:absolute;top:-42px;left:50%;transform:translateX(-50%);
+  width:126px;height:auto;z-index:3;animation:float 3.4s ease-in-out infinite;
+  filter:drop-shadow(0 12px 10px rgba(0,0,0,.45))}
+.crh-arena .animal-lives{margin-top:10px;z-index:3}
+.crh-arena .animal-lives b{color:#dff;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.crh-arena-row{display:flex;align-items:stretch;gap:8px;margin-top:8px}
+.crh-arena-row .arena-banner{margin:0;padding:6px 16px;flex-direction:column;gap:0;
+  background:linear-gradient(180deg,#17395f,#0f2748);border:2px solid #0c2a52;border-radius:12px;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.12),0 3px 0 #0c2141;backdrop-filter:none}
+.crh-arena-row .ab-num{font-size:9px;color:#9fc0e4}
+.crh-arena-row .ab-name{font-size:16px}
+.crh-cups{display:flex;align-items:center;gap:6px;border:2px solid #0c2a52;border-radius:12px;cursor:pointer;
+  padding:6px 12px;background:linear-gradient(180deg,#17395f,#0f2748);
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.12),0 3px 0 #0c2141}
+.crh-cups .cup-n{font-size:16px}
+
+/* --- botones 3D estilo CR --- */
+.crh-btns{display:flex;gap:12px;margin-top:14px}
+.cr3d{flex:1;border:none;border-radius:14px;cursor:pointer;padding:16px 10px 14px;
+  font-family:'Archivo Black',sans-serif;font-size:clamp(19px,4.6vw,24px);letter-spacing:.02em;color:#fff;
+  text-shadow:0 2px 0 rgba(0,0,0,.45), 0 0 6px rgba(0,0,0,.25);
+  transition:transform .06s}
+.cr3d.yellow{background:linear-gradient(180deg,#ffdf6b 0%,#ffb92e 55%,#f59d00 100%);color:#fff;
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.55), inset 0 -3px 0 rgba(0,0,0,.12), 0 6px 0 #a86a00, 0 10px 16px rgba(0,0,0,.35);
+  border:2px solid #7c4e00}
+.cr3d.blue{background:linear-gradient(180deg,#6ec4ff 0%,#2e8fe8 55%,#1a6fd0 100%);
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.5), inset 0 -3px 0 rgba(0,0,0,.12), 0 6px 0 #0e4a94, 0 10px 16px rgba(0,0,0,.35);
+  border:2px solid #0b3a78}
+.cr3d:active{transform:translateY(4px)}
+.cr3d.yellow:active{box-shadow:inset 0 3px 0 rgba(255,255,255,.55), 0 2px 0 #a86a00}
+.cr3d.blue:active{box-shadow:inset 0 3px 0 rgba(255,255,255,.5), 0 2px 0 #0e4a94}
+.cr3d.locked-btn{filter:saturate(.35) brightness(.8)}
+
+/* --- sockets de cofres (hundidos, estilo CR) --- */
+#panel-battle .chest-slots{margin-top:12px;gap:9px}
+#panel-battle .cslot{background:linear-gradient(180deg,#10294c,#0b1f3c);border:2px solid #0c2a52;border-radius:13px;
+  box-shadow:inset 0 4px 8px rgba(0,0,0,.5), inset 0 -2px 0 rgba(255,255,255,.06), 0 2px 0 rgba(255,255,255,.08)}
+#panel-battle .cslot.empty{border-style:solid;opacity:1}
+#panel-battle .cslot.empty small{color:#3f6591;font-family:'Archivo Black',sans-serif;font-size:9px;letter-spacing:.08em}
+#panel-battle .cslot small{color:#9fc0e4}
+#panel-battle .cslot b{color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.5)}
+#panel-battle .cslot.ready{border-color:#ffd34d}
+
+/* --- extras bajo el fold --- */
+.crh-extras{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+.crh-extras .panel{background:linear-gradient(180deg,rgba(13,32,60,.92),rgba(9,22,44,.94));border-color:#0c2a52}
+@media(max-width:560px){ .crh-extras{grid-template-columns:1fr} }
+
 /* ===== SLOTS DE COFRES (estilo Clash Royale) ===== */
 .chest-slots{display:flex;gap:10px;margin-top:16px;justify-content:center}
 .cslot{width:88px;min-height:96px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
