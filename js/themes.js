@@ -383,15 +383,22 @@ TF_ARENAS.china={ name:'DRAGON', wrapY:false,
   pal:{block:'#7a2e2a',mortar:'#2a0e0c',top:'#ffce4a',bg1:'#241010',bg2:'#4a1a16',moon:'#ffe0a0',amb:'petals'},
   grids:TF_ARENAS.selva.grids };
 // compila un grid a rects sólidos + antorchas + spawns automáticos
-function compileArena(a,gi){
-  const grid=a.grids[gi||0];
+function compileArena(a,gi,cols){
+  let grid=a.grids[gi||0];
+  // MAPAS MÁS GRANDES: si el monitor es ancho, la arena gana columnas —
+  // cada fila se extiende con el carácter de su borde ('#' alarga pisos/repisas, '.' alarga aire)
+  const C=Math.max(16, (cols|0)||16);
+  if(C>16){
+    const padL=Math.floor((C-16)/2), padR=C-16-padL;
+    grid=grid.map(row=>(row[0]==='#'?'#':'.').repeat(padL)+row+(row[15]==='#'?'#':'.').repeat(padR));
+  }
   const plats=[], torches=[];
   grid.forEach((row,r)=>{
     let c=0;
-    while(c<16){
+    while(c<C){
       if(row[c]==='#'){
         let c2=c;
-        while(c2<16&&row[c2]==='#') c2++;
+        while(c2<C&&row[c2]==='#') c2++;
         // plataformas DELGADAS tipo puente/tronco flotante (18px), de un solo sentido
         // (aterrizas encima, saltas por debajo) — ya no bloques macizos de 52px
         plats.push({x:c*CELL,y:GRID_OY+r*CELL,w:(c2-c)*CELL,h:18,solid:true,wall:false});
@@ -402,7 +409,7 @@ function compileArena(a,gi){
   });
   // spawns: puntos parados sobre bloques, elegidos maximizando separación
   const spots=[];
-  for(let r=0;r<11;r++)for(let c=0;c<16;c++){
+  for(let r=0;r<11;r++)for(let c=0;c<C;c++){
     if(grid[r][c]==='.'&&grid[r+1][c]==='#') spots.push([c*CELL+CELL/2, GRID_OY+(r+1)*CELL]);
   }
   const spawns=[];
@@ -426,7 +433,7 @@ function compileArena(a,gi){
 //  Volvemos a las estructuras propias del juego (grid+tiles) sobre fondo escénico limpio.)
 const TF_ART={};
 const ALL_DOTS=Array.from({length:12},()=>'................');
-function getFallLayout(eco,variant){
+function getFallLayout(eco,variant,cols){
   const art=TF_ART[eco];
   if(art){
     return { mapName:(TF_ARENAS[eco]||TF_ARENAS.selva).name, arena:eco, variant:0, art:true,
@@ -435,7 +442,7 @@ function getFallLayout(eco,variant){
       spawns: art.P.map(p=>[p[0]+p[2]/2, p[1]]) };
   }
   const a=TF_ARENAS[eco]||TF_ARENAS.selva;
-  const comp=compileArena(a,variant);
+  const comp=compileArena(a,variant,cols);
   return { mapName:a.name, arena:eco, variant:variant||0, wrap:true, wrapY:a.wrapY,
     plats:comp.plats, spawns:comp.spawns, grid:comp.grid, torches:comp.torches };
 }
@@ -444,11 +451,12 @@ function makeTFRender(eco,layout){
   const a=TF_ARENAS[eco]||TF_ARENAS.selva, pal=a.pal;
   if(!layout) layout=getFallLayout(eco,0);
   const g=layout.grid;
-  const at=(c,r)=>r>=0&&r<12&&c>=0&&c<16&&g[r][c]==='#';
+  const COLS=(g&&g[0])?g[0].length:16, PW=COLS*CELL;      // ancho real de la arena (mapas grandes)
+  const at=(c,r)=>r>=0&&r<12&&c>=0&&c<COLS&&g[r][c]==='#';
   const stars=[]; const r=rng(eco.length*131+(layout.variant||0)*17);
-  for(let i=0;i<50;i++) stars.push([r()*832,r()*500,r()]);
-  const bgBricks=[]; for(let i=0;i<26;i++) bgBricks.push([r()*800,r()*600,30+r()*40]);
-  const amb=makeAmbient(pal.amb,832,640);
+  for(let i=0;i<Math.round(50*PW/832);i++) stars.push([r()*PW,r()*500,r()]);
+  const bgBricks=[]; for(let i=0;i<Math.round(26*PW/832);i++) bgBricks.push([r()*(PW-32),r()*600,30+r()*40]);
+  const amb=makeAmbient(pal.amb,PW,640);
   const hash=(c,r2,n)=>((c*7+r2*13+(layout.variant||0)*5)%n+n)%n;
   const blockImg=arenaTile(eco,pal,layout.variant);   // tile pixel-art de los bloques
 
@@ -456,7 +464,7 @@ function makeTFRender(eco,layout){
   const runs=[];
   for(let r2=0;r2<12;r2++){
     let c=0;
-    while(c<16){
+    while(c<COLS){
       if(at(c,r2)&&!at(c-1,r2)){
         let c2=c; while(at(c2,r2)) c2++;
         runs.push({c0:c,c1:c2-1,r:r2});
@@ -499,7 +507,7 @@ function makeTFRender(eco,layout){
   function bg(ctx,time){
     const gr=ctx.createLinearGradient(0,0,0,640);
     gr.addColorStop(0,pal.bg1); gr.addColorStop(1,pal.bg2);
-    ctx.fillStyle=gr; ctx.fillRect(0,0,832,640);
+    ctx.fillStyle=gr; ctx.fillRect(0,0,PW,640);
     // textura de mazmorra al fondo
     bgBricks.forEach(([x,y,w])=>{ ctx.fillStyle='rgba(0,0,0,.16)'; ctx.fillRect(x,y,w,18); });
     stars.forEach(([x,y,s2])=>{
@@ -541,7 +549,7 @@ function makeTFRender(eco,layout){
       });
       const lg=ctx.createLinearGradient(0,540,0,640);
       lg.addColorStop(0,'rgba(255,110,30,0)'); lg.addColorStop(1,'rgba(255,110,30,.20)');
-      ctx.fillStyle=lg; ctx.fillRect(0,540,832,100);
+      ctx.fillStyle=lg; ctx.fillRect(0,540,PW,100);
     } else if(eco==='desierto'){
       // parches de atardecer + rostros de glifo
       [[140,150,110],[620,340,130],[330,480,100]].forEach(([x,y,w])=>{
@@ -578,7 +586,7 @@ function makeTFRender(eco,layout){
     // neblina baja
     const fg=ctx.createLinearGradient(0,520,0,640);
     fg.addColorStop(0,pal.bg2+'00'); fg.addColorStop(1,pal.moon+'1e');
-    ctx.fillStyle=fg; ctx.fillRect(0,520,832,120);
+    ctx.fillStyle=fg; ctx.fillRect(0,520,PW,120);
   }
 
   function flame(ctx,x,y,time,i,col1,col2){
@@ -601,18 +609,18 @@ function makeTFRender(eco,layout){
       });
       ctx.restore();
       amb.draw(ctx,time);
-      if(M) M.vignette(ctx,832,640);
+      if(M) M.vignette(ctx,PW,640);
       return;
     }
     // marco del escenario (anillo decorado)
     ctx.fillStyle=pal.mortar;
-    ctx.fillRect(0,0,832,10); ctx.fillRect(0,630,832,10);
+    ctx.fillRect(0,0,PW,10); ctx.fillRect(0,630,PW,10);
     ctx.fillRect(0,0,10,640); ctx.fillRect(822,0,10,640);
     ctx.fillStyle=pal.block;
-    for(let x=0;x<832;x+=52){ ctx.fillRect(x+4,2,44,6); ctx.fillRect(x+4,632,44,6); }
+    for(let x=0;x<PW;x+=52){ ctx.fillRect(x+4,2,44,6); ctx.fillRect(x+4,632,44,6); }
     for(let y=0;y<640;y+=52){ ctx.fillRect(2,y+4,6,44); ctx.fillRect(824,y+4,6,44); }
     if(eco==='desierto'){ ctx.fillStyle='#c92a2a';
-      for(let x=26;x<832;x+=104){ ctx.beginPath(); ctx.arc(x,5,4,0,7); ctx.arc(x,635,4,0,7); ctx.fill(); } }
+      for(let x=26;x<PW;x+=104){ ctx.beginPath(); ctx.arc(x,5,4,0,7); ctx.arc(x,635,4,0,7); ctx.fill(); } }
 
     // colgantes DETRÁS de los bloques
     hangs.forEach(h=>{
@@ -667,7 +675,7 @@ function makeTFRender(eco,layout){
       if(M) M.torchGlow(ctx,tx,ty-10,time,i,24);
     });
     amb.draw(ctx,time);
-    if(M) M.vignette(ctx,832,640);
+    if(M) M.vignette(ctx,PW,640);
   }
   return {bg,blocks};
 }

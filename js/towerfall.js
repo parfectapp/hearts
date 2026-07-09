@@ -1,6 +1,6 @@
 /* HEARTS FALL — arqueros battle royale: mueres y sueltas tus corazones */
 (function(){
-const W=832,H=640;
+let W=832,H=640;               // dinámicos: la arena se ensancha según el monitor (se fijan en start)
 const GRAV=1500, RUN=265, JUMP=-565;
 // tipos de flecha especiales (se consiguen en cofres)
 const ARROW_TYPES={
@@ -17,7 +17,15 @@ function start(canvas, players, cfg, onEnd, eco){
   const ctx=canvas.getContext('2d');
   const K=window.KIT;
   const M=window.MAPART;
-  const layout=THEMES.getFallLayout(eco||'selva',(cfg&&cfg.variant)||0);
+  // EL MAPA LLENA TODA LA PANTALLA: la arena gana COLUMNAS según lo ancho del monitor
+  let cols=16;
+  { const stEl=canvas.parentElement;
+    const sw=(stEl&&stEl.clientWidth)||window.innerWidth||screen.width||0;
+    const sh=(stEl&&stEl.clientHeight)||window.innerHeight||screen.height||0;
+    if(sw>0&&sh>0) cols=Math.max(16, Math.min(28, Math.round((640*(sw/sh))/52)));
+    canvas.width=cols*52; canvas.height=640;
+    W=canvas.width; H=canvas.height; }         // el motor entero usa el ancho real
+  const layout=THEMES.getFallLayout(eco||'selva',(cfg&&cfg.variant)||0, cols);
   const PLATS=layout.plats;
   const tf=THEMES.makeTFRender(layout.arena||'selva',layout);
   const parts=K.particles();
