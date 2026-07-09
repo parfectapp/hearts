@@ -7,7 +7,9 @@ function start(canvas, players, cfg, onEnd, eco){
   const ctx=canvas.getContext('2d');
   const K=window.KIT;
   const M=window.MAPART;
-  const layout=THEMES.BROS_LAYOUTS[eco||'selva'];
+  // stage: si el mundo no tiene layout propio (Sakura/Neo-Tokyo/…), toma uno de los 4 clásicos
+  const layout=THEMES.BROS_LAYOUTS[eco||'selva'] ||
+    THEMES.BROS_LAYOUTS[['selva','desierto','nieve','volcan'][(eco||'').length%4]];
   const PLATS=layout.plats;
   const scene=THEMES.makeScene(eco||'selva','bros');
   const th=THEMES.T[eco||'selva'];
@@ -247,7 +249,13 @@ function start(canvas, players, cfg, onEnd, eco){
 
   function draw(){
     ctx.save(); K.applyShake(ctx);
-    scene.bg(ctx,time);
+    // fondo: el ARTE del mundo (mismos fondos que TowerFall: Sakura, Neo-Tokyo, Giza…)
+    const bd=window.TOWERFALL&&TOWERFALL.backdrops&&TOWERFALL.backdrops[eco];
+    if(bd){
+      const s=Math.max(W/bd.width,H/bd.height)*1.02, bw=bd.width*s, bh=bd.height*s;
+      ctx.drawImage(bd,(W-bw)/2,(H-bh)/2,bw,bh);
+      ctx.fillStyle='rgba(6,8,16,.28)'; ctx.fillRect(0,0,W,H);   // sutil: que luzca el arte
+    } else scene.bg(ctx,time);
     // lava de Norfair
     if(layout.lava){
       const p=0.6+0.4*Math.sin(time*2.2);

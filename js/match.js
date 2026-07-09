@@ -268,8 +268,9 @@ const RANKED_MODES=[
   {id:'bombas',  icon:'💣', name:'BOMBAS',    color:'#ef7d1c', desc:'bomberman — el primero en VOLAR pierde 1 ♥'},
   {id:'smash',   icon:'🥊', name:'SMASH',     color:'#7e46e0', desc:'sácalos del stage — el primero FUERA pierde 1 ♥'},
   {id:'hunt',    icon:'💀', name:'CALAVERAS', color:'#9d4fd8', desc:'cacería de calaveras — el que junte MENOS pierde 1 ♥'},
+  {id:'ctf',     icon:'🚩', name:'BANDERA',   color:'#3f8fdd', desc:'por EQUIPOS — roba la bandera enemiga y llévala a tu base; el equipo que pierde: −1 ♥ cada uno'},
 ];
-const ECOS4=['selva','desierto','nieve','volcan'];       // bomber/bros: los 4 mundos con arte
+const TEAM_COLS=[['#4d9fff','#7fc4ff'],['#ff5a4d','#ff8a3c']];   // CTF: azules vs rojos
 const ECO_WHEEL={
   selva:   ['🌿','SELVA','#2e8b57'],   desierto:['🏜️','DESIERTO','#c8922e'],
   nieve:   ['❄️','NIEVE','#5f9fc8'],   volcan:  ['🌋','VOLCÁN','#c8442e'],
@@ -282,39 +283,51 @@ function classic832(){ const cv=$('#game-canvas'); cv.width=832; cv.height=640; 
 async function runRound(){
   const m=current;
   const parts=aliveList();
-  // 🎡 GIRO 1: el MODO — los que ya salieron NO se repiten (hasta agotar los 4)
+  // 🎡 GIRO 1: el MODO — los que ya salieron NO se repiten (hasta agotar el pool);
+  // BANDERA solo entra cuando los jugadores en pie se pueden partir en 2 equipos parejos
   if(!m.used) m.used=[];
-  let pool=RANKED_MODES.filter(md=>!m.used.includes(md.id));
-  if(!pool.length){ m.used=[]; pool=RANKED_MODES.slice(); }
+  const ctfOk=(parts.length%2===0);
+  const avail=md=>(md.id!=='ctf'||ctfOk);
+  let pool=RANKED_MODES.filter(md=>!m.used.includes(md.id)&&avail(md));
+  if(!pool.length){ m.used=[]; pool=RANKED_MODES.filter(avail); }
   const mode=pool[Math.floor(Math.random()*pool.length)];
   m.used.push(mode.id);
-  const ecoPool=(mode.id==='bombas'||mode.id==='smash')?ECOS4:ECOS.map(e=>e.id);
+  const ecoPool=ECOS.map(e=>e.id);                 // TODOS los mundos en TODOS los modos (fondos TowerFall)
   const ecoId=ecoPool[Math.floor(Math.random()*ecoPool.length)];
   if(window.WHEEL){
     await WHEEL.spin('🎡 RONDA '+(m.round+1)+' — ¿QUÉ MODO TOCA?',
-      RANKED_MODES.map(md=>({icon:md.icon,label:md.name,color:md.color,used:m.used.includes(md.id)&&md.id!==mode.id})),
+      RANKED_MODES.map(md=>({icon:md.icon,label:md.name,color:md.color,
+        used:(m.used.includes(md.id)&&md.id!==mode.id)||!avail(md)})),
       RANKED_MODES.indexOf(mode), {sub:'los modos que YA SALIERON no se repiten'});
     await WHEEL.spin('🗺️ ¿EN QUÉ MAPA?',
       ecoPool.map(id=>({icon:ECO_WHEEL[id][0],label:ECO_WHEEL[id][1],color:ECO_WHEEL[id][2]})),
       ecoPool.indexOf(ecoId));
   }
-  // snapshot de ♥: los motores mueven vidas a su manera — aquí se restauran y
-  // SOLO el perdedor de la ronda baja 1 (supervivencia pura, nadie suma)
+  // snapshot de ♥ y colores: los motores mueven vidas a su manera — aquí se restauran y
+  // SOLO quien pierde la ronda baja 1 (supervivencia pura, nadie suma)
   const snap=new Map(parts.map(p=>[p,p.hp]));
-  const entry={flechas:null, bombas:1, smash:1, hunt:null}[mode.id];
+  const colSnap=new Map(parts.map(p=>[p,p.color]));
+  const entry={flechas:null, bombas:1, smash:1, hunt:null, ctf:null}[mode.id];
   if(entry!=null) parts.forEach(p=>p.hp=entry);
-  parts.forEach(p=>{ p.koRound=false; p.skulls=0; p.kills=0; });
-  const done=()=>{
-    let loser=null;
-    if(mode.id==='hunt'){                                    // menos calaveras pierde (empate: menos kills)
+  parts.forEach(p=>{ p.koRound=false; p.skulls=0; p.kills=0; p.score=0; });
+  if(mode.id==='ctf'){                              // EQUIPOS al azar: azules vs rojos
+    const shuf=parts.slice().sort(()=>Math.random()-0.5);
+    shuf.forEach((p,i)=>{ p.team=i%2; p.color=TEAM_COLS[i%2][(i>>1)%2]; });
+  }
+  const done=(r)=>{
+    let losers=[];
+    if(mode.id==='ctf'){                             // pierde el EQUIPO: −1 ♥ cada uno
+      const wt=(r&&typeof r.winTeam==='number')?r.winTeam:0;
+      losers=parts.filter(p=>p.team===(1-wt));
+    } else if(mode.id==='hunt'){                     // menos calaveras pierde (empate: menos derribos)
       const rk=parts.slice().sort((a,b)=>((b.skulls||0)-(a.skulls||0)) || ((b.kills||0)-(a.kills||0)));
-      loser=rk[rk.length-1];
+      losers=[rk[rk.length-1]];
     } else {
-      loser=parts.find(p=>p.koRound) || parts.find(p=>p.hp<(entry!=null?entry:snap.get(p)))
-        || parts[Math.floor(Math.random()*parts.length)];
+      losers=[ parts.find(p=>p.koRound) || parts.find(p=>p.hp<(entry!=null?entry:snap.get(p)))
+        || parts[Math.floor(Math.random()*parts.length)] ];
     }
-    parts.forEach(p=>{ p.hp=snap.get(p); p.koRound=false; });
-    loser.hp=Math.max(0,loser.hp-1); loser.koRound=true;
+    parts.forEach(p=>{ p.hp=snap.get(p); p.koRound=false; p.team=null; p.color=colSnap.get(p); });
+    losers.forEach(p=>{ p.hp=Math.max(0,p.hp-1); p.koRound=true; });
     onRoundEnd();
   };
   const variant=Math.floor(Math.random()*3);
@@ -340,6 +353,7 @@ async function runRound(){
         if(mode.id==='bombas') BOMBERMAN.start(classic832(), parts, {duration:75, minAlive:minA}, done, ecoId);
         else if(mode.id==='smash') BROS.start(classic832(), parts, {duration:90, minAlive:minA}, done, ecoId);
         else if(mode.id==='hunt') TOWERFALL.start($('#game-canvas'), parts, {duration:60, gameMode:DATA.byMode['hunt'], variant}, done, ecoId);
+        else if(mode.id==='ctf') TOWERFALL.start($('#game-canvas'), parts, {duration:90, gameMode:{id:'ctf', name:'BANDERA', teams:true, respawn:1.5, goal:2}, variant}, done, ecoId);
         else TOWERFALL.start($('#game-canvas'), parts, {duration:60, minAlive:minA, rain:0, variant}, done, ecoId);
       },350);
     }

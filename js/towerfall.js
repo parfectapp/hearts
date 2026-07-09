@@ -55,6 +55,7 @@ function start(canvas, players, cfg, onEnd, eco){
   const GMID=GM.id, TEAMS=!!GM.teams, RESPAWN=GM.respawn||0;
   const DUR=cfg.duration||GM.dur||60, MIN=cfg.minAlive||2;
   const skulls=[], targets=[];               // HEADHUNTERS calaveras · TRIALS blancos
+  const flags=[]; let caps=[0,0];            // 🚩 CAPTURA LA BANDERA (por equipos)
   const result={mode:GMID}; let wave=1, questDone=false, questLost=false, targetT=0;
 
   const ents=players.map((p,i)=>{
@@ -86,6 +87,16 @@ function start(canvas, players, cfg, onEnd, eco){
     e.dead=false; e.p.koRound=false; e.inv=1.5; e.respawnT=0;
     e.ammo=e.weap.kind==='bow'?e.weap.ammo:0; e.shield=(e.pow==='shield'); e.wings=false; e.boots=false; e.special=null;
     parts.spawn(e.x,e.y-e.h/2,'#ffffff',18,240);
+  }
+  // 🚩 CTF: base de cada equipo = el spawn de un jugador suyo, lo MÁS LEJOS posible del rival
+  if(GMID==='ctf'){
+    const t0=ents.filter(e=>e.team===0), t1=ents.filter(e=>e.team===1);
+    if(t0.length&&t1.length){
+      const b0=t0[0];
+      const b1=t1.slice().sort((a,b)=>Math.hypot(b.x-b0.x,b.y-b0.y)-Math.hypot(a.x-b0.x,a.y-b0.y))[0];
+      flags.push({team:0, hx:b0.x, hy:b0.y-6, x:b0.x, y:b0.y-6, carrier:null});
+      flags.push({team:1, hx:b1.x, hy:b1.y-6, x:b1.x, y:b1.y-6, carrier:null});
+    }
   }
   const espd=e=>{ let s=(e.pow==='berserk'&&e.p.hp<=1)?e.spd*1.4:e.spd; if(e.rageT>0)s*=1.5; if(e.phaseT>0)s*=1.25; return s; };
   const MAXA=6;
@@ -227,6 +238,10 @@ function start(canvas, players, cfg, onEnd, eco){
     else if(GMID==='tdm'){ const a=teamKills(0),b=teamKills(1); result.t0=a; result.t1=b; result.winTeam=(a>=b?0:1); result.win=!!(me&&me.team===result.winTeam); }
     else if(GMID==='quest'){ result.win=questDone; result.wave=Math.min(wave,GM.waves||3); result.kills=me?(me.p.kills||0):0; }
     else if(GMID==='trials'){ result.score=me?(me.p.score||0):0; result.win=result.score>=(GM.goal||20); }
+    else if(GMID==='ctf'){ const a=caps[0], b=caps[1];
+      result.c0=a; result.c1=b;
+      result.winTeam = (a===b) ? (teamKills(0)>=teamKills(1)?0:1) : (a>b?0:1);   // empate: derribos del equipo
+      result.win=!!(me&&me.team===result.winTeam); }
   }
 
   // DODGE estilo TowerFall: dash con invencibilidad en 8 direcciones; atrapa flechas al esquivar
@@ -348,10 +363,19 @@ function start(canvas, players, cfg, onEnd, eco){
       } else if(e.onG){ const r=Math.random(); if(r<0.45) e.wantJump=true; else if(r<0.8) e.crouchT=0.35; }
     }
     const hunter=((GMID==='surv'||GMID==='camp')&&e.enemy);  // DEPREDADOR: caza al jugador SIN miedo, no huye ni saquea
-    const scared=!hunter&&e.p.hp<=1; // último corazón: sobrevive y saquea
+    // 🚩 CTF: prioridad de bandera — llévala a casa / persigue al ladrón / regresa la tuya / ve por la enemiga
+    let ctfGoal=null;
+    if(GMID==='ctf'&&flags.length===2){
+      const my=flags[e.team], en=flags[1-e.team];
+      if(en.carrier===e) ctfGoal={x:my.hx,y:my.hy,h:20};
+      else if(my.carrier) ctfGoal={x:my.carrier.x,y:my.carrier.y,h:42};
+      else if((my.x!==my.hx||my.y!==my.hy)&&Math.random()<0.8) ctfGoal={x:my.x,y:my.y,h:20};
+      else if(!en.carrier&&Math.random()<0.75) ctfGoal={x:en.x,y:en.y,h:20};
+    }
+    const scared=!hunter&&!ctfGoal&&e.p.hp<=1; // último corazón: sobrevive y saquea
     if(scared&&tg&&Math.abs(tg.x-e.x)<150&&!heartT){ e.mvx=-Math.sign(tg.x-e.x)*espd(e); e.face=tg.x<e.x?-1:1; return; }
-    const goHeart = heartT&&(hunter ? (e.weap.kind==='bow'&&e.ammo===0) : (scared||(e.weap.kind==='bow'&&Math.random()<0.65)||!tg));
-    const target = goHeart ? {x:heartT.x,y:heartT.y-10,h:20} : tg;
+    const goHeart = !ctfGoal&&heartT&&(hunter ? (e.weap.kind==='bow'&&e.ammo===0) : (scared||(e.weap.kind==='bow'&&Math.random()<0.65)||!tg));
+    const target = ctfGoal || (goHeart ? {x:heartT.x,y:heartT.y-10,h:20} : tg);
     if(!target){ e.mvx=0; return; }
     const dx=target.x-e.x, dy=(target.y-(target.h||42)/2)-(e.y-e.h/2);
     if(Math.abs(dx)>40) e.mvx=Math.sign(dx)*espd(e)*(hunter?1:0.85);
@@ -579,6 +603,34 @@ function start(canvas, players, cfg, onEnd, eco){
         if(sudden<=0){ sudden=1.6; const l=living(); const tg=l[Math.floor(Math.random()*l.length)];
           if(tg) arrows.push({x:tg.x+(Math.random()-.5)*60,y:24,vx:0,vy:520,owner:null,t:4,grace:0}); }
       }
+      // 🚩 CTF: recoger / robar / regresar / CAPTURAR
+      if(GMID==='ctf'&&flags.length){
+        flags.forEach(f=>{
+          if(f.carrier){
+            if(f.carrier.dead){ f.carrier=null; f.y=Math.min(f.y,H-60); }        // el portador cayó: la bandera queda ahí
+            else { f.x=f.carrier.x; f.y=f.carrier.y-f.carrier.h-8; }
+          }
+        });
+        for(const e of living()){
+          const en=flags[1-e.team], my=flags[e.team];
+          if(!en||!my) break;
+          const dEn=Math.hypot(e.x-en.x,(e.y-e.h/2)-en.y);
+          const dMy=Math.hypot(e.x-my.x,(e.y-e.h/2)-my.y);
+          if(!en.carrier && dEn<36){ en.carrier=e; SFX.coin(); parts.spawn(en.x,en.y,e.team===0?'#4d9fff':'#ff5a4d',16,240); }
+          if(!my.carrier && (my.x!==my.hx||my.y!==my.hy) && dMy<36){ my.x=my.hx; my.y=my.hy; SFX.phase(); parts.spawn(my.hx,my.hy,'#ffffff',12,200); }
+          if(en.carrier===e){
+            const dHome=Math.hypot(e.x-my.hx,(e.y-e.h/2)-my.hy);
+            const myHome=(!my.carrier && my.x===my.hx && my.y===my.hy);           // solo capturas con TU bandera en casa
+            if(dHome<48 && myHome){
+              caps[e.team]++; e.p.score=(e.p.score||0)+1;
+              en.carrier=null; en.x=en.hx; en.y=en.hy;
+              SFX.win&&SFX.win(); K.shake(9); parts.spawn(my.hx,my.hy,'#ffd34d',30,320);
+              say(my.hx,my.hy-40,'¡CAPTURA!');
+              hudRefresh();
+            }
+          }
+        }
+      }
       // FIN según el MODO
       let endNow=false;
       if(GMID==='lms'){
@@ -614,6 +666,7 @@ function start(canvas, players, cfg, onEnd, eco){
         if(!meC2 || (meC2.dead&&meC2.p.hp<=0)) endNow=true;   // te cazaron
       }
       else if(GMID==='trials'){ if((ents[0]&&(ents[0].p.score||0)>=(GM.goal||20))) endNow=true; }
+      else if(GMID==='ctf'){ if(caps[0]>=(GM.goal||2)||caps[1]>=(GM.goal||2)) endNow=true; }
       if(time>DUR) endNow=true;
       if(endNow){ over=true; endTimer=1.1; }
     } else {
@@ -659,6 +712,22 @@ function start(canvas, players, cfg, onEnd, eco){
       ctx.fillStyle=gl; ctx.fillRect(W/2-46,0,92,H); }
     if(!bd) tf.bg(ctx,time);
     tf.blocks(ctx,time);
+    // 🚩 CTF: bases (anillo del equipo) + banderas ondeando (la cargada va sobre la cabeza)
+    if(GMID==='ctf') flags.forEach(f=>{
+      const col=f.team===0?'#4d9fff':'#ff5a4d';
+      const pu=0.5+0.5*Math.sin(time*3+f.team*2);
+      ctx.save();
+      ctx.strokeStyle=col; ctx.globalAlpha=0.35+0.25*pu; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.arc(f.hx,f.hy+4,24,0,7); ctx.stroke();               // la BASE siempre marcada
+      ctx.globalAlpha=1;
+      const fx=f.x, fy=f.y;                                                     // asta + bandera (donde esté)
+      ctx.fillStyle='#d8cdb4'; ctx.fillRect(fx-2,fy-40,4,40);
+      const wav=Math.sin(time*5+f.team)*4;
+      ctx.fillStyle=col;
+      ctx.beginPath(); ctx.moveTo(fx+2,fy-40); ctx.lineTo(fx+30,fy-33+wav); ctx.lineTo(fx+2,fy-24); ctx.closePath(); ctx.fill();
+      ctx.fillStyle='rgba(255,255,255,.35)'; ctx.fillRect(fx+2,fy-40,10,3);
+      ctx.restore();
+    });
     // cofres del tesoro (estilo TowerFall)
     chests.forEach(ch=>{
       ch.t+=0.016;
@@ -815,6 +884,8 @@ function start(canvas, players, cfg, onEnd, eco){
     else if(GMID==='quest'){ ctx.fillStyle='#7fe0a0'; ctx.fillText('OLEADA '+wave+'/'+(GM.waves||3)+'  ·  kills '+teamKills(0)+'/'+(GM.questGoal||18),VW/2,48); }
     else if(GMID==='trials'){ const me=ents[0]; ctx.fillStyle='#ffc078'; ctx.fillText('🎯 BLANCOS '+(me?(me.p.score||0):0)+' / '+(GM.goal||20),VW/2,48); }
     else if(GMID==='surv'){ ctx.fillStyle='#ffb36b'; ctx.fillText('🌊 OLEADA '+wave+'  ·  derribados '+((ents.find(e=>!e.p.bot)||{p:{}}).p.kills||0),VW/2,48); }
+    else if(GMID==='ctf'){ ctx.fillStyle='#7fd0ff';
+      ctx.fillText('🚩 AZUL '+caps[0]+'  —  '+caps[1]+' ROJO  ·  primera a '+(GM.goal||2)+' capturas',VW/2,48); }
     else if(GMID==='camp'){ const CG=GM.camp||{}; const kH=((ents.find(e=>!e.p.bot)||{p:{}}).p.kills||0);
       ctx.fillStyle='#ffd34d';
       if(CG.goal==='boss'){ const bl=ents.filter(e=>e.enemy).reduce((s,e)=>s+Math.max(0,e.p.hp|0),0);
@@ -838,6 +909,8 @@ function start(canvas, players, cfg, onEnd, eco){
       PLATS.forEach(p=>ctx.fillRect(mx+p.x*k, my+p.y*ky, Math.max(2,p.w*k), 1.5));
       // la cornucopia (centro) marcada en dorado
       ctx.fillStyle='rgba(255,211,77,.9)'; ctx.fillRect(mx+mw/2-2, my+mh/2-2, 4, 4);
+      // 🚩 CTF: banderas en el minimapa (azul/rojo)
+      if(GMID==='ctf') flags.forEach(f=>{ ctx.fillStyle=f.team===0?'#4d9fff':'#ff5a4d'; ctx.fillRect(mx+f.x*k-2.5, my+f.y*ky-2.5, 5, 5); });
       ents.forEach(e=>{ if(e.dead) return;
         ctx.fillStyle=e.p.color||'#fff';
         ctx.beginPath(); ctx.arc(mx+e.x*k, my+e.y*ky, e.p.bot?2.5:3.5, 0, 7); ctx.fill();
@@ -862,12 +935,13 @@ function start(canvas, players, cfg, onEnd, eco){
   }
 
   raf=requestAnimationFrame(frame);
-  // hook de debug/balance (solo lectura): window.__tf.ents / .wave
-  window.__tf={ get ents(){ return ents; }, get wave(){ return wave; }, get mode(){ return GMID; } };
+  // hook de debug/balance (solo lectura): window.__tf.ents / .wave / .flags / .caps
+  window.__tf={ get ents(){ return ents; }, get wave(){ return wave; }, get mode(){ return GMID; },
+    get flags(){ return flags; }, get caps(){ return caps; } };
   return { stop(){ cancelAnimationFrame(raf); } };
 }
 
-window.TOWERFALL={ start,
+window.TOWERFALL={ start, backdrops:BACKDROPS,
   title:'HEARTS FALL',
   mapNames:{selva:'THORNWOOD',desierto:'MIRAGE',nieve:'FROSTFANG KEEP',volcan:'TOWERFORGE'},
   desc:'3 flechas (recupéralas). ESQUIVA (C/SHIFT) para ATRAPAR flechas. Apunta en 8 direcciones. Pisotón en la cabeza. Cada animal tiene su ULTIMATE con la tecla R. Cofres dan flechas BOMBA💥/LÁSER (rebotan)/ESPINA🌵 + alas/botas/escudo. ABAJO+SALTO te suelta por la plataforma.',

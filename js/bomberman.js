@@ -390,8 +390,13 @@ function start(canvas, players, cfg, onEnd, eco){
   function draw(){
     ctx.save();
     K.applyShake(ctx);
-    // exterior en piedra oscura
-    if(KIT.corner){
+    // exterior: el ARTE del mundo (mismos fondos que TowerFall: Sakura, Neo-Tokyo, Giza…)
+    const bd=window.TOWERFALL&&TOWERFALL.backdrops&&TOWERFALL.backdrops[eco];
+    if(bd){
+      const s=Math.max(832/bd.width,640/bd.height)*1.02, bw=bd.width*s, bh=bd.height*s;
+      ctx.drawImage(bd,(832-bw)/2,(640-bh)/2,bw,bh);
+      ctx.fillStyle='rgba(6,8,16,.45)'; ctx.fillRect(0,0,832,640);   // oscurece para que el tablero LEA
+    } else if(KIT.corner){
       for(let px=0;px<832;px+=TILE)for(let py=0;py<640;py+=TILE) ctx.drawImage(KIT.corner,px,py,TILE,TILE);
       ctx.fillStyle='rgba(6,10,14,.55)'; ctx.fillRect(0,0,832,640);
     } else { ctx.fillStyle='#22282e'; ctx.fillRect(0,0,832,640); }
