@@ -91,6 +91,43 @@ const SIZE = {
 };
 ANIMALS.forEach(a=>{ a.size = SIZE[a.id] || 1; });
 
+// ---- SUPERVIVENCIA: los DEPREDADORES naturales de cada animal (llegan en oleadas) ----
+const PREDATORS_OF={
+  mouse:['cat','snake','eagle'],      pigeon:['cat','eagle','vulture'],   goose:['wolf','croc','eagle'],
+  penguin:['orca','seal','shark'],    seal:['orca','shark','bear'],       toucan:['eagle','snake','cat'],
+  chameleon:['snake','vulture','cat'],monkey:['leopard','eagle','snake'], dog:['wolf','croc','bear'],
+  cat:['wolf','croc','eagle'],        panda:['tiger','leopard','bear'],   giraffe:['lion','croc','leopard'],
+  elephant:['lion','tiger','croc'],   platypus:['croc','eagle','snake'],
+  shark:['orca','croc','shark'],      orca:['orca','shark','croc'],       croc:['hippo','lion','croc'],
+  vulture:['eagle','lion','wolf'],    lion:['tiger','hippo','croc'],      tiger:['lion','bear','wolf'],
+  wolf:['bear','tiger','lion'],       hippo:['lion','croc','elephant'],   bear:['tiger','wolf','lion'],
+  darkpanda:['tiger','bear','leopard'],eagle:['eagle','vulture','leopard'],otter:['croc','eagle','wolf'],
+  snake:['eagle','vulture','hippo'],  leopard:['lion','tiger','bear'],
+};
+function predatorsOf(id){ return (PREDATORS_OF[id]||['wolf','eagle','croc']).slice(0,3); }
+
+// ---- CLANES (locales por ahora; los lugares los llenan miembros de relleno hasta que haya servidor) ----
+const CLAN_BADGES=['🛡️','🐾','🔥','❄️','⚡','🌵'];
+function fakeClanMembers(n){
+  const out=[], used={};
+  for(let i=0;i<n;i++){ let nm, guard=0;
+    do{ nm=BOT_NAMES[Math.floor(Math.random()*BOT_NAMES.length)]; }while(used[nm]&&guard++<30);
+    used[nm]=1; out.push({name:nm, cups:20+Math.floor(Math.random()*900)}); }
+  return out.sort((a,b)=>b.cups-a.cups);
+}
+function suggestedClans(){ return [
+  {name:'GARRAS MX',        badge:'🐾', members:fakeClanMembers(9)},
+  {name:'REYES DEL VOLCÁN', badge:'🔥', members:fakeClanMembers(12)},
+  {name:'HIELO ETERNO',     badge:'❄️', members:fakeClanMembers(7)},
+]; }
+function createClan(name,badge){
+  name=String(name||'').trim().slice(0,18); if(name.length<3) return null;
+  S.clan={name, badge:badge||'🛡️', members:fakeClanMembers(5+Math.floor(Math.random()*6)), mine:true};
+  save(); return S.clan;
+}
+function joinClan(c){ if(!c) return null; S.clan={name:c.name, badge:c.badge, members:c.members, mine:false}; save(); return S.clan; }
+function leaveClan(){ S.clan=null; save(); }
+
 // ---- COFRES (gacha): entre más caro, mejores probabilidades ----
 // los cofres cuestan DINERO real (compra demo, sin pago de verdad); el duplicado se convierte en ORO
 const CHESTS = [
@@ -375,6 +412,7 @@ const DEFAULT = ()=>({
   roadClaimed:{},     // premios del camino de copas ya reclamados
   shopDay:null, shopDeals:null,  // ofertas del día (3 cartas por oro)
   ftueSeen:false,     // ¿ya pasó la primera batalla guiada?
+  clan:null,          // {name,badge,members[],mine} — clanes locales (demo) hasta que haya servidor
   owned:{mouse:'#0000'},  // arranca SOLO con el RATÓN (gratis); los mejores se compran en la landing
   weapons:['bow_wood'],   // armas que posees
   weapon:'bow_wood',      // arma equipada
@@ -608,5 +646,6 @@ window.DATA = { ANIMALS, byId, WEAPONS, byWeapon, ECON, MODES, byMode, HEART_PAC
   cardOf, cardLevel, canUpgrade, upgradeCard, slots, awardChest, startUnlock, unlockLeft, skipCost, skipUnlock,
   openSlot, buyChestGems, freeLeft, claimFree, buyGems, getDeals, buyDeal, roadClaimable, claimRoad, rollVictoryChest,
   RARITY_LIVES, FREE_STARTER, maxLivesOf, animalLives, isSpent, spendLives, refillLives,
-  loginOrCreate, logout, session };
+  loginOrCreate, logout, session, predatorsOf,
+  CLAN_BADGES, suggestedClans, createClan, joinClan, leaveClan };
 })();

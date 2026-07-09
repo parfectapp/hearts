@@ -164,7 +164,7 @@ function start(canvas, players, cfg, onEnd, eco){
     addCorpse(e,dir,by);   // el mono sale volando con la flecha y se acuesta
     e.dead=true; e.p.koRound=true; SFX.die();
     // vidas / RESPAWN según el modo
-    if(GMID==='lms'){ if(e.p.hp>0) e.p.hp--; e.respawnT=(e.p.hp>0)?RESPAWN:0; }   // sin vidas = out
+    if(GMID==='lms'||GMID==='surv'){ if(e.p.hp>0) e.p.hp--; e.respawnT=(e.p.hp>0&&!e.enemy)?RESPAWN:0; }   // sin vidas = out
     else if(e.enemy){ e.respawnT=0; }                                            // enemigos de QUEST no reviven
     else if(RESPAWN>0){ e.respawnT=RESPAWN; }                                    // reapareces
     hudRefresh();
@@ -208,6 +208,8 @@ function start(canvas, players, cfg, onEnd, eco){
   const topSkulls=()=>ents.reduce((m,e)=>Math.max(m,e.p.skulls||0),0);
   const teamKills=t=>ents.filter(e=>e.team===t).reduce((s,e)=>s+(e.p.kills||0),0);
   function computeResult(){
+    if(GMID==='surv'){ const meS=ents.find(e=>!e.p.bot);
+      result.wave=wave; result.kills=(meS&&meS.p.kills)||0; result.win=wave>=6; return; }
     const me=ents.find(e=>!e.p.bot);
     result.time=Math.round(time);
     if(GMID==='lms'){ const al=ents.filter(e=>e.p.hp>0); result.winner=(al[0]||ents[0]); result.win=!!(me&&me.p.hp>0); }
@@ -576,6 +578,16 @@ function start(canvas, players, cfg, onEnd, eco){
       else if(GMID==='hunt'){ if(topSkulls()>=(GM.goal||10)) endNow=true; }
       else if(GMID==='tdm'){ if(teamKills(0)>=(GM.goal||15)||teamKills(1)>=(GM.goal||15)) endNow=true; }
       else if(GMID==='quest'){ if(questDone||questLost) endNow=true; }
+      else if(GMID==='surv'){
+        // OLEADA superada → los depredadores REGRESAN más rápidos y la cuenta sube
+        const en=ents.filter(e=>e.enemy);
+        if(en.length&&en.every(e=>e.dead)){
+          wave++; SFX.phase();
+          en.forEach(e=>{ e.p.hp=1; e.spd*=1.08; respawnEnt(e); });
+        }
+        const meS=ents.find(e=>!e.p.bot);
+        if(!meS || (meS.dead&&meS.p.hp<=0)) endNow=true;   // caíste: fin de la supervivencia
+      }
       else if(GMID==='trials'){ if((ents[0]&&(ents[0].p.score||0)>=(GM.goal||20))) endNow=true; }
       if(time>DUR) endNow=true;
       if(endNow){ over=true; endTimer=1.1; }
@@ -769,7 +781,7 @@ function start(canvas, players, cfg, onEnd, eco){
     ctx.fillStyle='rgba(20,25,35,.75)'; ctx.fillRect(VW/2-40,4,80,26);
     ctx.fillStyle=time>DUR-15?'#ff8a80':'#e8f2f8';
     ctx.font='bold 14px "Space Mono"'; ctx.textAlign='center';
-    ctx.fillText(Math.max(0,Math.ceil(DUR-time))+'s',VW/2,22);
+    ctx.fillText(GMID==='surv'?('OLA '+wave):(Math.max(0,Math.ceil(DUR-time))+'s'),VW/2,22);
     // MARCADOR del modo
     ctx.font='900 14px "Space Mono"'; ctx.textAlign='center';
     if(GMID==='hunt'){ const me=ents.find(e=>!e.p.bot);
@@ -777,6 +789,7 @@ function start(canvas, players, cfg, onEnd, eco){
     else if(GMID==='tdm'){ ctx.fillStyle='#7fd0ff'; ctx.fillText('AZUL '+teamKills(0)+'  —  '+teamKills(1)+' ROJO  (meta '+(GM.goal||15)+')',VW/2,48); }
     else if(GMID==='quest'){ ctx.fillStyle='#7fe0a0'; ctx.fillText('OLEADA '+wave+'/'+(GM.waves||3)+'  ·  kills '+teamKills(0)+'/'+(GM.questGoal||18),VW/2,48); }
     else if(GMID==='trials'){ const me=ents[0]; ctx.fillStyle='#ffc078'; ctx.fillText('🎯 BLANCOS '+(me?(me.p.score||0):0)+' / '+(GM.goal||20),VW/2,48); }
+    else if(GMID==='surv'){ ctx.fillStyle='#ffb36b'; ctx.fillText('🌊 OLEADA '+wave+'  ·  derribados '+((ents.find(e=>!e.p.bot)||{p:{}}).p.kills||0),VW/2,48); }
     else if(GMID==='lms'&&time>DUR-15){ ctx.fillStyle='#ff8a80'; ctx.font='bold 13px "Space Mono"'; ctx.fillText('¡MUERTE SÚBITA!',VW/2,48); }
     const meE=ents.find(e=>!e.p.bot);
     if(meE&&meE.dead&&!over){

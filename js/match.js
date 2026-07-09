@@ -148,6 +148,46 @@ function startParty(members){
   runRound();
 }
 
+// ===== SUPERVIVENCIA: tu animal vs SUS DEPREDADORES en oleadas (aguanta lo más que puedas) =====
+const SURV_MODE={id:'surv', name:'SUPERVIVENCIA', icon:'🌊', color:'#ff7a3c', respawn:1.4, dur:600,
+  blurb:'tus depredadores llegan en OLEADAS — cada una más rápida'};
+function startSurvival(){
+  const st=DATA.state();
+  let an=DATA.byId[st.selected];
+  if(!an || DATA.isSpent(an.id)){ st.selected=DATA.FREE_STARTER; DATA.save(); an=DATA.byId[st.selected]; }
+  st.matches++; DATA.save(); UI.updateHearts();
+  const preds=DATA.predatorsOf(an.id);
+  const players=[{name:st.name||'TÚ', animal:an, bot:false, team:0, color:COLORS[0],
+                  weapon:DATA.equipped(), cardLvl:DATA.cardLevel(an.id)}];
+  preds.forEach((pid,i)=>{ const pa=DATA.byId[pid]||DATA.byId.wolf;
+    players.push({name:pa.name, animal:pa, bot:true, enemy:true, team:1,
+                  color:['#ff5a4d','#ff8a3c','#c0392b'][i%3], weapon:DATA.byWeapon['bow_wood']}); });
+  players.forEach(p=>{ p.hp=p.enemy?1:3; p.elim=false; p.koRound=false; p.kills=0; p.skulls=0; p.score=0; });
+  current={ players, mode:SURV_MODE };
+  $('#hud-pot').textContent='3';
+  const lbl=document.querySelector('.hud-pot-label'); if(lbl) lbl.textContent='VIDAS';
+  KIT.updateHudPlayers(players,()=>true);
+  $('#results').classList.remove('show'); $('#scoreboard').classList.remove('show');
+  UI.show('#screen-game');
+  const eco=ECOS[Math.floor(Math.random()*ECOS.length)];
+  $('#hud-phase').textContent='SUPERVIVENCIA · '+eco.name;
+  const intro=$('#phase-intro'), pv=$('#map-preview');
+  $('#intro-kicker').textContent='🌊 SUPERVIVENCIA';
+  $('#intro-name').textContent=an.name+' vs DEPREDADORES';
+  $('#intro-desc').textContent='te cazan: '+preds.map(p=>DATA.byId[p].name).join(' · ')+' — cada oleada más rápida';
+  intro.classList.add('show'); SFX.phase();
+  if(pv){ pv.style.display=''; pv.classList.remove('zoom'); drawMapPreview(pv, eco.id); void pv.offsetWidth; pv.classList.add('zoom'); }
+  if(window.MUSIC) MUSIC.battle(2);
+  let n=3; $('#intro-go').textContent=n; SFX.count();
+  const iv=setInterval(()=>{ n--;
+    if(n>0){ $('#intro-go').textContent=n; SFX.count(); }
+    else{ clearInterval(iv); $('#intro-go').textContent='GO!'; SFX.go();
+      setTimeout(()=>{ intro.classList.remove('show');
+        window.TOWERFALL.start($('#game-canvas'), players, {duration:600, gameMode:SURV_MODE, variant:Math.floor(Math.random()*3)}, onModeEnd, eco.id);
+      },350); }
+  },650);
+}
+
 // ===== ONLINE (host): partida REAL con amigos — LMS de una arena, 3 vidas c/u =====
 function startNetHost(roster, net){
   const st=DATA.state();
@@ -513,6 +553,7 @@ function showModeResult(r){
   else if(mode.id==='tdm'){ s1='AZUL '+(r.t0||0)+'  —  '+(r.t1||0)+' ROJO'; s2=win?'¡tu equipo ganó!':'perdió tu equipo'; }
   else if(mode.id==='quest'){ s1='oleada '+(r.wave||1)+' / '+(mode.waves||3); s2=win?'¡oleadas superadas!':'no aguantaron'; }
   else if(mode.id==='trials'){ s1='🎯 '+(r.score||0)+' / '+(mode.goal||20)+' blancos'; s2=win?'¡meta cumplida!':'sigue practicando'; }
+  else if(mode.id==='surv'){ s1='🌊 aguantaste '+(r.wave||1)+' oleadas · '+(r.kills||0)+' derribados'; s2=win?'¡sobreviviste a la cacería!':'te cazaron — llega a la oleada 6'; }
   $('#results-hearts').textContent=s1;
   $('#results-cash').className=''; $('#results-cash').style.color=win?'#57d977':'#b7b1a4'; $('#results-cash').textContent=s2;
   const cupTxt=(dcups>=0?'+':'')+dcups+' 🏆 · '+(st.cups|0)+' 🏆 total'
@@ -527,10 +568,11 @@ function showModeResult(r){
 
 function init(){
   $('#btn-ranked').addEventListener('click',()=>{ SFX.click(); startRanked(); }); // JUGAR → VERSUS estilo TowerFall (rondas + eliminación)
+  const bs=$('#btn-surv'); if(bs) bs.addEventListener('click',()=>{ SFX.click(); startSurvival(); });
   $('#btn-modes-close').addEventListener('click',()=>{ SFX.click(); $('#modal-modes').classList.remove('show'); });
   $('#modal-modes').addEventListener('click',(e)=>{ if(e.target.id==='modal-modes') $('#modal-modes').classList.remove('show'); });
   $('#btn-results-lobby').addEventListener('click',()=>{ SFX.click(); $('#results').classList.remove('show'); UI.enterLobby(); });
 }
 
-window.MATCH={ init, openModes, startMode, startRanked, openRanks, startParty, startNetHost };
+window.MATCH={ init, openModes, startMode, startRanked, openRanks, startParty, startNetHost, startSurvival };
 })();

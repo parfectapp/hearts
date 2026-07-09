@@ -135,6 +135,7 @@ function enterLobby(){
   renderArena();                                 // (el fondo ahora es el acolchado azul; la arena vive en el diorama)
   updateLocks();
   startFeed();
+  renderClanPlate();
   maybeFTUE();
   if(window.TUT) TUT.onLobby();
 }
@@ -225,9 +226,65 @@ function initPager(){
   const pass=$('#crh-pass'); if(pass) pass.addEventListener('click',()=>{ SFX.deny(); toast('🔒 El PASE HEARTS se desbloquea en la ARENA 4 — ¡sigue subiendo copas!'); });
   // reloj del modelo CR: refresca slots + cofre gratis cada segundo
   setInterval(()=>{ if($('#screen-main').classList.contains('active')){ renderSlots(); tickFree(); } },1000);
-  // modal de recompensas
+  // modal de recompensas (toca la carta para avanzar, estilo CR)
   const rok=$('#btn-rewards-ok');
   if(rok) rok.addEventListener('click',()=>{ SFX.click(); $('#modal-rewards').classList.remove('show'); renderMarket(); renderSlots(); renderShop(); updateHearts(); });
+  const stg=$('#rw-stage');
+  if(stg) stg.addEventListener('click',()=>{ rwNext(); });
+  initClan();
+}
+
+// ---------- CLANES (locales demo — el clan global llega con el servidor) ----------
+let _clanBadge='🛡️';
+function renderClanPlate(){
+  const el=$('#plate-clan'); if(!el) return;
+  const c=DATA.state().clan;
+  el.textContent = c ? (c.badge+' '+c.name) : '';
+}
+function renderClanModal(){
+  const c=DATA.state().clan;
+  $('#clan-none').style.display=c?'none':'';
+  $('#clan-mine').style.display=c?'':'none';
+  if(!c){
+    const bd=$('#clan-badges'); bd.innerHTML='';
+    DATA.CLAN_BADGES.forEach(b=>{
+      const btn=document.createElement('button'); btn.className='clan-badge'+(b===_clanBadge?' sel':''); btn.textContent=b;
+      btn.addEventListener('click',()=>{ _clanBadge=b; SFX.click(); renderClanModal(); });
+      bd.appendChild(btn);
+    });
+    const sg=$('#clan-suggested'); sg.innerHTML='';
+    DATA.suggestedClans().forEach(cl=>{
+      const total=cl.members.reduce((a,m)=>a+m.cups,0);
+      const row=document.createElement('div'); row.className='clan-row';
+      row.innerHTML='<span class="cb">'+cl.badge+'</span><span class="cn2">'+cl.name+'<small>'+cl.members.length+' miembros · '+total.toLocaleString()+' 🏆</small></span>';
+      const jb=document.createElement('button'); jb.className='chest-buy'; jb.textContent='UNIRME';
+      jb.addEventListener('click',()=>{ DATA.joinClan(cl); SFX.win(); toast('¡Bienvenido a '+cl.name+'!'); renderClanModal(); renderClanPlate(); });
+      row.appendChild(jb); sg.appendChild(row);
+    });
+  } else {
+    const st=DATA.state();
+    const total=c.members.reduce((a,m)=>a+m.cups,0)+(st.cups|0);
+    $('#clan-head').innerHTML='<span class="cb big">'+c.badge+'</span><b>'+c.name+'</b><small>'+(c.members.length+1)+' miembros · '+total.toLocaleString()+' 🏆 en total</small>';
+    const box=$('#clan-members'); box.innerHTML='';
+    const all=[{name:st.name+' (TÚ)', cups:st.cups|0, me:true}].concat(c.members).sort((a,b)=>b.cups-a.cups);
+    all.forEach((m,i)=>{
+      const row=document.createElement('div'); row.className='clan-row'+(m.me?' me':'');
+      row.innerHTML='<span class="cb">'+(i+1)+'</span><span class="cn2">'+(m.me?'★ ':'')+m.name+'</span><span class="cm-cups">'+m.cups+' 🏆</span>';
+      box.appendChild(row);
+    });
+  }
+}
+function initClan(){
+  const b=$('#btn-clan'); if(!b||b.__wired) return; b.__wired=true;
+  b.addEventListener('click',()=>{ SFX.click(); renderClanModal(); $('#modal-clan').classList.add('show'); });
+  $('#btn-clan-create').addEventListener('click',()=>{
+    const c=DATA.createClan(($('#clan-name')||{}).value, _clanBadge);
+    if(!c){ SFX.deny(); toast('Ponle nombre a tu clan (3+ letras)'); return; }
+    SFX.win(); toast('⚔ ¡Clan '+c.name+' creado!'); renderClanModal(); renderClanPlate();
+  });
+  $('#btn-clan-leave').addEventListener('click',()=>{ SFX.click(); DATA.leaveClan(); toast('Saliste del clan'); renderClanModal(); renderClanPlate(); });
+  $('#btn-clan-close').addEventListener('click',()=>{ SFX.click(); $('#modal-clan').classList.remove('show'); });
+  $('#modal-clan').addEventListener('click',e=>{ if(e.target.id==='modal-clan') $('#modal-clan').classList.remove('show'); });
 }
 
 // ---------- SLOTS DE COFRES (estilo Clash Royale: ganas cofres jugando, tiempo para abrir) ----------
@@ -263,8 +320,40 @@ function renderSlots(){
     box.appendChild(d);
   });
 }
-// ---------- RECOMPENSAS (oro + cartas) ----------
+// ---------- RECOMPENSAS: revelado CARTA POR CARTA estilo Clash Royale ----------
+let _rwQueue=null, _rwData=null, _rwTimer=null;
 function showRewards(r){
+  _rwData=r; _rwQueue=r.stacks.slice();
+  $('#rw-summary').style.display='none';
+  $('#rw-stage').style.display='';
+  $('#modal-rewards').classList.add('show');
+  updateHearts();
+  rwNext();
+}
+function rwNext(){
+  clearTimeout(_rwTimer);
+  const big=$('#rw-bigcard');
+  if(!_rwQueue || !_rwQueue.length){ rwSummary(); return; }
+  const sk=_rwQueue.shift();
+  const rc=DATA.RARITY[sk.rarity]||DATA.RARITY.common;
+  big.innerHTML=''; big.style.borderColor=rc.color; big.style.boxShadow='0 0 60px '+rc.color+'66, 0 24px 50px rgba(0,0,0,.6)';
+  const src=Sprites.spriteCanvas(sk.animal);
+  const cv=document.createElement('canvas'); cv.width=src.width; cv.height=src.height;
+  cv.getContext('2d').drawImage(src,0,0);
+  big.appendChild(cv);
+  big.insertAdjacentHTML('beforeend',
+    '<div class="rwb-rar" style="color:'+rc.color+'">'+rc.name+'</div>'
+    +'<div class="rwb-name">'+sk.animal.name+'</div>'
+    +'<div class="rwb-copies">×'+sk.copies+(sk.isNew?'  <em>¡NUEVO!</em>':'')+'</div>');
+  big.classList.remove('pop'); void big.offsetWidth; big.classList.add('pop');   // reinicia la animación
+  if(sk.rarity==='legendary'||sk.rarity==='epic'){ SFX.win(); } else SFX.coin();
+  _rwTimer=setTimeout(rwNext, sk.rarity==='legendary'?2200:1500);                // auto-avanza (o toca)
+}
+function rwSummary(){
+  clearTimeout(_rwTimer);
+  const r=_rwData; if(!r) return;
+  $('#rw-stage').style.display='none';
+  $('#rw-summary').style.display='';
   $('#rw-title').textContent='¡'+r.chest.name+'!';
   $('#rw-gold').textContent='+'+r.gold+' 🪙';
   const box=$('#rw-stacks'); box.innerHTML='';
@@ -278,8 +367,6 @@ function showRewards(r){
     el.insertAdjacentHTML('beforeend','<b style="color:'+rc.color+'">'+sk.animal.name+'</b><span>×'+sk.copies+(sk.isNew?' · <em>¡NUEVO!</em>':'')+'</span>');
     box.appendChild(el);
   });
-  $('#modal-rewards').classList.add('show');
-  updateHearts();
 }
 // ---------- TIENDA estilo CR ----------
 function tickFree(){
@@ -813,11 +900,11 @@ function initChests(){
   $('#reveal-close').addEventListener('click',()=>{ SFX.click(); cancelAnimationFrame(revealRaf); $('#chest-reveal').classList.remove('show'); renderChests(); updateHearts(); });
 }
 
-// ---------- leaderboard ----------
+// ---------- leaderboard (TOP por COPAS 🏆) ----------
 function renderBoard(){
   const st=DATA.state();
-  const board=DATA.leaderboard().slice();
-  board.push({name:st.name||'TÚ', animal:st.selected||'mouse', hearts:st.heartsWon, me:true});
+  const board=DATA.leaderboard().slice().map(r=>({name:r.name, animal:r.animal, hearts:(r.hearts*4)|0}));
+  board.push({name:st.name||'TÚ', animal:st.selected||'mouse', hearts:st.cups|0, me:true});
   board.sort((a,b)=>b.hearts-a.hearts);
   const list=$('#board-list'); list.innerHTML='';
   board.forEach((r,i)=>{
@@ -825,7 +912,7 @@ function renderBoard(){
     const row=document.createElement('div');
     row.className='board-row'+(r.me?' me':'');
     row.innerHTML=`<span class="br-rank">${i+1}</span><span class="br-name">${r.me?'★ ':''}${r.name}</span>
-      <span class="br-animal">${an?an.name:''}</span><span class="br-hearts">${r.hearts} ♥</span>`;
+      <span class="br-animal">${an?an.name:''}</span><span class="br-hearts">${r.hearts} 🏆</span>`;
     list.appendChild(row);
   });
 }

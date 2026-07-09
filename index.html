@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Archivo+Black&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=132">
+<link rel="stylesheet" href="css/style.css?v=133">
 </head>
 <body>
 
@@ -107,7 +107,9 @@
         <div class="crh-plate">
           <div class="user-plate" id="lobby-username" title="toca para cambiar tu nombre">JUGADOR</div>
           <div class="crh-rank" id="lobby-lvl">COBRE · 0 🏆</div>
+          <div class="crh-clan" id="plate-clan"></div>
         </div>
+        <button class="crh-mini" id="btn-clan">CLAN</button>
         <button class="crh-mini" id="btn-leaderboard">TOP</button>
         <button class="crh-mini" id="btn-mute">SONIDO ON</button>
         <button class="crh-mini" id="btn-logout" title="cambiar de cuenta">SALIR</button>
@@ -140,6 +142,7 @@
         <button class="cr3d yellow" id="btn-ranked">¡Batalla!</button>
         <button class="cr3d blue" id="btn-party">¡Party!</button>
       </div>
+      <button class="cr3d red" id="btn-surv">🌊 Supervivencia <small>tu animal vs sus depredadores</small></button>
 
       <!-- SLOTS DE COFRES -->
       <div class="chest-slots" id="chest-slots"></div>
@@ -223,13 +226,39 @@
   </div>
 </div>
 
-<!-- RECOMPENSAS DE COFRE (estilo CR: oro + varias cartas) -->
+<!-- RECOMPENSAS DE COFRE (revelado carta por carta, estilo Clash Royale) -->
 <div class="modal-back" id="modal-rewards">
-  <div class="modal rewards-modal">
+  <div class="rw-stage" id="rw-stage">
+    <div class="rw-rays"></div>
+    <div class="rw-bigcard" id="rw-bigcard"></div>
+    <div class="rw-tapline">toca para continuar</div>
+  </div>
+  <div class="modal rewards-modal" id="rw-summary" style="display:none">
     <h3 id="rw-title">¡COFRE ABIERTO!</h3>
     <div class="rw-gold" id="rw-gold">+120 🪙</div>
     <div class="rw-stacks" id="rw-stacks"></div>
     <div class="modal-actions"><button class="btn-flat btn-ranked" id="btn-rewards-ok">¡GENIAL!</button></div>
+  </div>
+</div>
+
+<!-- CLAN (local demo: el clan global llega con el servidor) -->
+<div class="modal-back" id="modal-clan">
+  <div class="modal clan-modal" style="max-width:420px;width:min(420px,94vw)">
+    <h3>⚔ CLAN</h3>
+    <div id="clan-none">
+      <input id="clan-name" class="ftue-name" maxlength="18" placeholder="NOMBRE DE TU CLAN" autocomplete="off">
+      <div class="clan-badges" id="clan-badges"></div>
+      <button class="btn-flat btn-ranked" id="btn-clan-create" style="margin-top:10px">CREAR CLAN</button>
+      <div class="clan-sub">O ÚNETE A UNO</div>
+      <div id="clan-suggested"></div>
+      <div class="buy-note">clanes locales (demo) — los clanes globales llegan con el servidor</div>
+    </div>
+    <div id="clan-mine" style="display:none">
+      <div class="clan-head" id="clan-head"></div>
+      <div class="clan-members" id="clan-members"></div>
+      <button class="btn-flat" id="btn-clan-leave" style="margin-top:12px">SALIR DEL CLAN</button>
+    </div>
+    <div class="modal-actions"><button class="btn-flat" id="btn-clan-close">CERRAR</button></div>
   </div>
 </div>
 
@@ -456,22 +485,22 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/audio.js?v=132"></script>
-<script src="js/sprites.js?v=132"></script>
-<script src="js/mapart.js?v=132"></script>
-<script src="js/intro.js?v=132"></script>
-<script src="js/tutorial.js?v=132"></script>
-<script src="js/themes.js?v=132"></script>
-<script src="js/data.js?v=132"></script>
-<script src="js/weapons.js?v=132"></script>
-<script src="js/ui.js?v=132"></script>
-<script src="js/bomberman.js?v=132"></script>
-<script src="js/towerfall.js?v=132"></script>
-<script src="js/showdown.js?v=132"></script>
-<script src="js/bros.js?v=132"></script>
-<script src="js/match.js?v=132"></script>
+<script src="js/audio.js?v=133"></script>
+<script src="js/sprites.js?v=133"></script>
+<script src="js/mapart.js?v=133"></script>
+<script src="js/intro.js?v=133"></script>
+<script src="js/tutorial.js?v=133"></script>
+<script src="js/themes.js?v=133"></script>
+<script src="js/data.js?v=133"></script>
+<script src="js/weapons.js?v=133"></script>
+<script src="js/ui.js?v=133"></script>
+<script src="js/bomberman.js?v=133"></script>
+<script src="js/towerfall.js?v=133"></script>
+<script src="js/showdown.js?v=133"></script>
+<script src="js/bros.js?v=133"></script>
+<script src="js/match.js?v=133"></script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-<script src="js/net.js?v=132"></script>
-<script src="js/main.js?v=132"></script>
+<script src="js/net.js?v=133"></script>
+<script src="js/main.js?v=133"></script>
 </body>
 </html>
