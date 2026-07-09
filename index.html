@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Archivo+Black&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=135">
+<link rel="stylesheet" href="css/style.css?v=136">
 </head>
 <body>
 
@@ -142,7 +142,10 @@
         <button class="cr3d yellow" id="btn-ranked">¡Batalla!</button>
         <button class="cr3d blue" id="btn-party">¡Party!</button>
       </div>
-      <button class="cr3d red" id="btn-surv">🌊 Supervivencia <small>tu animal vs sus depredadores</small></button>
+      <div class="crh-btns2">
+        <button class="cr3d green" id="btn-camp">📜 Campaña <small>el corazón dorado · modo historia</small></button>
+        <button class="cr3d red" id="btn-surv">🌊 Supervivencia <small>tu animal vs sus depredadores</small></button>
+      </div>
 
       <!-- SLOTS DE COFRES -->
       <div class="chest-slots" id="chest-slots"></div>
@@ -208,8 +211,8 @@
       <div class="ftue-mouse" id="ftue-mouse"></div>
     </div>
     <div class="ftue-title">TU PRIMER GUERRERO:<br>EL RATÓN</div>
-    <p><b id="ftue-hola">¡Hola!</b> Con él <b>escalas</b>: gana copas 🏆,<br>sube de arena y consigue guerreros más fuertes.</p>
-    <button class="cr3d yellow ftue-go" id="ftue-go">¡Tu primera batalla!</button>
+    <p><b id="ftue-hola">¡Hola!</b> Los depredadores robaron el <b>CORAZÓN DORADO</b> 💛<br>y solo el más pequeño puede recuperarlo.</p>
+    <button class="cr3d yellow ftue-go" id="ftue-go">📜 ¡Empieza la historia!</button>
     <button class="ftue-skip" id="ftue-skip">explorar primero</button>
   </div>
 </div>
@@ -268,6 +271,49 @@
 
 <!-- (legacy) onboarding: fuera del flujo, se conserva el nodo -->
 <div class="onb" id="onboarding"><div class="onb-card" id="onb-card"></div></div>
+
+<!-- ============ CAMPAÑA: EL CORAZÓN DORADO (mapa de mundos estilo Mario) ============ -->
+<section id="screen-campaign" class="screen">
+  <div class="camp-wrap">
+    <div class="camp-head">
+      <button class="btn-flat" id="btn-camp-back">← LOBBY</button>
+      <h2>📜 EL CORAZÓN DORADO</h2>
+      <div class="camp-progress"><span id="camp-progress-n">0 / 12</span></div>
+    </div>
+    <div class="camp-prologue">Una noche, los DEPREDADORES robaron el CORAZÓN DORADO que mantenía la paz entre los animales. Los cuatro reinos cayeron en la cacería eterna. Nadie se atrevió a enfrentarlos… <b>excepto el más pequeño de todos.</b></div>
+    <div class="camp-worlds" id="camp-worlds"></div>
+  </div>
+</section>
+
+<!-- ficha de nivel de campaña (historia + objetivo) -->
+<div class="modal-back" id="modal-camp">
+  <div class="modal camp-modal">
+    <div class="camp-kicker" id="camp-kicker">MUNDO 1</div>
+    <h3 id="camp-name">NIVEL</h3>
+    <div class="camp-foes" id="camp-foes"></div>
+    <p class="camp-story" id="camp-story"></p>
+    <div class="camp-goal" id="camp-goal"></div>
+    <div class="camp-tut" id="camp-tut" style="display:none"></div>
+    <div class="camp-reward" id="camp-reward"></div>
+    <button class="cr3d yellow" id="btn-camp-play">¡A LA AVENTURA!</button>
+    <div class="modal-actions"><button class="btn-flat" id="btn-camp-close">CERRAR</button></div>
+  </div>
+</div>
+
+<!-- fin de nivel de campaña -->
+<div class="camp-end" id="camp-end">
+  <div class="ce-card">
+    <div class="ce-rays"></div>
+    <h2 id="ce-title">⭐ ¡NIVEL SUPERADO!</h2>
+    <p id="ce-sub"></p>
+    <div class="ce-reward" id="ce-reward"></div>
+    <div class="ce-btns">
+      <button class="cr3d yellow" id="btn-ce-next">SIGUIENTE NIVEL ▶</button>
+      <button class="cr3d yellow" id="btn-ce-retry">REINTENTAR</button>
+      <button class="cr3d blue" id="btn-ce-map">MAPA</button>
+    </div>
+  </div>
+</div>
 
 <!-- ============ LEADERBOARD ============ -->
 <section id="screen-leaderboard" class="screen">
@@ -489,22 +535,23 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/audio.js?v=135"></script>
-<script src="js/sprites.js?v=135"></script>
-<script src="js/mapart.js?v=135"></script>
-<script src="js/intro.js?v=135"></script>
-<script src="js/tutorial.js?v=135"></script>
-<script src="js/themes.js?v=135"></script>
-<script src="js/data.js?v=135"></script>
-<script src="js/weapons.js?v=135"></script>
-<script src="js/ui.js?v=135"></script>
-<script src="js/bomberman.js?v=135"></script>
-<script src="js/towerfall.js?v=135"></script>
-<script src="js/showdown.js?v=135"></script>
-<script src="js/bros.js?v=135"></script>
-<script src="js/match.js?v=135"></script>
+<script src="js/audio.js?v=136"></script>
+<script src="js/sprites.js?v=136"></script>
+<script src="js/mapart.js?v=136"></script>
+<script src="js/intro.js?v=136"></script>
+<script src="js/tutorial.js?v=136"></script>
+<script src="js/themes.js?v=136"></script>
+<script src="js/data.js?v=136"></script>
+<script src="js/weapons.js?v=136"></script>
+<script src="js/ui.js?v=136"></script>
+<script src="js/bomberman.js?v=136"></script>
+<script src="js/towerfall.js?v=136"></script>
+<script src="js/showdown.js?v=136"></script>
+<script src="js/bros.js?v=136"></script>
+<script src="js/match.js?v=136"></script>
+<script src="js/campaign.js?v=136"></script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-<script src="js/net.js?v=135"></script>
-<script src="js/main.js?v=135"></script>
+<script src="js/net.js?v=136"></script>
+<script src="js/main.js?v=136"></script>
 </body>
 </html>

@@ -164,7 +164,9 @@ function start(canvas, players, cfg, onEnd, eco){
     addCorpse(e,dir,by);   // el mono sale volando con la flecha y se acuesta
     e.dead=true; e.p.koRound=true; SFX.die();
     // vidas / RESPAWN según el modo
-    if(GMID==='lms'||GMID==='surv'){ if(e.p.hp>0) e.p.hp--; e.respawnT=(e.p.hp>0&&!e.enemy)?RESPAWN:0; }   // sin vidas = out
+    if(GMID==='lms'||GMID==='surv'||GMID==='camp'){ if(e.p.hp>0) e.p.hp--;
+      // CAMPAÑA: el JEFE también revive mientras le queden vidas; en surv/lms solo el jugador
+      e.respawnT=(e.p.hp>0 && (!e.enemy||GMID==='camp'))?RESPAWN:0; }   // sin vidas = out
     else if(e.enemy){ e.respawnT=0; }                                            // enemigos de QUEST no reviven
     else if(RESPAWN>0){ e.respawnT=RESPAWN; }                                    // reapareces
     hudRefresh();
@@ -210,6 +212,13 @@ function start(canvas, players, cfg, onEnd, eco){
   function computeResult(){
     if(GMID==='surv'){ const meS=ents.find(e=>!e.p.bot);
       result.wave=wave; result.kills=(meS&&meS.p.kills)||0; result.win=wave>=6; return; }
+    if(GMID==='camp'){ const meC=ents.find(e=>!e.p.bot); const CG=GM.camp||{goal:'kills',n:3};
+      result.kills=(meC&&meC.p.kills)||0; result.time=Math.round(time);
+      if(result.win==null){ // se acabó el tiempo o caíste
+        if(CG.goal==='time') result.win=!!(meC&&meC.p.hp>0);          // AGUANTA: sobrevivir el reloj = victoria
+        else result.win=false;                                        // kills/boss sin cumplir = derrota
+      }
+      return; }
     const me=ents.find(e=>!e.p.bot);
     result.time=Math.round(time);
     if(GMID==='lms'){ const al=ents.filter(e=>e.p.hp>0); result.winner=(al[0]||ents[0]); result.win=!!(me&&me.p.hp>0); }
@@ -338,7 +347,7 @@ function start(canvas, players, cfg, onEnd, eco){
         else startDodge(e, (Math.random()<0.5?-tx:tx), -1);                // esquiva vertical
       } else if(e.onG){ const r=Math.random(); if(r<0.45) e.wantJump=true; else if(r<0.8) e.crouchT=0.35; }
     }
-    const hunter=(GMID==='surv'&&e.enemy);  // DEPREDADOR: caza al jugador SIN miedo, no huye ni saquea
+    const hunter=((GMID==='surv'||GMID==='camp')&&e.enemy);  // DEPREDADOR: caza al jugador SIN miedo, no huye ni saquea
     const scared=!hunter&&e.p.hp<=1; // último corazón: sobrevive y saquea
     if(scared&&tg&&Math.abs(tg.x-e.x)<150&&!heartT){ e.mvx=-Math.sign(tg.x-e.x)*espd(e); e.face=tg.x<e.x?-1:1; return; }
     const goHeart = heartT&&(hunter ? (e.weap.kind==='bow'&&e.ammo===0) : (scared||(e.weap.kind==='bow'&&Math.random()<0.65)||!tg));
@@ -589,6 +598,21 @@ function start(canvas, players, cfg, onEnd, eco){
         const meS=ents.find(e=>!e.p.bot);
         if(!meS || (meS.dead&&meS.p.hp<=0)) endNow=true;   // caíste: fin de la supervivencia
       }
+      else if(GMID==='camp'){
+        // CAMPAÑA: objetivo por nivel — kills (derrota N) · time (aguanta) · boss (véncelo)
+        const CG=GM.camp||{goal:'kills',n:3};
+        const en=ents.filter(e=>e.enemy);
+        const meC2=ents.find(e=>!e.p.bot);
+        const kC=meC2?(meC2.p.kills||0):0;
+        if(CG.goal==='boss'){
+          if(en.length&&en.every(e=>e.dead&&e.p.hp<=0)){ result.win=true; endNow=true; }
+        } else {
+          // los enemigos vuelven en oleadas (un poco más rápidos) hasta cumplir el objetivo
+          if(en.length&&en.every(e=>e.dead&&e.p.hp<=0)){ wave++; SFX.phase(); en.forEach(e=>{ e.p.hp=1; e.spd*=1.05; respawnEnt(e); }); }
+          if(CG.goal==='kills'&&kC>=CG.n){ result.win=true; endNow=true; }
+        }
+        if(!meC2 || (meC2.dead&&meC2.p.hp<=0)) endNow=true;   // te cazaron
+      }
       else if(GMID==='trials'){ if((ents[0]&&(ents[0].p.score||0)>=(GM.goal||20))) endNow=true; }
       if(time>DUR) endNow=true;
       if(endNow){ over=true; endTimer=1.1; }
@@ -791,6 +815,12 @@ function start(canvas, players, cfg, onEnd, eco){
     else if(GMID==='quest'){ ctx.fillStyle='#7fe0a0'; ctx.fillText('OLEADA '+wave+'/'+(GM.waves||3)+'  ·  kills '+teamKills(0)+'/'+(GM.questGoal||18),VW/2,48); }
     else if(GMID==='trials'){ const me=ents[0]; ctx.fillStyle='#ffc078'; ctx.fillText('🎯 BLANCOS '+(me?(me.p.score||0):0)+' / '+(GM.goal||20),VW/2,48); }
     else if(GMID==='surv'){ ctx.fillStyle='#ffb36b'; ctx.fillText('🌊 OLEADA '+wave+'  ·  derribados '+((ents.find(e=>!e.p.bot)||{p:{}}).p.kills||0),VW/2,48); }
+    else if(GMID==='camp'){ const CG=GM.camp||{}; const kH=((ents.find(e=>!e.p.bot)||{p:{}}).p.kills||0);
+      ctx.fillStyle='#ffd34d';
+      if(CG.goal==='boss'){ const bl=ents.filter(e=>e.enemy).reduce((s,e)=>s+Math.max(0,e.p.hp|0),0);
+        ctx.fillText('👑 VENCE AL JEFE  ·  vidas del jefe: '+bl,VW/2,48); }
+      else if(CG.goal==='time') ctx.fillText('⏱ AGUANTA HASTA QUE ACABE EL RELOJ  ·  derribados '+kH,VW/2,48);
+      else ctx.fillText('🎯 DERROTA '+kH+' / '+(CG.n||3),VW/2,48); }
     else if(GMID==='lms'&&time>DUR-15){ ctx.fillStyle='#ff8a80'; ctx.font='bold 13px "Space Mono"'; ctx.fillText('¡MUERTE SÚBITA!',VW/2,48); }
     const meE=ents.find(e=>!e.p.bot);
     if(meE&&meE.dead&&!over){

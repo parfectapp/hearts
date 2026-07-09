@@ -413,6 +413,7 @@ const DEFAULT = ()=>({
   shopDay:null, shopDeals:null,  // ofertas del día (3 cartas por oro)
   ftueSeen:false,     // ¿ya pasó la primera batalla guiada?
   clan:null,          // {name,badge,members[],mine} — clanes locales (demo) hasta que haya servidor
+  campaign:{done:{}}, // CAMPAÑA "El Corazón Dorado": niveles superados {idx:true}
   owned:{mouse:'#0000'},  // arranca SOLO con el RATÓN (gratis); los mejores se compran en la landing
   weapons:['bow_wood'],   // armas que posees
   weapon:'bow_wood',      // arma equipada
@@ -488,6 +489,8 @@ function normalize(){
   if(!S.owned[FREE_STARTER]){ S.owned[FREE_STARTER]='#0000'; if(!S.cards[FREE_STARTER]) S.cards[FREE_STARTER]={copies:0,level:1}; }
   if(!S.selected || !byId[S.selected]) S.selected=FREE_STARTER;
   if(typeof S.rank!=='number' || S.rank<0 || S.rank>=RANKS.length) S.rank=0;   // rango válido
+  if(!S.campaign||typeof S.campaign!=='object') S.campaign={done:{}};
+  if(!S.campaign.done||typeof S.campaign.done!=='object') S.campaign.done={};
 }
 // ---- armas: comprar / equipar ----
 function buyWeapon(id){
