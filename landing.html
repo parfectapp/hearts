@@ -129,6 +129,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:40;display:flex;align-items:cent
 .mon-card{position:relative;border-radius:14px;padding:12px 6px 10px;text-align:center;background:rgba(12,12,20,.55);border:1px solid rgba(255,255,255,.08);transition:transform .12s,border-color .12s}
 .mon-card:hover{transform:translateY(-4px)}
 .mon-card img{width:100%;max-width:70px;height:70px;object-fit:contain;filter:drop-shadow(0 6px 10px rgba(0,0,0,.4))}
+img.pix{image-rendering:pixelated}
 .mon-card .mn{font-family:'Space Mono',monospace;font-size:9.5px;letter-spacing:.06em;color:#dfe6f2;margin-top:4px;display:block}
 .mon-card .dot{position:absolute;top:8px;right:8px;width:8px;height:8px;border-radius:50%}
 
@@ -310,7 +311,7 @@ const CHESTS=[
     const cards=document.createElement('div'); cards.className='rar-cards';
     list.forEach(a=>{
       const el=document.createElement('div'); el.className='mon-card'; el.style.borderColor=RAR[k].c+'55';
-      el.innerHTML=`<img src="${spr(a.id)}" alt="${a.n}" loading="lazy"><span class="mn">${a.n}</span>`;
+      el.innerHTML=`<img src="${spr(a.id)}" alt="${a.n}"><span class="mn">${a.n}</span>`;
       cards.appendChild(el);
     });
     grp.appendChild(cards); show.appendChild(grp);
@@ -476,6 +477,28 @@ const ARENAS=[
   fit(); addEventListener('resize',()=>{ clearTimeout(cv._rz); cv._rz=setTimeout(fit,180); });
   requestAnimationFrame(frame);
 })();
+
+/* ================= PIXEL-ART: mismo estilo de sprite que el juego ================= */
+function pixelize(img){
+  if(img.dataset.pix) return; img.dataset.pix='1';
+  const done=()=>{
+    if(!img.naturalWidth || img.src.indexOf('data:')===0) return;
+    const PIXH=42, ph=PIXH, pw=Math.max(1,Math.round(PIXH*(img.naturalWidth/img.naturalHeight)));
+    const t=document.createElement('canvas'); t.width=pw; t.height=ph;
+    const tg=t.getContext('2d'); tg.imageSmoothingEnabled=true; tg.imageSmoothingQuality='high';
+    tg.drawImage(img,0,0,pw,ph);
+    const sil=document.createElement('canvas'); sil.width=pw; sil.height=ph;           // contorno oscuro
+    const sg=sil.getContext('2d'); sg.drawImage(t,0,0);
+    sg.globalCompositeOperation='source-in'; sg.fillStyle='#161018'; sg.fillRect(0,0,pw,ph);
+    const S=6, c=document.createElement('canvas'); c.width=(pw+2)*S; c.height=(ph+2)*S;
+    const g=c.getContext('2d'); g.imageSmoothingEnabled=false;
+    [[0,1],[2,1],[1,0],[1,2],[0,0],[2,2],[2,0],[0,2]].forEach(o=>g.drawImage(sil,o[0]*S,o[1]*S,pw*S,ph*S));
+    g.drawImage(t,S,S,pw*S,ph*S);
+    img.onload=null; img.src=c.toDataURL(); img.classList.add('pix');
+  };
+  if(img.naturalWidth) done(); else img.onload=done;
+}
+document.querySelectorAll('.mon-card img,.rar img,.arena-thumb img.mon').forEach(pixelize);
 
 /* ================= scroll reveal ================= */
 const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.remove('pre');e.target.classList.add('in');}}),{threshold:.06});

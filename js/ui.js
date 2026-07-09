@@ -66,7 +66,7 @@ function enterLobby(){
   c.clearRect(0,0,cv.width,cv.height);
   if(an){
     const sp=Sprites.spriteCanvas(an);
-    c.imageSmoothingEnabled=true; c.imageSmoothingQuality='high';
+    c.imageSmoothingEnabled=false;                    // pixel-art nítido
     // ajusta al marco respetando el aspecto del sticker
     const k=Math.min(340/sp.height, 300/sp.width);
     const w=sp.width*k, h=sp.height*k;
@@ -186,7 +186,7 @@ function openBuy(a){    // "ver tarjeta" estilo mockup: header HEARTS · pips ·
   const cv=$('#buy-canvas'), c=cv.getContext('2d');
   c.clearRect(0,0,cv.width,cv.height);
   const sp=Sprites.spriteCanvas(a);
-  c.imageSmoothingEnabled=true; c.imageSmoothingQuality='high';
+  c.imageSmoothingEnabled=false;                      // pixel-art nítido
   const k=Math.min(230/sp.height, 220/sp.width);
   const w=sp.width*k, h=sp.height*k;
   c.drawImage(sp,(cv.width-w)/2,(cv.height-h)/2,w,h);
@@ -331,7 +331,7 @@ function renderPartySlots(){
       slot.className='pslot'+(m.me?' me':'');
       const cv=document.createElement('canvas'); cv.width=cv.height=40;
       const src=Sprites.spriteCanvas(m.animal), c=cv.getContext('2d');
-      const k=Math.min(40/src.height,40/src.width); c.imageSmoothingEnabled=true;
+      const k=Math.min(40/src.height,40/src.width); c.imageSmoothingEnabled=false;
       c.drawImage(src,(40-src.width*k)/2,(40-src.height*k)/2,src.width*k,src.height*k);
       slot.appendChild(cv);
       const nm=document.createElement('div'); nm.className='pn';
@@ -515,7 +515,7 @@ function playReveal(res){
       c.beginPath(); c.arc(cx,cy,26+k*115,0,7); c.stroke(); c.restore();
       const bounce=(1-Math.pow(1-k,3))*(1+0.14*Math.sin(k*Math.PI));   // rebote
       const scale=Math.min((Hc*0.72)/sp.height,(Wc*0.72)/sp.width)*bounce;
-      c.imageSmoothingEnabled=true; c.imageSmoothingQuality='high';
+      c.imageSmoothingEnabled=false;                  // pixel-art nítido
       const w=sp.width*scale, h=sp.height*scale;
       c.drawImage(sp,cx-w/2,cy-h/2+6,w,h);
       if(res.rarity==='legendary'){ for(let i=0;i<5;i++){ const a=t*2+i*1.3; c.fillStyle='#fff';

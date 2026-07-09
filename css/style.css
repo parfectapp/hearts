@@ -63,6 +63,8 @@ body{
   height:calc(100% - 80px);padding:60px 5% 0;
 }
 .roster canvas{width:clamp(56px,7vw,84px);height:auto;filter:drop-shadow(0 7px 10px rgba(0,0,0,.4))}
+/* UN SOLO ESTILO: sprites pixel-art nítidos en todo el UI (sin suavizado del navegador) */
+.roster canvas,.own-row canvas,.market-card canvas,#buy-canvas,#lobby-avatar,#results-sprite,#reveal-canvas,.pslot canvas{image-rendering:pixelated}
 /* deja el centro libre para la tarjeta de login */
 .side-red .roster{padding-right:120px}
 .side-blue .roster{padding-left:120px}

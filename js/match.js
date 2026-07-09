@@ -267,7 +267,7 @@ function finishMatch(){
   const cvs=$('#results-sprite'), c=cvs.getContext('2d');
   c.clearRect(0,0,cvs.width,cvs.height);
   const sp=Sprites.spriteCanvas(winner.animal);
-  c.imageSmoothingEnabled=true; c.imageSmoothingQuality='high';
+  c.imageSmoothingEnabled=false;                       // pixel-art nítido
   const k=Math.min(150/sp.height,130/sp.width);
   c.drawImage(sp,(cvs.width-sp.width*k)/2,(cvs.height-sp.height*k)/2,sp.width*k,sp.height*k);
   $('#results').classList.add('show');
@@ -428,7 +428,7 @@ function showModeResult(r){
     + (afterIdx>beforeIdx?'  ↑ ¡SUBISTE DE ARENA!':(afterIdx<beforeIdx?'  ↓ bajaste de arena':''));
   $('#results-xp').innerHTML='<b style="color:'+(dcups>=0?'#ffd34d':'#ff8a7a')+'">'+cupTxt+'</b><br><span style="opacity:.85;color:#ffcf5a">+'+dgold+' 🪙 oro · '+(st.coins|0)+' 🪙 total</span><br><span style="opacity:.7">+'+xp+' XP · Nivel '+DATA.level()+(lu.up?'  ★ ¡NIVEL '+lu.level+'!':'')+'</span>';
   const cvs=$('#results-sprite'), c=cvs.getContext('2d'); c.clearRect(0,0,cvs.width,cvs.height);
-  if(me){ const sp=Sprites.spriteCanvas(me.animal); c.imageSmoothingEnabled=true; const k=Math.min(150/sp.height,130/sp.width); c.drawImage(sp,(cvs.width-sp.width*k)/2,(cvs.height-sp.height*k)/2,sp.width*k,sp.height*k); }
+  if(me){ const sp=Sprites.spriteCanvas(me.animal); c.imageSmoothingEnabled=false; const k=Math.min(150/sp.height,130/sp.width); c.drawImage(sp,(cvs.width-sp.width*k)/2,(cvs.height-sp.height*k)/2,sp.width*k,sp.height*k); }
   $('#results').classList.add('show');
   if(window.MUSIC){ if(win)MUSIC.winner(); else MUSIC.lobby(); }
   if(win){ SFX.win(); UI.popHeart(); confetti(); } else SFX.lose();

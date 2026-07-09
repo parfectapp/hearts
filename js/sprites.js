@@ -18,13 +18,15 @@ function load(animals){
   return Promise.all(animals.map(a=>loadOne(a,3)));
 }
 
-// canvas con el sticker a tamaño nativo (para UI: roster, market, lobby)
+// UN SOLO ESTILO: todo el UI (roster/mercado/lobby/tarjetas) usa el sprite PIXEL-ART con
+// contorno — el mismo look que la arena — pre-escalado x6 nearest-neighbor (nítido en grande).
 function spriteCanvas(an){
   if(cache[an.id]) return cache[an.id];
-  const cv=document.createElement('canvas');
   const im=imgs[an.id];
-  if(im){ cv.width=im.width; cv.height=im.height; cv.getContext('2d').drawImage(im,0,0); }
-  else { cv.width=90; cv.height=110; return cv; } // sin cachear: puede llegar después
+  if(!im){ const cv=document.createElement('canvas'); cv.width=90; cv.height=110; return cv; } // sin cachear: puede llegar después
+  const px=pixOf(an), S=6;
+  const cv=document.createElement('canvas'); cv.width=px.width*S; cv.height=px.height*S;
+  const g=cv.getContext('2d'); g.imageSmoothingEnabled=false; g.drawImage(px,0,0,cv.width,cv.height);
   cache[an.id]=cv;
   return cv;
 }
