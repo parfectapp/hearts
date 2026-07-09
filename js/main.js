@@ -14,8 +14,6 @@ Promise.all([Sprites.load(DATA.ANIMALS), MAPART.load(), WEAP.load()]).then(()=>{
   UI.initTouch();
   UI.initMenu();
   MATCH.init();
-  if(window.CAMPAIGN) CAMPAIGN.init();
-  if(window.FIESTA) FIESTA.init();
   // ENTRADA: si ya tienes SESIÓN, directo a tu cuenta (progreso guardado);
   // si no, la pantalla de LOG IN (roja/azul) — crea tu cuenta o entra.
   if(DATA.session()){ UI.enterLobby(); }

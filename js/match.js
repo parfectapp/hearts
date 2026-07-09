@@ -260,24 +260,74 @@ function drawMapPreview(cv, ecoId){
   im.onload=()=>{ if(cv.dataset.eco===ecoId) paint(im); };
 }
 
-function runRound(){
-  const m=current;
-  const eco=ECOS[((m.ecoStart||0)+m.round)%ECOS.length]; // cada ronda cambia de mundo
-  const parts=aliveList();
-  // ESTILO TOWERFALL: la ronda acaba en cuanto CAE el primero — ese pierde 1 ♥
-  const variant=Math.floor(Math.random()*3);
-  const cfg={ duration:60, minAlive:Math.max(1,parts.length-1), rain:0, variant };
-  const MODE=window.TOWERFALL, tower=MODE.mapNames[eco.id]||eco.name;
+// ===== RANKED con RULETA: cada ronda la RUEDA DE LA FORTUNA decide el MODO
+// (sin repetir hasta que salgan todos) y el MAPA. La ronda solo decide QUIÉN
+// cae — el torneo administra los ♥ (snapshot antes, −1 al perdedor después).
+const RANKED_MODES=[
+  {id:'flechas', icon:'🏹', name:'FLECHAS',   color:'#d8a13c', desc:'duelo TowerFall — el primero en CAER pierde 1 ♥'},
+  {id:'bombas',  icon:'💣', name:'BOMBAS',    color:'#ef7d1c', desc:'bomberman — el primero en VOLAR pierde 1 ♥'},
+  {id:'smash',   icon:'🥊', name:'SMASH',     color:'#7e46e0', desc:'sácalos del stage — el primero FUERA pierde 1 ♥'},
+  {id:'hunt',    icon:'💀', name:'CALAVERAS', color:'#9d4fd8', desc:'cacería de calaveras — el que junte MENOS pierde 1 ♥'},
+];
+const ECOS4=['selva','desierto','nieve','volcan'];       // bomber/bros: los 4 mundos con arte
+const ECO_WHEEL={
+  selva:   ['🌿','SELVA','#2e8b57'],   desierto:['🏜️','DESIERTO','#c8922e'],
+  nieve:   ['❄️','NIEVE','#5f9fc8'],   volcan:  ['🌋','VOLCÁN','#c8442e'],
+  japon:   ['🌸','SAKURA','#c86a94'],  tokyo:   ['🌃','NEO-TOKYO','#7e5fd8'],
+  egipto:  ['🐫','GIZA','#b8a04f'],    grecia:  ['🏛️','OLIMPO','#6f8fb0'],
+  china:   ['🐉','DRAGÓN','#b83a3a'],
+};
+function classic832(){ const cv=$('#game-canvas'); cv.width=832; cv.height=640; return cv; }
 
-  // SELECCIÓN DE MAPA: te sale el mapa y la cámara se ACERCA a la arena (zoom) mientras corre el 3·2·1
+async function runRound(){
+  const m=current;
+  const parts=aliveList();
+  // 🎡 GIRO 1: el MODO — los que ya salieron NO se repiten (hasta agotar los 4)
+  if(!m.used) m.used=[];
+  let pool=RANKED_MODES.filter(md=>!m.used.includes(md.id));
+  if(!pool.length){ m.used=[]; pool=RANKED_MODES.slice(); }
+  const mode=pool[Math.floor(Math.random()*pool.length)];
+  m.used.push(mode.id);
+  const ecoPool=(mode.id==='bombas'||mode.id==='smash')?ECOS4:ECOS.map(e=>e.id);
+  const ecoId=ecoPool[Math.floor(Math.random()*ecoPool.length)];
+  if(window.WHEEL){
+    await WHEEL.spin('🎡 RONDA '+(m.round+1)+' — ¿QUÉ MODO TOCA?',
+      RANKED_MODES.map(md=>({icon:md.icon,label:md.name,color:md.color,used:m.used.includes(md.id)&&md.id!==mode.id})),
+      RANKED_MODES.indexOf(mode), {sub:'los modos que YA SALIERON no se repiten'});
+    await WHEEL.spin('🗺️ ¿EN QUÉ MAPA?',
+      ecoPool.map(id=>({icon:ECO_WHEEL[id][0],label:ECO_WHEEL[id][1],color:ECO_WHEEL[id][2]})),
+      ecoPool.indexOf(ecoId));
+  }
+  // snapshot de ♥: los motores mueven vidas a su manera — aquí se restauran y
+  // SOLO el perdedor de la ronda baja 1 (supervivencia pura, nadie suma)
+  const snap=new Map(parts.map(p=>[p,p.hp]));
+  const entry={flechas:null, bombas:1, smash:1, hunt:null}[mode.id];
+  if(entry!=null) parts.forEach(p=>p.hp=entry);
+  parts.forEach(p=>{ p.koRound=false; p.skulls=0; p.kills=0; });
+  const done=()=>{
+    let loser=null;
+    if(mode.id==='hunt'){                                    // menos calaveras pierde (empate: menos kills)
+      const rk=parts.slice().sort((a,b)=>((b.skulls||0)-(a.skulls||0)) || ((b.kills||0)-(a.kills||0)));
+      loser=rk[rk.length-1];
+    } else {
+      loser=parts.find(p=>p.koRound) || parts.find(p=>p.hp<(entry!=null?entry:snap.get(p)))
+        || parts[Math.floor(Math.random()*parts.length)];
+    }
+    parts.forEach(p=>{ p.hp=snap.get(p); p.koRound=false; });
+    loser.hp=Math.max(0,loser.hp-1); loser.koRound=true;
+    onRoundEnd();
+  };
+  const variant=Math.floor(Math.random()*3);
+  const minA=Math.max(1,parts.length-1);
+  // SELECCIÓN DE MAPA: el mapa a pantalla completa con zoom mientras corre el 3·2·1
   const intro=$('#phase-intro'), pv=$('#map-preview');
   $('#intro-kicker').textContent='RONDA '+(m.round+1)+' · '+parts.length+' EN PIE';
-  $('#intro-name').textContent=tower;
-  $('#intro-desc').textContent=eco.name+' · el primero en caer pierde 1 ♥';
-  $('#hud-phase').textContent='RONDA '+(m.round+1)+' · '+eco.name;
-  $('#game-controls').textContent=MODE.controls;
+  $('#intro-name').textContent=mode.icon+' '+mode.name;
+  $('#intro-desc').textContent=ECO_WHEEL[ecoId][1]+' · '+mode.desc;
+  $('#hud-phase').textContent='RONDA '+(m.round+1)+' · '+mode.name+' · '+ECO_WHEEL[ecoId][1];
+  $('#game-controls').textContent=(mode.id==='bombas'?BOMBERMAN.controls : mode.id==='smash'?BROS.controls : TOWERFALL.controls);
   intro.classList.add('show'); SFX.phase();                  // primero visible (para medir la pantalla)
-  if(pv){ pv.style.display=''; pv.classList.remove('zoom'); drawMapPreview(pv, eco.id); }
+  if(pv){ pv.style.display=''; pv.classList.remove('zoom'); drawMapPreview(pv, ecoId); }
   if(window.MUSIC) MUSIC.battle(m.round);
   if(pv){ void pv.offsetWidth; pv.classList.add('zoom'); }  // arranca el acercamiento
   let n=3; $('#intro-go').textContent=n; SFX.count();
@@ -287,7 +337,10 @@ function runRound(){
       clearInterval(iv2);
       $('#intro-go').textContent='GO!'; SFX.go();
       setTimeout(()=>{ intro.classList.remove('show');
-        MODE.start($('#game-canvas'), parts, cfg, onRoundEnd, eco.id);
+        if(mode.id==='bombas') BOMBERMAN.start(classic832(), parts, {duration:75, minAlive:minA}, done, ecoId);
+        else if(mode.id==='smash') BROS.start(classic832(), parts, {duration:90, minAlive:minA}, done, ecoId);
+        else if(mode.id==='hunt') TOWERFALL.start($('#game-canvas'), parts, {duration:60, gameMode:DATA.byMode['hunt'], variant}, done, ecoId);
+        else TOWERFALL.start($('#game-canvas'), parts, {duration:60, minAlive:minA, rain:0, variant}, done, ecoId);
       },350);
     }
   },650);
@@ -306,11 +359,9 @@ function onRoundEnd(){
 
 function showScoreboard(final){
   const m=current;
-  const nextEco = final?null:ECOS[((m.ecoStart||0)+m.round+1)%ECOS.length];
   const alive=aliveList();
-  let head = final?'FINAL':nextEco.name;
-  if(!final&&alive.length===2) head=nextEco.name+' · ¡DUELO 1v1!';
-  else if(!final&&m.round+1>=4) head=nextEco.name+' · ⛈';
+  let head = final?'FINAL':'🎡 LA RUEDA DECIDE LA RONDA '+(m.round+2)+'…';
+  if(!final&&alive.length===2) head='🎡 ¡DUELO 1v1! — la rueda decide dónde…';
   $('#sb-eco').textContent = head;
   const rows=$('#sb-rows'); rows.innerHTML='';
   const ranked=m.players.slice().sort((a,b)=>(b.elim?-1:b.hp)-(a.elim?-1:a.hp));

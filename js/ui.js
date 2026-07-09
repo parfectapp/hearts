@@ -152,8 +152,7 @@ function maybeFTUE(){
     if(src){ const cv=document.createElement('canvas'); cv.width=src.width; cv.height=src.height;
       cv.getContext('2d').drawImage(src,0,0); mh.appendChild(cv); } }
   if(ov.__wired) return; ov.__wired=true;
-  $('#ftue-go').addEventListener('click',()=>{ SFX.click(); st.ftueSeen=true; DATA.save(); ov.classList.remove('show');
-    if(window.CAMPAIGN) CAMPAIGN.play(0); else MATCH.startRanked(); });   // el TUTORIAL es el nivel 1-1 de la CAMPAÑA
+  $('#ftue-go').addEventListener('click',()=>{ SFX.click(); st.ftueSeen=true; DATA.save(); ov.classList.remove('show'); MATCH.startRanked(); });
   $('#ftue-skip').addEventListener('click',()=>{ SFX.click(); st.ftueSeen=true; DATA.save(); ov.classList.remove('show'); enterLobby(); });
 }
 
