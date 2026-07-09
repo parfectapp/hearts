@@ -136,18 +136,20 @@ function eliminate(list){
 // pantalla de selección de mapa: muestra SOLO EL FONDO del mapa (el arte del escenario)
 const MAP_PREVIEWS={};
 function drawMapPreview(cv, ecoId){
+  // bitmap = tamaño real en pantalla (pantalla completa, nítido)
+  const cw=cv.clientWidth||832, ch=cv.clientHeight||640;
+  if(cv.width!==cw||cv.height!==ch){ cv.width=cw; cv.height=ch; }
   const c=cv.getContext('2d'), W=cv.width, H=cv.height;
   cv.dataset.eco=ecoId;
-  const frame=()=>{ c.strokeStyle='rgba(255,255,255,.22)'; c.lineWidth=2; c.strokeRect(1,1,W-2,H-2); };
   const paint=im=>{ const s=Math.max(W/im.width,H/im.height), w=im.width*s, h=im.height*s;
-    c.drawImage(im,(W-w)/2,(H-h)/2,w,h); frame(); };
+    c.drawImage(im,(W-w)/2,(H-h)/2,w,h); };
   let im=MAP_PREVIEWS[ecoId];
   if(im && im.complete && im.naturalWidth){ paint(im); return; }
   // mientras carga: degradado con la paleta del mundo (sigue siendo solo fondo)
   const a=(THEMES.TF_ARENAS && (THEMES.TF_ARENAS[ecoId]||THEMES.TF_ARENAS.selva))||null;
   const pal=a?a.pal:{bg1:'#08110c',bg2:'#17301e'};
   const g=c.createLinearGradient(0,0,0,H); g.addColorStop(0,pal.bg1); g.addColorStop(1,pal.bg2);
-  c.fillStyle=g; c.fillRect(0,0,W,H); frame();
+  c.fillStyle=g; c.fillRect(0,0,W,H);
   if(!im){ im=new Image(); MAP_PREVIEWS[ecoId]=im; im.src='assets/maps/'+ecoId+'.png?v=4'; }
   im.onload=()=>{ if(cv.dataset.eco===ecoId) paint(im); };
 }
@@ -168,8 +170,8 @@ function runRound(){
   $('#intro-desc').textContent=eco.name+' · el primero en caer pierde 1 ♥';
   $('#hud-phase').textContent='RONDA '+(m.round+1)+' · '+eco.name;
   $('#game-controls').textContent=MODE.controls;
+  intro.classList.add('show'); SFX.phase();                  // primero visible (para medir la pantalla)
   if(pv){ pv.style.display=''; pv.classList.remove('zoom'); drawMapPreview(pv, eco.id); }
-  intro.classList.add('show'); SFX.phase();
   if(window.MUSIC) MUSIC.battle(m.round);
   if(pv){ void pv.offsetWidth; pv.classList.add('zoom'); }  // arranca el acercamiento
   let n=3; $('#intro-go').textContent=n; SFX.count();
