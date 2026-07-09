@@ -228,7 +228,8 @@ function start(canvas, players, cfg, onEnd, eco){
         }
       }
       const me2=ents.find(e=>!e.p.bot);
-      if(time>DUR || active().length<=MIN || (me2&&me2.out)){ over=true; endTimer=1.3; }
+      // LAST MAN STANDING: la ronda sigue hasta que quede UNO (si caes, ves el final)
+      if(time>DUR || active().length<=MIN){ over=true; endTimer=1.3; }
     }
     if(over&&dt0>0){
       endTimer-=dt0;

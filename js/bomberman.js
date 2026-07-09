@@ -306,7 +306,8 @@ function start(canvas, players, cfg, onEnd, eco){
           }
         }
       }
-      if(time>DUR || active().length<=MIN || (me&&me.out)){
+      // LAST MAN STANDING: la ronda sigue hasta que quede UNO (si caes, ves el final)
+      if(time>DUR || active().length<=MIN){
         over=true; endTimer=1.1;
       }
     } else {

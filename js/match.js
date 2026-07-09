@@ -264,9 +264,9 @@ function drawMapPreview(cv, ecoId){
 // (sin repetir hasta que salgan todos) y el MAPA. La ronda solo decide QUIÉN
 // cae — el torneo administra los ♥ (snapshot antes, −1 al perdedor después).
 const RANKED_MODES=[
-  {id:'flechas', icon:'🏹', name:'FLECHAS',   color:'#d8a13c', desc:'duelo TowerFall — el primero en CAER pierde 1 ♥'},
-  {id:'bombas',  icon:'💣', name:'BOMBAS',    color:'#ef7d1c', desc:'bomberman — el primero en VOLAR pierde 1 ♥'},
-  {id:'smash',   icon:'🥊', name:'SMASH',     color:'#7e46e0', desc:'sácalos del stage — el primero FUERA pierde 1 ♥'},
+  {id:'flechas', icon:'🏹', name:'FLECHAS',   color:'#d8a13c', desc:'LAST MAN STANDING — hasta que quede UNO; los caídos pierden 1 ♥'},
+  {id:'bombas',  icon:'💣', name:'BOMBAS',    color:'#ef7d1c', desc:'LAST MAN STANDING — el último en pie gana; los que vuelan pierden 1 ♥'},
+  {id:'smash',   icon:'🥊', name:'SMASH',     color:'#7e46e0', desc:'LAST MAN STANDING — el último en el stage gana; los caídos pierden 1 ♥'},
   {id:'hunt',    icon:'💀', name:'CALAVERAS', color:'#9d4fd8', desc:'cacería de calaveras — el que junte MENOS pierde 1 ♥'},
   {id:'ctf',     icon:'🚩', name:'BANDERA',   color:'#3f8fdd', desc:'por EQUIPOS — roba la bandera enemiga y llévala a tu base; el equipo que pierde: −1 ♥ cada uno'},
 ];
@@ -307,7 +307,7 @@ async function runRound(){
   // SOLO quien pierde la ronda baja 1 (supervivencia pura, nadie suma)
   const snap=new Map(parts.map(p=>[p,p.hp]));
   const colSnap=new Map(parts.map(p=>[p,p.color]));
-  const entry={flechas:null, bombas:1, smash:1, hunt:null, ctf:null}[mode.id];
+  const entry={flechas:1, bombas:1, smash:1, hunt:null, ctf:null}[mode.id];   // LMS: 1 vida de RONDA c/u
   if(entry!=null) parts.forEach(p=>p.hp=entry);
   parts.forEach(p=>{ p.koRound=false; p.skulls=0; p.kills=0; p.score=0; });
   if(mode.id==='ctf'){                              // EQUIPOS al azar: azules vs rojos
@@ -323,15 +323,17 @@ async function runRound(){
       const rk=parts.slice().sort((a,b)=>((b.skulls||0)-(a.skulls||0)) || ((b.kills||0)-(a.kills||0)));
       losers=[rk[rk.length-1]];
     } else {
-      losers=[ parts.find(p=>p.koRound) || parts.find(p=>p.hp<(entry!=null?entry:snap.get(p)))
-        || parts[Math.floor(Math.random()*parts.length)] ];
+      // LAST MAN STANDING: la ronda corrió hasta que quedó UNO — TODOS los caídos pierden 1 ♥
+      losers=parts.filter(p=>p.koRound || p.hp<entry);
+      if(losers.length>=parts.length) losers=losers.slice(0,parts.length-1);          // siempre sobrevive uno
+      if(!losers.length) losers=[parts[Math.floor(Math.random()*parts.length)]];      // nadie cayó (rarísimo)
     }
     parts.forEach(p=>{ p.hp=snap.get(p); p.koRound=false; p.team=null; p.color=colSnap.get(p); });
     losers.forEach(p=>{ p.hp=Math.max(0,p.hp-1); p.koRound=true; });
     onRoundEnd();
   };
   const variant=Math.floor(Math.random()*3);
-  const minA=Math.max(1,parts.length-1);
+  const minA=1;                                     // LMS: la ronda acaba cuando queda UNO (no al primer caído)
   // SELECCIÓN DE MAPA: el mapa a pantalla completa con zoom mientras corre el 3·2·1
   const intro=$('#phase-intro'), pv=$('#map-preview');
   $('#intro-kicker').textContent='RONDA '+(m.round+1)+' · '+parts.length+' EN PIE';
