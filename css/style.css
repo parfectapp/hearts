@@ -561,6 +561,22 @@ body{
 .crh-btns2{display:flex;gap:12px;margin-top:12px}
 .crh-btns2 .cr3d{flex:1}
 #panel-battle .cr-home>.crh-btns2{grid-column:2}
+.crh-btns3{display:flex;gap:10px;margin-top:10px}
+.crh-btns3 .cr3d{flex:1;font-size:13px;padding:12px 6px 11px}
+.crh-btns3 .cr3d small{display:block;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.08em;opacity:.85;font-weight:400;margin-top:2px}
+#panel-battle .cr-home>.crh-btns3{grid-column:2}
+.cr3d.orange{background:linear-gradient(180deg,#ffb45e 0%,#ef7d1c 55%,#d0640e 100%);color:#fff;
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.45), 0 6px 0 #9c4a08, 0 10px 18px rgba(0,0,0,.35);
+  text-shadow:0 2px 0 rgba(0,0,0,.3);font-family:'Archivo Black',sans-serif;letter-spacing:.03em}
+.cr3d.orange:active{box-shadow:inset 0 3px 0 rgba(255,255,255,.45), 0 2px 0 #6f3405}
+.cr3d.violet{background:linear-gradient(180deg,#b98aff 0%,#7e46e0 55%,#6430c0 100%);color:#fff;
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.45), 0 6px 0 #47208c, 0 10px 18px rgba(0,0,0,.35);
+  text-shadow:0 2px 0 rgba(0,0,0,.3);font-family:'Archivo Black',sans-serif;letter-spacing:.03em}
+.cr3d.violet:active{box-shadow:inset 0 3px 0 rgba(255,255,255,.45), 0 2px 0 #331566}
+.cr3d.pink{background:linear-gradient(180deg,#ff8ac2 0%,#e8489a 55%,#c92e7e 100%);color:#fff;
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.45), 0 6px 0 #8f1c58, 0 10px 18px rgba(0,0,0,.35);
+  text-shadow:0 2px 0 rgba(0,0,0,.3);font-family:'Archivo Black',sans-serif;letter-spacing:.03em}
+.cr3d.pink:active{box-shadow:inset 0 3px 0 rgba(255,255,255,.45), 0 2px 0 #660f3d}
 .cr3d:active{transform:translateY(4px)}
 .cr3d.yellow:active{box-shadow:inset 0 3px 0 rgba(255,255,255,.55), 0 2px 0 #a86a00}
 .cr3d.blue:active{box-shadow:inset 0 3px 0 rgba(255,255,255,.5), 0 2px 0 #0e4a94}
@@ -1238,3 +1254,8 @@ body.touch-on .touch-toggle{background:rgba(232,193,30,.85)}
 .ce-card p{position:relative;font-family:'Archivo',sans-serif;font-size:13px;line-height:1.6;color:#b9d0ea;margin-bottom:10px}
 .ce-reward{position:relative;font-family:'Space Mono',monospace;font-size:12.5px;color:#ffd34d;font-weight:700;margin-bottom:16px;min-height:16px}
 .ce-btns{position:relative;display:flex;flex-direction:column;gap:10px}
+
+
+/* marcador de FIESTA / modos casuales */
+.pe-standings{position:relative;margin:4px 0 10px;text-align:left}
+.pe-standings .clan-row .cn2 small{display:block}
