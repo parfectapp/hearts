@@ -147,6 +147,10 @@ function maybeFTUE(){
   const ov=$('#ftue'); if(!ov) return;
   ov.classList.add('show');
   const hi=$('#ftue-hola'); if(hi) hi.textContent='¡Hola, '+(st.name||'')+'!';
+  const mh=$('#ftue-mouse');
+  if(mh && !mh.firstChild){ const src=Sprites.spriteCanvas(DATA.byId[DATA.FREE_STARTER]);
+    if(src){ const cv=document.createElement('canvas'); cv.width=src.width; cv.height=src.height;
+      cv.getContext('2d').drawImage(src,0,0); mh.appendChild(cv); } }
   if(ov.__wired) return; ov.__wired=true;
   $('#ftue-go').addEventListener('click',()=>{ SFX.click(); st.ftueSeen=true; DATA.save(); ov.classList.remove('show'); MATCH.startRanked(); });
   $('#ftue-skip').addEventListener('click',()=>{ SFX.click(); st.ftueSeen=true; DATA.save(); ov.classList.remove('show'); enterLobby(); });

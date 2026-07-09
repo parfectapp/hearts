@@ -359,26 +359,39 @@ body{
 .cico.cards{background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='3' y='5' width='11' height='15' rx='2' fill='%234dd2ff' stroke='%231a5b8a' stroke-width='1.6' transform='rotate(-8 8 12)'/><rect x='10' y='4' width='11' height='15' rx='2' fill='%23ff5a4d' stroke='%237a1710' stroke-width='1.6' transform='rotate(8 16 12)'/><path d='M15.5 9.5a1.7 1.7 0 0 1 3 1.2c0 1.4-3 3.3-3 3.3s-3-1.9-3-3.3a1.7 1.7 0 0 1 3-1.2z' fill='%23fff'/></svg>")}
 .cr-tabs .cico{width:20px;height:20px}
 
-/* ===== FTUE: primera batalla guiada ===== */
+/* ===== FTUE: primera batalla guiada (tema azul CR) ===== */
 .ftue{position:absolute;inset:0;z-index:60;display:none;align-items:center;justify-content:center;
-  background:rgba(6,5,10,.82);backdrop-filter:blur(4px)}
+  background:rgba(4,10,22,.82);backdrop-filter:blur(4px)}
 .ftue.show{display:flex}
-.ftue-card{text-align:center;max-width:400px;padding:34px 28px;border-radius:22px;
-  background:linear-gradient(180deg,rgba(28,22,38,.97),rgba(12,10,18,.98));border:2px solid rgba(255,211,77,.4);
-  box-shadow:0 30px 80px rgba(0,0,0,.7)}
-.ftue-kicker{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.34em;color:#c9a9d6}
-.ftue-logo{font-family:'Archivo Black',sans-serif;font-size:52px;color:#f4efe4;margin:4px 0 8px}
-.ftue-logo span{color:var(--red);animation:heartbeat 1.4s ease-in-out infinite;display:inline-block}
-.ftue-card p{color:#c9cedd;font-size:14px;line-height:1.6;margin-bottom:18px}
+.ftue-card{position:relative;text-align:center;max-width:400px;padding:40px 28px 28px;border-radius:22px;
+  background:linear-gradient(180deg,#1a3c66,#0d2547 70%,#0b1f3d);border:3px solid #0c2a52;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.14), 0 30px 80px rgba(0,0,0,.7)}
+.ftue-banner{position:absolute;top:-20px;left:50%;transform:translateX(-50%);padding:10px 34px;
+  font-family:'Archivo Black',sans-serif;font-size:17px;letter-spacing:.1em;color:#5b3a00;white-space:nowrap;
+  background:linear-gradient(180deg,#ffe27a,#ffb52e);border:2.5px solid #b8770a;border-radius:14px;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.55), 0 5px 0 #9a6206, 0 10px 24px rgba(0,0,0,.45);
+  text-shadow:0 1px 0 rgba(255,255,255,.4)}
+.ftue-hero{position:relative;width:170px;height:170px;margin:8px auto 4px}
+.ftue-rays{position:absolute;inset:-26px;border-radius:50%;
+  background:repeating-conic-gradient(rgba(255,211,77,.28) 0 11deg, rgba(255,211,77,0) 11deg 30deg);
+  -webkit-mask:radial-gradient(circle,#000 30%,transparent 70%);mask:radial-gradient(circle,#000 30%,transparent 70%);
+  animation:rw-spin 14s linear infinite}
+@keyframes rw-spin{to{transform:rotate(360deg)}}
+.ftue-mouse{position:relative;width:100%;height:100%;display:flex;align-items:flex-end;justify-content:center;
+  filter:drop-shadow(0 12px 14px rgba(0,0,0,.5))}
+.ftue-mouse canvas{width:150px;height:auto}
+.ftue-title{font-family:'Archivo Black',sans-serif;font-size:21px;line-height:1.25;color:#fff;margin:10px 0 8px;
+  text-shadow:0 2px 0 rgba(0,0,0,.4)}
+.ftue-card p{color:#b9d0ea;font-size:13.5px;line-height:1.6;margin-bottom:20px}
 .ftue-card p b{color:#ffd34d}
 .ftue-name{display:block;width:100%;max-width:260px;margin:0 auto 14px;padding:13px 14px;border-radius:12px;
   border:2px solid rgba(255,211,77,.4);background:rgba(255,255,255,.08);color:#fff;text-align:center;
   font-family:'Archivo Black',sans-serif;font-size:16px;letter-spacing:.08em;outline:none}
 .ftue-name::placeholder{color:rgba(255,255,255,.35)}
 .ftue-name:focus{border-color:#ffd34d}
-.ftue-go{font-size:16px;padding:16px 30px;animation:pulse-slot 1.3s ease-in-out infinite}
+.ftue-go{font-size:18px;padding:17px 34px;animation:pulse-slot 1.3s ease-in-out infinite}
 .ftue-skip{display:block;margin:14px auto 0;background:none;border:none;cursor:pointer;
-  font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.1em;color:#8f8a9e;text-decoration:underline}
+  font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.1em;color:#9fc0e4;text-decoration:underline}
 
 /* ===== MATCHMAKING (buscando rivales) ===== */
 .matchmaking{position:absolute;inset:0;z-index:7;display:none;align-items:center;justify-content:center;
