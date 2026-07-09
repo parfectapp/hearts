@@ -152,7 +152,8 @@ function cardLevel(id){ return (S.cards&&S.cards[id])?S.cards[id].level:1; }
 function addCopies(id,n){
   const c=cardOf(id);
   const isNew=!S.owned[id];
-  if(isNew){ mint(id); if(!S.selected) S.selected=id; }
+  if(isNew){ mint(id); if(!S.selected) S.selected=id; livesMap()[id]=maxLivesOf(byId[id]); }  // nuevo = vidas llenas
+  else refillLives(id, 2*n);                        // copia repetida = +2 VIDAS por copia (recarga)
   c.copies+=n; save();
   return isNew;
 }
@@ -297,14 +298,32 @@ const ECON = {
 function animalHearts(a){ return (ECON.RARITY_HEARTS[a.rarity]||25); }
 function animalPrice(a){ return (ECON.RARITY_PRICE[a.rarity]||0.99); }
 function animalGold(a){ return (ECON.RARITY_GOLD[a.rarity]||40); }   // precio en ORO
-// COMPRAR un monito con ORO: si te alcanza, lo posees y te lo seleccionas
+// ---- VIDAS del monito: cada mono que compras VIENE con X vidas; jugar las gasta.
+// A 0 vidas el mono queda AGOTADO y tienes que comprar otro (o recargar con copias de cofre: +2 c/u).
+const RARITY_LIVES={common:5, rare:8, epic:12, legendary:18};
+function maxLivesOf(a){ return RARITY_LIVES[a.rarity]||5; }
+function livesMap(){ if(!S.lives||typeof S.lives!=='object') S.lives={}; return S.lives; }
+function animalLives(id){ const m=livesMap(); return (m[id]==null)?0:(m[id]|0); }
+function isSpent(id){ return !!S.owned[id] && animalLives(id)<=0; }
+function spendLives(id,n){
+  const m=livesMap(); m[id]=Math.max(0,(m[id]|0)-(n|0)); save(); return m[id];
+}
+function refillLives(id,n){       // copias de cofre / recarga: suma vidas con tope
+  const a=byId[id]; if(!a) return 0;
+  const m=livesMap(); m[id]=Math.min(maxLivesOf(a), (m[id]|0)+(n|0)); save(); return m[id];
+}
+// COMPRAR un monito con ORO: nuevo = lo posees con vidas LLENAS; agotado = compras OTRO (vidas llenas)
 function buyAnimal(id){
   const a=byId[id]; if(!a) return null;
-  if(S.owned[id]) return {already:true, animal:a};
+  const owned=!!S.owned[id];
+  if(owned && animalLives(id)>0) return {already:true, animal:a};   // vivo: no hay nada que comprar
   const cost=animalGold(a);
   if((S.coins|0) < cost) return {ok:false, need:cost, have:S.coins|0, animal:a};   // no te alcanza el oro
-  S.coins -= cost; mint(id); S.selected=id; save();
-  return {ok:true, animal:a, cost:cost};
+  S.coins -= cost;
+  if(!owned){ mint(id); if(!S.selected) S.selected=id; }
+  livesMap()[id]=maxLivesOf(a);                                     // monito nuevo = vidas llenas
+  save();
+  return {ok:true, animal:a, cost:cost, revived:owned};
 }
 function gainGold(n){ S.coins=Math.max(0,(S.coins|0)+(n|0)); save(); return S.coins; }
 
@@ -345,6 +364,7 @@ const DEFAULT = ()=>({
   gems:30,            // GEMAS 💎 de arranque (como CR regala las primeras)
   slots:[null,null,null,null],   // 4 SLOTS de cofres (se ganan jugando, desbloqueo por tiempo)
   cards:{},           // {animalId:{copies,level}} — colección estilo CR (copias → subir nivel)
+  lives:{},           // {animalId: vidas restantes} — cada mono VIENE con X vidas; a 0 = comprar otro
   freeAt:0,           // timestamp del próximo COFRE GRATIS
   roadClaimed:{},     // premios del camino de copas ya reclamados
   shopDay:null, shopDeals:null,  // ofertas del día (3 cartas por oro)
@@ -381,6 +401,9 @@ function load(){
   if(!S.roadClaimed||typeof S.roadClaimed!=='object') S.roadClaimed={};
   // los animales que ya posees siempre tienen carta (nivel 1 mínimo)
   Object.keys(S.owned).forEach(id=>{ if(!S.cards[id]) S.cards[id]={copies:0,level:1}; });
+  // vidas: saves viejos sin registro → vidas llenas (no castigar migración)
+  if(!S.lives||typeof S.lives!=='object') S.lives={};
+  Object.keys(S.owned).forEach(id=>{ if(S.lives[id]==null && byId[id]) S.lives[id]=maxLivesOf(byId[id]); });
   if(typeof S.rank!=='number' || S.rank<0 || S.rank>=RANKS.length) S.rank=0;   // rango válido
   return S;
 }
@@ -535,5 +558,6 @@ window.DATA = { ANIMALS, byId, WEAPONS, byWeapon, ECON, MODES, byMode, HEART_PAC
   // modelo CLASH ROYALE
   CHEST_META, CHEST_GEMS, GEM_PACKS, UPGRADE, MAXLVL, ROAD_REWARDS, FREE_EVERY,
   cardOf, cardLevel, canUpgrade, upgradeCard, slots, awardChest, startUnlock, unlockLeft, skipCost, skipUnlock,
-  openSlot, buyChestGems, freeLeft, claimFree, buyGems, getDeals, buyDeal, roadClaimable, claimRoad, rollVictoryChest };
+  openSlot, buyChestGems, freeLeft, claimFree, buyGems, getDeals, buyDeal, roadClaimable, claimRoad, rollVictoryChest,
+  RARITY_LIVES, maxLivesOf, animalLives, isSpent, spendLives, refillLives };
 })();

@@ -409,6 +409,19 @@ body{
 .mk-upg{margin-top:5px;border:none;border-radius:8px;background:#57d977;color:#0c2413;cursor:pointer;
   font-family:'Archivo Black',sans-serif;font-size:9.5px;letter-spacing:.04em;padding:6px 10px;animation:pulse-slot 1.4s ease-in-out infinite}
 
+/* ===== VIDAS del monito (cada mono viene con X ♥; a 0 = comprar otro) ===== */
+.animal-lives{margin-top:8px;display:flex;flex-direction:column;align-items:center;gap:1px;min-height:20px}
+.animal-lives .al-hearts{color:#ff5a4d;font-size:15px;letter-spacing:2px;text-shadow:0 0 8px rgba(255,90,77,.5)}
+.animal-lives b{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;color:#e0b7b3}
+.animal-lives.low .al-hearts{animation:pulse-slot 1s ease-in-out infinite}
+.animal-lives.spent{font-family:'Space Mono',monospace;font-size:11px;color:#ff8a7a;background:rgba(255,90,77,.1);
+  border:1px solid rgba(255,90,77,.4);border-radius:10px;padding:7px 12px}
+.animal-lives.spent b{color:#ffd34d;font-family:inherit;font-size:inherit}
+.own-row canvas.spent{opacity:.35;filter:grayscale(1)}
+.mk-lives{font-family:'Space Mono',monospace;font-size:10px;font-weight:700;color:#ff8a90;margin-top:2px}
+.mk-lives.out{color:#ff5a4d;font-family:'Archivo Black',sans-serif;letter-spacing:.06em}
+.market-card.spent-card canvas{opacity:.45;filter:grayscale(.8)}
+
 /* ===== CAMINO DE COPAS: premios ===== */
 .ar-claim{border:none;border-radius:8px;background:#ffd34d;color:#3a2a00;cursor:pointer;white-space:nowrap;
   font-family:'Archivo Black',sans-serif;font-size:10px;padding:6px 9px;animation:pulse-slot 1.4s ease-in-out infinite}

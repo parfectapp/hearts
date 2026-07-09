@@ -89,7 +89,8 @@ function startRanked(){
   if(window.TUT) TUT.onRanked();
   const st=DATA.state();
   const an=DATA.byId[st.selected];
-  if(!an){ SFX.deny(); UI.toast('Consigue tu guerrero: compra un cofre en la LANDING'); return; }
+  if(!an){ SFX.deny(); UI.toast('Consigue tu guerrero en la TIENDA o en CARTAS'); return; }
+  if(DATA.isSpent(an.id)){ SFX.deny(); UI.toast('¡'+an.name+' está AGOTADO (0 ♥)! Compra otro en CARTAS o recárgalo con copias de cofre'); return; }
   st.matches++; DATA.save(); UI.updateHearts();   // VERSUS estilo TowerFall: rondas de eliminación
 
   const players=[{name:st.name||'TÚ', animal:an, bot:false, color:COLORS[0], weapon:DATA.equipped(), cardLvl:DATA.cardLevel(an.id)}];
@@ -249,6 +250,18 @@ function finishMatch(){
   const dcups=win?30:-20;                                  // COPAS: ganas +30, pierdes −20 (Clash Royale)
   const b4=DATA.playerRankCups().idx; DATA.gainCups(dcups); const af=DATA.playerRankCups().idx;
   const dgold=win?60:20; DATA.gainGold(dgold);             // ORO para subir cartas
+  // VIDAS DEL MONITO: las ♥ que perdiste en la partida se le descuentan a TU mono (a 0 = comprar otro)
+  let livesLine='';
+  if(!isParty && me && me.animal){
+    const lost=Math.max(0, DATA.ECON.LIVES - Math.max(0, me.hp|0));
+    if(lost>0){
+      const left=DATA.spendLives(me.animal.id, lost);
+      livesLine = '−'+lost+' ♥ de '+me.animal.name+' · le quedan '+left+' ♥'
+        + (left<=0 ? '  ☠ ¡SE AGOTÓ! compra otro' : '');
+    } else {
+      livesLine = me.animal.name+' salió ILESO · '+DATA.animalLives(me.animal.id)+' ♥';
+    }
+  }
   // COFRE por VICTORIA (estilo CR): entra a un slot; si están llenos, no cabe
   let chestLine='';
   if(win && !isParty){
@@ -269,6 +282,7 @@ function finishMatch(){
   $('#results-xp').innerHTML = '<b style="color:'+(dcups>=0?'#ffd34d':'#ff8a7a')+'">'+(dcups>=0?'+':'')+dcups+' 🏆 · '+(st.cups|0)+' total'
     +(af>b4?'  ↑ ¡SUBISTE DE ARENA!':(af<b4?'  ↓ bajaste de arena':''))+'</b>'
     +(chestLine?'<br><span style="color:#7fe0a0;font-weight:900">'+chestLine+'</span>':'')
+    +(livesLine?'<br><span style="color:'+(livesLine.indexOf('AGOTÓ')>=0?'#ff8a7a':'#ffb3ad')+'">'+livesLine+'</span>':'')
     +'<br><span style="color:#ffcf5a">+'+dgold+' 🪙 oro</span>'
     +'<br><span style="opacity:.7">+'+xp+' XP · Nivel '+DATA.level()+'</span>';
   if(win) SFX.win(); else SFX.lose();

@@ -84,11 +84,25 @@ function enterLobby(){
     $('#avatar-name').style.color=rc.color;
     $('#avatar-value').innerHTML='<span style="color:'+rc.color+';font-weight:900">'+rc.name+'</span> · PODER: <b style="color:'+(pw?pw.color:'#fff')+'">'+(pw?pw.name:'—')+'</b>'
       +(pw&&pw.ult?'<br><span style="opacity:.8">R · '+pw.ult+'</span>':'');
+    // VIDAS del monito: cada mono viene con X ♥; jugar las gasta; a 0 = comprar otro
+    const lv=$('#animal-lives');
+    if(lv){
+      const cur=DATA.animalLives(an.id), max=DATA.maxLivesOf(an);
+      if(cur<=0){
+        lv.className='animal-lives spent';
+        lv.innerHTML='☠ AGOTADO · <b>compra otro en CARTAS</b> (o recárgalo con copias de cofre)';
+      } else {
+        lv.className='animal-lives'+(cur<=2?' low':'');
+        const shown=Math.min(cur,10);
+        lv.innerHTML='<span class="al-hearts">'+'♥'.repeat(shown)+(cur>10?' +'+(cur-10):'')+'</span><b>'+cur+' / '+max+' vidas</b>';
+      }
+    }
   } else {
     $('#avatar-name').textContent='SIN GUERRERO';
     $('#avatar-token').textContent='—';
     $('#stats-card').style.display='none';
-    $('#avatar-value').innerHTML='Consigue tu guerrero:<br><a href="landing.html" style="color:#ffd34d;font-weight:900;text-decoration:underline">COMPRA UN COFRE EN LA LANDING →</a>';
+    $('#avatar-value').innerHTML='Consigue tu guerrero en la <b>TIENDA</b> (cofres) o en <b>CARTAS</b>';
+    const lv=$('#animal-lives'); if(lv){ lv.className='animal-lives'; lv.innerHTML=''; }
   }
   // selector rápido de tus guerreros
   const row=$('#own-row'); row.innerHTML='';
@@ -101,7 +115,8 @@ function enterLobby(){
       mini.width=src.width; mini.height=src.height;
       mini.getContext('2d').drawImage(src,0,0);
       if(st.selected===id) mini.classList.add('sel');
-      mini.title=a2.name;
+      if(DATA.isSpent(id)) mini.classList.add('spent');
+      mini.title=a2.name+' · '+DATA.animalLives(id)+' ♥';
       mini.addEventListener('click',()=>{ st.selected=id; DATA.save(); SFX.click(); enterLobby(); });
       row.appendChild(mini);
     });
@@ -313,6 +328,11 @@ function renderMarket(){
     const nm=document.createElement('div'); nm.className='mc-name'; nm.textContent=a.name;
     card.appendChild(nm);
     if(owned){
+      const spent=DATA.isSpent(a.id);
+      if(spent) card.classList.add('spent-card');
+      const lvs=document.createElement('div'); lvs.className='mk-lives'+(spent?' out':'');
+      lvs.textContent= spent ? '☠ AGOTADO' : ('♥ '+DATA.animalLives(a.id)+'/'+DATA.maxLivesOf(a));
+      card.appendChild(lvs);
       const lv=document.createElement('div'); lv.className='mk-lvl'; lv.textContent='NIVEL '+c.level;
       lv.style.background=rc.color; card.appendChild(lv);
       if(c.level>=DATA.MAXLVL){
@@ -375,11 +395,12 @@ function openBuy(a){    // "ver tarjeta" estilo mockup: header HEARTS · pips ·
   // ULTIMATE del animal (tecla R), personalizado
   $('#buy-ult').innerHTML = (pw&&pw.ult) ? ('<b>R · '+pw.ult+'</b> — '+(pw.ultDesc||pw.blurb)) : (pw?pw.blurb:'');
   $('#btn-buy-select').style.display = owned&&st.selected!==a.id?'':'none';
-  // COMPRAR visible si NO lo tienes: precio en ORO. Se desactiva si no te alcanza.
+  // COMPRAR visible si NO lo tienes (nuevo) o si está AGOTADO (comprar OTRO). Precio en ORO.
   const bb=$('#btn-buy-buy');
-  if(owned){ bb.style.display='none'; }
+  const spent=owned && DATA.isSpent(a.id);
+  if(owned && !spent){ bb.style.display='none'; }
   else { bb.style.display=''; const g=DATA.animalGold(a), can=(st.coins|0)>=g;
-    bb.textContent=(can?'COMPRAR · ':'FALTA ORO · ')+g+' 🪙';
+    bb.textContent=(can?(spent?'COMPRAR OTRO · ':'COMPRAR · '):'FALTA ORO · ')+g+' 🪙';
     bb.disabled=!can; bb.style.opacity=can?1:.55; bb.style.cursor=can?'pointer':'not-allowed'; }
   $('#modal-buy').classList.add('show');
   if(window.TUT) TUT.onBuyModal();
@@ -401,7 +422,7 @@ function initMarket(){
     if(!r || r.already){ SFX.deny(); return; }
     if(r.ok===false){ SFX.deny(); toast('Necesitas '+r.need+' 🪙 — gana partidas para juntar oro'); return; }
     SFX.coin(); updateHearts();
-    toast('¡'+r.animal.name+' es TUYO! (−'+r.cost+' 🪙)');
+    toast(r.revived?('¡'+r.animal.name+' de vuelta con vidas llenas! (−'+r.cost+' 🪙)'):('¡'+r.animal.name+' es TUYO! (−'+r.cost+' 🪙)'));
     renderMarket(); openBuy(buyTarget);                    // re-abre la carta ya como TUYO
     if(window.TUT && TUT.onBought) TUT.onBought();
   });
