@@ -19,8 +19,8 @@ function start(canvas, players, cfg, onEnd, eco){
       map[y].push((x%2===1&&y%2===1)?1:0);
     }
   }
-  // pieza central 3x3 (pirámide/montaña/zigurat/cráter)
-  for(let y=4;y<=6;y++)for(let x=5;x<=7;x++) map[y][x]=3;
+  // (sin muro central: el tablero clásico de Bomberman deja el centro LIBRE —
+  //  solo los pilares fijos en (impar,impar). El "muro en medio" estorbaba las bombas.)
   const spawns=[[0,0],[COLS-1,0],[0,ROWS-1],[COLS-1,ROWS-1],[6,0],[6,ROWS-1],[0,5],[COLS-1,5]].slice(0,players.length);
   const safe=new Set();
   spawns.forEach(([sx,sy])=>{
@@ -93,8 +93,11 @@ function start(canvas, players, cfg, onEnd, eco){
 
   // ---- bombas ----
   function placeBomb(e){
-    if(e.bombsOut>=e.bombN || cellBomb(e.gx,e.gy)) return;
-    bombs.push({gx:e.gx,gy:e.gy,t:2.1,range:e.range,owner:e,under:e});
+    // en la celda donde el jugador ESTÁ (si va a medio paso, la más cercana a su posición visual)
+    const gx=e.moving?Math.round(e.fx):e.gx, gy=e.moving?Math.round(e.fy):e.gy;
+    if(gx<0||gx>=COLS||gy<0||gy>=ROWS||map[gy][gx]!==0) return;
+    if(e.bombsOut>=e.bombN || cellBomb(gx,gy)) return;
+    bombs.push({gx,gy,t:2.1,range:e.range,owner:e,under:e});
     e.bombsOut++; SFX.bomb();
   }
   function explode(b){
@@ -109,10 +112,8 @@ function start(canvas, players, cfg, onEnd, eco){
         cells.push([x,y]);
         if(map[y][x]===2){
           map[y][x]=0;
-          if(Math.random()<0.32){
-            const types=['range','speed','bomb','shield'];
-            pups.push({x,y,type:types[Math.floor(Math.random()*types.length)]});
-          }
+          // ÚNICO power-up: la "P" — bombas INFINITAS + fuego de alcance 3
+          if(Math.random()<0.30) pups.push({x,y,type:'P'});
           break;
         }
         const ob=cellBomb(x,y);
@@ -268,13 +269,10 @@ function start(canvas, players, cfg, onEnd, eco){
           }
           const pi=pups.findIndex(p=>p.x===e.gx&&p.y===e.gy);
           if(pi>=0){
-            const p=pups.splice(pi,1)[0];
-            if(p.type==='range')e.range=Math.min(6,e.range+1);
-            if(p.type==='speed')e.speed=Math.min(1.8,e.speed+0.15);
-            if(p.type==='bomb')e.bombN=Math.min(4,e.bombN+1);
-            if(p.type==='shield')e.shield=true;
+            pups.splice(pi,1);
+            e.bombN=99; e.range=3;                 // "P": bombas INFINITAS + fuego de 3
             SFX.powerup();
-            parts.spawn(OX+(e.gx+.5)*TILE,OY+(e.gy+.5)*TILE,'#9dff8a',10,180);
+            parts.spawn(OX+(e.gx+.5)*TILE,OY+(e.gy+.5)*TILE,'#9dff8a',12,200);
           }
         } else {
           e.fx=e.gx+(e.tx-e.gx)*e.t; e.fy=e.gy+(e.ty-e.gy)*e.t;
@@ -298,9 +296,15 @@ function start(canvas, players, cfg, onEnd, eco){
           const [x,y]=spiral[shrinkIdx++];
           if(map[y][x]!==3){
             map[y][x]=4;
-            const bi=bombs.findIndex(b=>b.gx===x&&b.gy===y); if(bi>=0)bombs.splice(bi,1);
+            // al tragar una bomba, LIBERA el contador de su dueño (si no, no podía volver a poner bombas)
+            const bi=bombs.findIndex(b=>b.gx===x&&b.gy===y);
+            if(bi>=0){ const sb=bombs[bi]; if(sb.owner) sb.owner.bombsOut=Math.max(0,sb.owner.bombsOut-1); bombs.splice(bi,1); }
             const pi=pups.findIndex(p=>p.x===x&&p.y===y); if(pi>=0)pups.splice(pi,1);
-            ents.forEach(e=>{ if(!e.out&&!e.dead&&Math.round(e.fx)===x&&Math.round(e.fy)===y){e.shield=false;e.inv=0;kill(e);} });
+            // mata a quien esté EN la celda O yendo HACIA ella (si no, quedaba incrustado dentro del muro)
+            ents.forEach(e=>{ if(e.out||e.dead) return;
+              const onIt=Math.round(e.fx)===x&&Math.round(e.fy)===y;
+              const intoIt=e.moving&&e.tx===x&&e.ty===y;
+              if(onIt||intoIt){ e.shield=false; e.inv=0; e.moving=false; e.gx=Math.round(e.fx); e.gy=Math.round(e.fy); kill(e); } });
             const hI=heartCells.findIndex(h=>h.x===x&&h.y===y); if(hI>=0)heartCells.splice(hI,1);
             parts.spawn(OX+(x+.5)*TILE,OY+(y+.5)*TILE,'#bcd6e8',6,120);
           }
@@ -354,11 +358,26 @@ function start(canvas, players, cfg, onEnd, eco){
   }
   function drawBomb(b){
     const px=OX+(b.gx+.5)*TILE, py=OY+(b.gy+.5)*TILE;
-    const pulse=1+Math.sin((2.1-b.t)*14)*0.08;
-    const s=40*pulse;
-    M.shadow(ctx,px,py+14,13);
-    drawTile(MI.bomb,px-s/2,py-s/2,s,s);
-    if(Math.floor(time*10)%2){ ctx.fillStyle='#ffd34d'; ctx.fillRect(px+7,py-22,5,5); }
+    const pulse=1+Math.sin((2.1-b.t)*14)*0.09;                 // late más rápido cuando va a estallar
+    const r=15*pulse;
+    M.shadow(ctx,px,py+15,14);
+    // cuerpo negro esférico (procedural — la imagen vieja traía una "pared" pegada)
+    const g=ctx.createRadialGradient(px-r*0.35,py-r*0.4,r*0.2, px,py,r);
+    g.addColorStop(0,'#5a5f68'); g.addColorStop(0.5,'#23262c'); g.addColorStop(1,'#0d0f13');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(px,py,r,0,7); ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.55)'; ctx.beginPath(); ctx.arc(px-r*0.35,py-r*0.4,r*0.22,0,7); ctx.fill();  // brillo
+    // tapa metálica arriba
+    ctx.fillStyle='#3a3f47'; ctx.fillRect(px-4,py-r-4,8,5);
+    // mecha curva con chispa que titila
+    ctx.strokeStyle='#caa46a'; ctx.lineWidth=3; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(px+1,py-r-3);
+    ctx.quadraticCurveTo(px+10,py-r-11, px+7+Math.sin(time*12)*2, py-r-16);
+    ctx.stroke();
+    const sf=0.6+0.4*Math.sin(time*22);
+    ctx.fillStyle='#ffd34d'; ctx.globalAlpha=sf;
+    ctx.beginPath(); ctx.arc(px+7,py-r-17,3.4+sf*1.6,0,7); ctx.fill();
+    ctx.fillStyle='#fff7cc'; ctx.beginPath(); ctx.arc(px+7,py-r-17,1.6,0,7); ctx.fill();
+    ctx.globalAlpha=1;
   }
   function drawBlastCells(bl,filter){
     const a=Math.min(1,bl.t/0.42);
@@ -432,32 +451,29 @@ function start(canvas, players, cfg, onEnd, eco){
     // antorchas
     [[OX+2.5*TILE,OY-FW/2],[OX+10.5*TILE,OY-FW/2],[OX+2.5*TILE,OY+ROWS*TILE+FW/2],[OX+10.5*TILE,OY+ROWS*TILE+FW/2]]
       .forEach(([tx,ty],i)=>drawTorch(tx,ty,i));
-    // powerups
+    // power-up ÚNICO: la "P" (bombas infinitas + fuego 3) — cápsula dorada que flota y brilla
     pups.forEach(p=>{
-      const px=OX+p.x*TILE, py=OY+p.y*TILE;
-      const bob=Math.sin(time*5+p.x)*3;
-      M.shadow(ctx,px+TILE/2,py+TILE-6,12);
-      drawTile(MI.crate,px+6,py+4+bob,TILE-12,TILE-12);
-      ctx.fillStyle='#fff'; ctx.font='bold 13px "Space Mono"'; ctx.textAlign='center';
-      ctx.strokeStyle='rgba(0,0,0,.7)'; ctx.lineWidth=3;
-      const ch={range:'R',speed:'S',bomb:'B',shield:'♥'}[p.type];
-      ctx.strokeText(ch,px+TILE/2,py+TILE/2+3+bob); ctx.fillText(ch,px+TILE/2,py+TILE/2+3+bob);
+      const cx=OX+(p.x+.5)*TILE, cy=OY+(p.y+.5)*TILE+Math.sin(time*5+p.x)*3;
+      const pu=0.6+0.4*Math.sin(time*6+p.x);
+      M.shadow(ctx,cx,OY+p.y*TILE+TILE-6,12);
+      const g=ctx.createRadialGradient(cx,cy,2,cx,cy,20);
+      g.addColorStop(0,`rgba(255,211,77,${0.5*pu})`); g.addColorStop(1,'rgba(255,211,77,0)');
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,20,0,7); ctx.fill();
+      ctx.fillStyle='#f5a623'; ctx.beginPath(); ctx.arc(cx,cy,13,0,7); ctx.fill();
+      ctx.fillStyle='#ffd34d'; ctx.beginPath(); ctx.arc(cx,cy-1,11,0,7); ctx.fill();
+      ctx.fillStyle='#7a4a08'; ctx.font='bold 15px "Archivo Black","Space Mono"'; ctx.textAlign='center';
+      ctx.fillText('P',cx,cy+5);
     });
     // corazones sueltos en el tablero
     heartCells.forEach(h=>M.drawHeart(ctx,OX+(h.x+.5)*TILE,OY+(h.y+.5)*TILE,1.15,time+h.t));
-    // capa detrás de la pieza central
-    const sorted=ents.filter(e=>!e.out&&!e.dead).sort((a,b)=>a.fy-b.fy);
-    bombs.filter(b=>b.gy<3.5).forEach(drawBomb);
-    sorted.filter(e=>e.fy<3.5).forEach(drawEnt);
-    blasts.forEach(bl=>drawBlastCells(bl,y=>y<3.5));
-    // PIEZA CENTRAL del ecosistema
-    const pcx=OX+6.5*TILE, pby=OY+7*TILE+3;
-    M.shadow(ctx,pcx,pby-4,92);
-    KIT.center(ctx,pcx,pby,time);
-    // capa delante
-    bombs.filter(b=>b.gy>=3.5).forEach(drawBomb);
-    sorted.filter(e=>e.fy>=3.5).forEach(drawEnt);
-    blasts.forEach(bl=>drawBlastCells(bl,y=>y>=3.5));
+    // PROFUNDIDAD CORRECTA: bombas y monitos se ordenan JUNTOS por su fila Y
+    // (antes se partían en 2 pasadas por una línea fija → la bomba salía delante/detrás de quien no debía)
+    const drawables=[];
+    ents.filter(e=>!e.out&&!e.dead).forEach(e=>drawables.push({y:e.fy+0.5, z:1, d:()=>drawEnt(e)}));
+    bombs.forEach(b=>drawables.push({y:b.gy+0.5, z:0, d:()=>drawBomb(b)}));   // la bomba, en su celda, detrás del que está en la misma fila
+    drawables.sort((a,b)=>(a.y-b.y)||(a.z-b.z));
+    drawables.forEach(o=>o.d());
+    blasts.forEach(bl=>drawBlastCells(bl,()=>true));   // el fuego siempre encima
     parts.draw(ctx);
     M.vignette(ctx,832,640);
     // timer

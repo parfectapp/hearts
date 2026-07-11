@@ -29,6 +29,7 @@ function start(canvas, players, cfg, onEnd, eco){
     canvas.width=vc*52; canvas.height=640;
     VW=canvas.width; VH=canvas.height;         // vista = tu pantalla
     cols=Math.min(56, vc*2); rows=24;          // mundo = 2 pantallas de ancho × 2 de alto (cuadrado)
+    if(cfg&&cfg.gameMode&&cfg.gameMode.id==='ctf'){ cols=vc; rows=12; }   // 🚩 CTF: UNA sola pantalla — no puedes rodear por los lados
     if(cfg&&cfg.forceCols){ cols=cfg.forceCols; rows=cfg.forceRows||24; }   // ONLINE: el host dicta el mundo
     W=cols*52; H=rows*52+32;
     camX=Math.max(0,(W-VW)/2); camY=Math.max(0,(H-VH)/2); }
@@ -45,10 +46,12 @@ function start(canvas, players, cfg, onEnd, eco){
   const PLATS=layout.plats;
   const tf=THEMES.makeTFRender(layout.arena||'selva',layout);
   const parts=K.particles();
-  const WRAP=!!layout.wrap, WRAPY=true;   // WRAP TOTAL (túneles): sales por abajo→apareces arriba, por un lado→el otro (como TowerFall)
+  const isCTF=!!(cfg&&cfg.gameMode&&cfg.gameMode.id==='ctf');
+  const WRAP=!!layout.wrap && !isCTF, WRAPY=true;   // WRAP TOTAL (túneles) — MENOS en CTF (paredes sólidas: no puedes rodear por los lados)
   function wrapEnt(o){
-    if(!WRAP) return;
-    if(o.x<-10) o.x+=W+20; else if(o.x>W+10) o.x-=W+20;
+    if(isCTF){ const hw=(o.w||24)/2;               // 🚩 CTF: pared sólida en cada lado
+      if(o.x<hw){ o.x=hw; if(o.vx<0)o.vx=0; } else if(o.x>W-hw){ o.x=W-hw; if(o.vx>0)o.vx=0; } }
+    else if(WRAP){ if(o.x<-10) o.x+=W+20; else if(o.x>W+10) o.x-=W+20; }
     if(WRAPY){ if(o.y>H+24) o.y-=H+48; else if(o.y<-24) o.y+=H+48; }
   }
   const GM=cfg.gameMode||{id:'lms',respawn:0};
@@ -74,7 +77,7 @@ function start(canvas, players, cfg, onEnd, eco){
       weap:wd, ammo: wd.kind==='bow'? wd.ammo : 0, cd:0, swing:0, drawT:0, kx:0,
       pow:pw, dj:pw==='doublejump', healT:0,
       jumpMul:0.86+(st.vel-3)*0.035, gravMul:0.9+(st.def-3)*0.03,  // ligeros saltan/flotan, pesados caen
-      dead:false, shield:pw==='shield', wings:false, boots:false,
+      dead:false, shield:false, wings:false, boots:false,   // NADIE empieza con escudo (solo sale de un cofre)
       spd, think:Math.random()*0.3, mvx:0, wantJump:false, wantShootDir:null,
       inv:1.2, runPh:Math.random()*6, landT:0, crouch:false, crouchT:0,
       dodgeT:0, dodgeCd:0, ddx:0, ddy:0, dropT:0,
@@ -85,7 +88,7 @@ function start(canvas, players, cfg, onEnd, eco){
     const sp=layout.spawns[Math.floor(Math.random()*layout.spawns.length)];
     e.x=sp[0]+(Math.random()-.5)*30; e.y=sp[1]-4; e.vx=0; e.vy=0;
     e.dead=false; e.p.koRound=false; e.inv=1.5; e.respawnT=0;
-    e.ammo=e.weap.kind==='bow'?e.weap.ammo:0; e.shield=(e.pow==='shield'); e.wings=false; e.boots=false; e.special=null;
+    e.ammo=e.weap.kind==='bow'?e.weap.ammo:0; e.shield=false; e.wings=false; e.boots=false; e.special=null;
     parts.spawn(e.x,e.y-e.h/2,'#ffffff',18,240);
   }
   // 🚩 CTF: base de cada equipo = el spawn de un jugador suyo, lo MÁS LEJOS posible del rival
@@ -134,12 +137,12 @@ function start(canvas, players, cfg, onEnd, eco){
   function openChest(ch,e){
     chests.splice(chests.indexOf(ch),1);
     SFX.powerup(); parts.spawn(ch.x,ch.y-10,'#ffd34d',14,200);
-    const pool=['escudo','alas','botas','carcaj','bomba','laser','bramble'];   // sin '+♥' (nadie suma corazones)
+    // SOLO 4 premios: escudo, alas, flechas BOMBA o flechas LÁSER (rebotan). Nada más.
+    const pool=['escudo','alas','bomba','laser'];
     const fx=pool[Math.floor(Math.random()*pool.length)];
     if(fx==='escudo'){ e.shield=true; say(ch.x,ch.y-24,'ESCUDO','#9ce8ff'); }
     else if(fx==='alas'){ e.wings=true; say(ch.x,ch.y-24,'ALAS','#f2ede2'); }
-    else if(fx==='botas'){ e.boots=true; say(ch.x,ch.y-24,'BOTAS DE SALTO','#9dff8a'); }
-    else if(ARROW_TYPES[fx]&&e.weap.kind==='bow'){   // FLECHAS ESPECIALES (bomba/láser/espina)
+    else if(ARROW_TYPES[fx]&&e.weap.kind==='bow'){   // FLECHAS ESPECIALES (bomba/láser)
       e.special={type:fx,count:4}; e.ammo=Math.min(MAXA,Math.max(e.ammo,4));
       say(ch.x,ch.y-24,ARROW_TYPES[fx].label,ARROW_TYPES[fx].tint); SFX.powerup();
     }
@@ -151,7 +154,9 @@ function start(canvas, players, cfg, onEnd, eco){
       vx:(Math.random()-.5)*60, vy:40, onG:false, t:Math.random()*6});
   }
 
-  function hudRefresh(){ K.updateHudPlayers(players, p=>!p.koRound); }
+  function hudRefresh(){ K.updateHudPlayers(players, p=>!p.koRound);
+    // modos con VIDAS reales (surv/online): pinta tus corazones según tu hp actual
+    if(cfg.lives && K.setLives){ const me=ents.find(e=>!e.p.bot); if(me) K.setLives(Math.max(0,me.p.hp|0), cfg.lives); } }
   function dropHearts(x,y,n){
     for(let i=0;i<n;i++){
       hearts.push({x:x+(Math.random()-.5)*20, y:y-30,
@@ -670,7 +675,7 @@ function start(canvas, players, cfg, onEnd, eco){
       }
       else if(GMID==='trials'){ if((ents[0]&&(ents[0].p.score||0)>=(GM.goal||20))) endNow=true; }
       else if(GMID==='ctf'){ if(caps[0]>=(GM.goal||2)||caps[1]>=(GM.goal||2)) endNow=true; }
-      if(time>DUR) endNow=true;
+      if(time>DUR && GMID!=='hunt') endNow=true;   // HUNT = carrera a 10: NO termina por tiempo, solo al llegar a la meta
       if(endNow){ over=true; endTimer=1.1; }
     } else {
       endTimer-=dt;
@@ -837,6 +842,18 @@ function start(canvas, players, cfg, onEnd, eco){
       }
       if(e.boots&&e.onG){ ctx.fillStyle='rgba(157,255,138,.7)';
         ctx.fillRect(e.x-9,e.y-3,6,3); ctx.fillRect(e.x+3,e.y-3,6,3); }
+      // 🚩 CTF: CONTORNO del color de tu equipo (azul / rojo) — para distinguir aliados de rivales
+      if(GMID==='ctf'){ const tc=e.team===0?'#4d9fff':'#ff5a4d';
+        const pu=0.55+0.45*Math.sin(time*4+e.team);
+        ctx.save();
+        ctx.strokeStyle=tc; ctx.globalAlpha=0.9; ctx.lineWidth=3;
+        ctx.beginPath(); ctx.ellipse(e.x,e.y-e.h*0.5, e.w*0.95+2, e.h*0.6, 0,0,7); ctx.stroke();  // halo del cuerpo
+        ctx.globalAlpha=0.35+0.3*pu; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.ellipse(e.x,e.y-e.h*0.5, e.w*0.95+6, e.h*0.66, 0,0,7); ctx.stroke();  // pulso exterior
+        ctx.globalAlpha=0.85; ctx.fillStyle=tc;                                                     // anillo en los pies
+        ctx.beginPath(); ctx.ellipse(e.x,e.y+1, 15, 5, 0,0,7); ctx.fill();
+        ctx.restore();
+      }
       const _phase=e.phaseT>0; if(_phase) ctx.globalAlpha=0.4;   // FANTASMA: casi invisible
       Sprites.drawAnimal(ctx,e.p.animal,e.x,e.y,56*(e.sz||1),e.face<0,
         {moving:e.onG&&Math.abs(e.vx)>30, run:e.runPh, air:!e.onG, vy:e.vy,
@@ -876,9 +893,10 @@ function start(canvas, players, cfg, onEnd, eco){
     // ===== UI en pantalla (fija) =====
     // timer
     ctx.fillStyle='rgba(20,25,35,.75)'; ctx.fillRect(VW/2-40,4,80,26);
-    ctx.fillStyle=time>DUR-15?'#ff8a80':'#e8f2f8';
+    ctx.fillStyle=(GMID!=='hunt'&&time>DUR-15)?'#ff8a80':'#e8f2f8';
     ctx.font='bold 14px "Space Mono"'; ctx.textAlign='center';
-    ctx.fillText(GMID==='surv'?('OLA '+wave):(Math.max(0,Math.ceil(DUR-time))+'s'),VW/2,22);
+    // hunt = carrera a 10 (sin reloj); surv = oleada; el resto = cuenta regresiva
+    ctx.fillText(GMID==='hunt'?('💀 '+topSkulls()+'/'+(GM.goal||10)) : GMID==='surv'?('OLA '+wave) : (Math.max(0,Math.ceil(DUR-time))+'s'),VW/2,22);
     // MARCADOR del modo
     ctx.font='900 14px "Space Mono"'; ctx.textAlign='center';
     if(GMID==='hunt'){ const me=ents.find(e=>!e.p.bot);

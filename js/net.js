@@ -106,8 +106,7 @@ function guestStart(m){
   guest.tfr=THEMES.makeTFRender(guest.eco, guest.layout);
   guest.bd=new Image(); guest.bd.src='assets/maps/'+guest.eco+'.png?v=4';
   $('#hud-phase').textContent='ONLINE · '+(m.ecoName||guest.eco).toUpperCase();
-  $('#hud-pot').textContent='3';
-  const lbl=document.querySelector('.hud-pot-label'); if(lbl) lbl.textContent='VIDAS';
+  if(window.KIT&&KIT.setLives) KIT.setLives(3,3);
   $('#game-controls').textContent='FLECHAS/WASD mover · ESPACIO saltar · X/J disparar · C esquivar · R ulti · ONLINE BETA';
   if(window.MUSIC) MUSIC.battle(0);
   let last=0;

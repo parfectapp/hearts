@@ -60,6 +60,21 @@ window.KIT={
       d.innerHTML=`<span class="dot" style="background:${p.color}"></span>${p.bot?p.name:'TÚ'} <b class="hud-hp">♥${p.hp}</b>`;
       el.appendChild(d);
     });
+  },
+  // TUS VIDAS: pintar los corazones que te quedan (arriba a la derecha)
+  setLives(cur, max){
+    const el=$('#hud-lives'); if(!el) return;
+    el.innerHTML='';
+    for(let i=0;i<max;i++){ const h=document.createElement('i'); h.className='hpip'+(i<cur?'':' gone'); el.appendChild(h); }
+    const lb=document.querySelector('.hud-pot-label'); if(lb) lb.textContent='TUS VIDAS';
+  },
+  // PERDISTE una vida: el corazón (índice newCur) se ROMPE con animación y desaparece
+  loseLife(newCur, max){
+    this.setLives(newCur+1, max);
+    const el=$('#hud-lives'); if(!el) return;
+    const p=el.querySelectorAll('.hpip')[newCur];
+    if(p){ p.classList.add('breaking'); if(window.SFX&&SFX.die)SFX.die();
+      setTimeout(()=>{ p.classList.remove('breaking'); p.classList.add('gone'); },560); }
   }
 };
 
@@ -106,8 +121,7 @@ function startRanked(){
   players.forEach(p=>{ p.hp=DATA.ECON.LIVES; p.elim=false; p.koRound=false; });
 
   current={ players, round:0, ecoStart:Math.floor(Math.random()*ECOS.length) };
-  $('#hud-pot').textContent=DATA.ECON.LIVES;                 // vidas con las que entra cada quien
-  const lbl=document.querySelector('.hud-pot-label'); if(lbl) lbl.textContent='VIDAS';
+  KIT.setLives(DATA.ECON.LIVES, DATA.ECON.LIVES);            // TUS VIDAS: 3 corazones
   KIT.updateHudPlayers(players,()=>true);
   $('#results').classList.remove('show');
   $('#scoreboard').classList.remove('show');
@@ -140,7 +154,7 @@ function startParty(members){
   players.forEach(p=>{ p.hp=DATA.ECON.LIVES; p.elim=false; p.koRound=false; });
   st.matches++; DATA.save();
   current={ players, round:0, party:true };
-  $('#hud-pot').textContent='AMIGOS';
+  KIT.setLives(DATA.ECON.LIVES, DATA.ECON.LIVES);
   KIT.updateHudPlayers(players,()=>true);
   $('#results').classList.remove('show');
   $('#scoreboard').classList.remove('show');
@@ -164,8 +178,7 @@ function startSurvival(){
                   color:['#ff5a4d','#ff8a3c','#c0392b'][i%3], weapon:DATA.byWeapon['bow_wood']}); });
   players.forEach(p=>{ p.hp=p.enemy?1:3; p.elim=false; p.koRound=false; p.kills=0; p.skulls=0; p.score=0; });
   current={ players, mode:SURV_MODE };
-  $('#hud-pot').textContent='3';
-  const lbl=document.querySelector('.hud-pot-label'); if(lbl) lbl.textContent='VIDAS';
+  KIT.setLives(3,3);                                         // TUS VIDAS: 3 (el motor las baja al morir)
   KIT.updateHudPlayers(players,()=>true);
   $('#results').classList.remove('show'); $('#scoreboard').classList.remove('show');
   UI.show('#screen-game');
@@ -183,7 +196,7 @@ function startSurvival(){
     if(n>0){ $('#intro-go').textContent=n; SFX.count(); }
     else{ clearInterval(iv); $('#intro-go').textContent='GO!'; SFX.go();
       setTimeout(()=>{ intro.classList.remove('show');
-        window.TOWERFALL.start($('#game-canvas'), players, {duration:600, gameMode:SURV_MODE, variant:Math.floor(Math.random()*3)}, onModeEnd, eco.id);
+        window.TOWERFALL.start($('#game-canvas'), players, {duration:600, gameMode:SURV_MODE, variant:Math.floor(Math.random()*3), lives:3}, onModeEnd, eco.id);
       },350); }
   },650);
 }
@@ -212,14 +225,13 @@ function startNetHost(roster, net){
   const vc=Math.max(16,Math.min(28,Math.round((640*(sw/sh))/52)));
   const cols=Math.min(56,vc*2), rows=24;
   const eco=ECOS[Math.floor(Math.random()*ECOS.length)], variant=Math.floor(Math.random()*3);
-  $('#hud-pot').textContent=mode.lives||3;
-  const lbl=document.querySelector('.hud-pot-label'); if(lbl) lbl.textContent='VIDAS';
+  KIT.setLives(mode.lives||3, mode.lives||3);
   KIT.updateHudPlayers(players,()=>true);
   $('#results').classList.remove('show'); $('#scoreboard').classList.remove('show');
   document.querySelectorAll('.modal-back.show').forEach(x=>x.classList.remove('show'));
   UI.show('#screen-game');
   $('#hud-phase').textContent='ONLINE · '+eco.name;
-  const cfg={ duration:120, gameMode:mode, variant, forceCols:cols, forceRows:rows, net:{emit:net.emit} };
+  const cfg={ duration:120, gameMode:mode, variant, forceCols:cols, forceRows:rows, net:{emit:net.emit}, lives:(mode.lives||3) };
   setTimeout(()=>{ window.TOWERFALL.start($('#game-canvas'), players, cfg, (result)=>{
     const wEnt=result&&result.winner;
     const wIdx=wEnt?players.indexOf(wEnt.p):0;
@@ -267,7 +279,7 @@ const RANKED_MODES=[
   {id:'flechas', icon:'🏹', name:'FLECHAS',   color:'#d8a13c', desc:'LAST MAN STANDING — hasta que quede UNO; los caídos pierden 1 ♥'},
   {id:'bombas',  icon:'💣', name:'BOMBAS',    color:'#ef7d1c', desc:'LAST MAN STANDING — el último en pie gana; los que vuelan pierden 1 ♥'},
   {id:'smash',   icon:'🥊', name:'SMASH',     color:'#7e46e0', desc:'LAST MAN STANDING — el último en el stage gana; los caídos pierden 1 ♥'},
-  {id:'hunt',    icon:'💀', name:'CALAVERAS', color:'#9d4fd8', desc:'cacería de calaveras — el que junte MENOS pierde 1 ♥'},
+  {id:'hunt',    icon:'💀', name:'CALAVERAS', color:'#9d4fd8', desc:'PRIMERO A 10 CALAVERAS — respawns infinitos, sin tiempo; el que junte MENOS pierde 1 ♥'},
   {id:'ctf',     icon:'🚩', name:'BANDERA',   color:'#3f8fdd', desc:'por EQUIPOS — roba la bandera enemiga y llévala a tu base; el equipo que pierde: −1 ♥ cada uno'},
 ];
 const TEAM_COLS=[['#4d9fff','#7fc4ff'],['#ff5a4d','#ff8a3c']];   // CTF: azules vs rojos
@@ -307,6 +319,8 @@ async function runRound(){
   // SOLO quien pierde la ronda baja 1 (supervivencia pura, nadie suma)
   const snap=new Map(parts.map(p=>[p,p.hp]));
   const colSnap=new Map(parts.map(p=>[p,p.color]));
+  const meP=parts.find(p=>!p.bot);
+  if(meP) KIT.setLives(snap.get(meP), DATA.ECON.LIVES);      // TUS VIDAS al entrar la ronda
   const entry={flechas:1, bombas:1, smash:1, hunt:null, ctf:null}[mode.id];   // LMS: 1 vida de RONDA c/u
   if(entry!=null) parts.forEach(p=>p.hp=entry);
   parts.forEach(p=>{ p.koRound=false; p.skulls=0; p.kills=0; p.score=0; });
@@ -323,13 +337,15 @@ async function runRound(){
       const rk=parts.slice().sort((a,b)=>((b.skulls||0)-(a.skulls||0)) || ((b.kills||0)-(a.kills||0)));
       losers=[rk[rk.length-1]];
     } else {
-      // LAST MAN STANDING: la ronda corrió hasta que quedó UNO — TODOS los caídos pierden 1 ♥
-      losers=parts.filter(p=>p.koRound || p.hp<entry);
+      // LAST MAN STANDING: pierde quien fue ELIMINADO (koRound). Se decide por el KO real,
+      // NO por hp (los motores mueven hp a su manera — bros repartía corazones del piso = injusto).
+      losers=parts.filter(p=>p.koRound);
       if(losers.length>=parts.length) losers=losers.slice(0,parts.length-1);          // siempre sobrevive uno
       if(!losers.length) losers=[parts[Math.floor(Math.random()*parts.length)]];      // nadie cayó (rarísimo)
     }
     parts.forEach(p=>{ p.hp=snap.get(p); p.koRound=false; p.team=null; p.color=colSnap.get(p); });
     losers.forEach(p=>{ p.hp=Math.max(0,p.hp-1); p.koRound=true; });
+    if(meP && losers.includes(meP)) KIT.loseLife(meP.hp, DATA.ECON.LIVES);   // ¡perdiste! se ROMPE un corazón
     onRoundEnd();
   };
   const variant=Math.floor(Math.random()*3);
@@ -353,8 +369,8 @@ async function runRound(){
       $('#intro-go').textContent='GO!'; SFX.go();
       setTimeout(()=>{ intro.classList.remove('show');
         if(mode.id==='bombas') BOMBERMAN.start(classic832(), parts, {duration:75, minAlive:minA}, done, ecoId);
-        else if(mode.id==='smash') BROS.start(classic832(), parts, {duration:90, minAlive:minA}, done, ecoId);
-        else if(mode.id==='hunt') TOWERFALL.start($('#game-canvas'), parts, {duration:60, gameMode:DATA.byMode['hunt'], variant}, done, ecoId);
+        else if(mode.id==='smash') BROS.start(classic832(), parts, {duration:90, minAlive:minA, oneLife:true}, done, ecoId);   // ranked = 1 vida por ronda
+        else if(mode.id==='hunt') TOWERFALL.start($('#game-canvas'), parts, {duration:600, gameMode:DATA.byMode['hunt'], variant}, done, ecoId);   // PRIMERO A 10: sin límite de tiempo, respawns infinitos
         else if(mode.id==='ctf') TOWERFALL.start($('#game-canvas'), parts, {duration:90, gameMode:{id:'ctf', name:'BANDERA', teams:true, respawn:1.5, goal:2}, variant}, done, ecoId);
         else TOWERFALL.start($('#game-canvas'), parts, {duration:60, minAlive:minA, rain:0, variant}, done, ecoId);
       },350);
@@ -577,7 +593,7 @@ function startMode(mode){
 }
 function launchArena(){
   const m=current, mode=m.mode, eco=ECOS[Math.floor(Math.random()*ECOS.length)];
-  $('#hud-pot').textContent=mode.icon; const lbl=document.querySelector('.hud-pot-label'); if(lbl)lbl.textContent=mode.id.toUpperCase();
+  KIT.setLives(mode.lives||3, mode.lives||3);
   KIT.updateHudPlayers(m.players, p=>!p.koRound);
   const intro=$('#phase-intro'), MODE=window.TOWERFALL, world=(MODE.mapNames[eco.id]||eco.name);
   const pv=$('#map-preview'); if(pv) pv.style.display='none';   // el preview del mapa es del VERSUS

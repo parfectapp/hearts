@@ -876,6 +876,18 @@ body{
 .hud-p.dead{opacity:.32;text-decoration:line-through}
 .hud-right{display:flex;align-items:center;gap:8px}
 .hud-pot-label{font-family:'Archivo',sans-serif;font-weight:900;font-size:11px;letter-spacing:.2em;color:#b7b1a4}
+/* TUS VIDAS: corazones que se ROMPEN al morir */
+.hp-lives{display:flex;align-items:center;gap:4px}
+.hpip{position:relative;width:22px;height:21px}
+.hpip::before{content:'♥';position:absolute;inset:0;font-size:20px;line-height:21px;text-align:center;
+  color:#ff4d43;text-shadow:0 0 7px rgba(255,77,67,.65),0 1px 0 #7a1710}
+.hpip.gone::before{content:'♡';color:#5a4048;text-shadow:none;opacity:.55}
+.hpip.breaking::before{animation:hp-break .56s cubic-bezier(.3,1.2,.5,1) forwards}
+@keyframes hp-break{
+  0%{transform:scale(1) rotate(0)}
+  22%{transform:scale(1.55) rotate(-12deg);color:#fff;text-shadow:0 0 16px #fff,0 0 8px #ff8a80}
+  55%{transform:scale(1.15) rotate(12deg);color:#ff8a80}
+  100%{transform:scale(.15) rotate(34deg);opacity:0}}
 .game-stage{flex:1;position:relative;display:flex;align-items:center;justify-content:center;min-height:0}
 #game-canvas{width:100%;height:100%;object-fit:contain;box-shadow:0 12px 44px rgba(0,0,0,.6)}
 .game-controls{

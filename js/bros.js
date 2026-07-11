@@ -45,6 +45,8 @@ function start(canvas, players, cfg, onEnd, eco){
     if(e.out||e.dead) return;
     SFX.ko(); K.shake(14); koText=0.9;
     parts.spawn(Math.max(30,Math.min(W-30,e.x)),Math.max(30,Math.min(H-30,e.y)),'#ffd34d',30,380);
+    // RANKED (una vida): el primer KO te elimina de la ronda — nada de soltar/recuperar corazones
+    if(cfg.oneLife){ e.out=true; e.p.koRound=true; SFX.die(); hudRefresh(); return; }
     const drop=e.p.hp;
     if(drop>0){
       dropHearts(e.x,e.y,drop);
@@ -94,7 +96,8 @@ function start(canvas, players, cfg, onEnd, eco){
     e.onG=false;
     const oy=e.y-e.vy*dt;
     PLATS.forEach(pl=>{
-      if(e.vy>=0 && oy<=pl.y+4 && e.x>pl.x-e.w/3 && e.x<pl.x+pl.w+e.w/3 && e.y>=pl.y && e.y<pl.y+pl.h+18){
+      // colisión BARRIDA: aterriza si CRUZASTE el borde superior este frame (evita atravesar la plataforma a alta velocidad)
+      if(e.vy>=0 && oy<=pl.y+4 && e.x>pl.x-e.w/3 && e.x<pl.x+pl.w+e.w/3 && e.y>=pl.y){
         e.y=pl.y; e.vy=0; e.onG=true;
       }
     });
@@ -162,6 +165,7 @@ function start(canvas, players, cfg, onEnd, eco){
 
     if(!over&&dt>0){
       const me=ents.find(e=>!e.p.bot);
+      if(me&&me.stun>0) me.crouch=false;    // aturdido: NO puedes bloquear (si no, el crouch se quedaba trabado dando mitigación gratis)
       if(me&&!me.out&&!me.dead&&me.stun<=0){
         const sp=me.spd*(me.buffSpd>0?1.4:1);
         me.vx=0;
@@ -183,7 +187,7 @@ function start(canvas, players, cfg, onEnd, eco){
           if(e.think<=0&&e.stun<=0) botThink(e);
           e.crouchT=Math.max(0,e.crouchT-dt);
           e.crouch=e.crouchT>0&&e.onG;
-          if(e.stun<=0) e.vx=(e.vxDes||0)*(e.crouch?0.2:1);
+          if(e.stun<=0) e.vx=(e.vxDes||0)*(e.buffSpd>0?1.4:1)*(e.crouch?0.2:1);   // el bot también aprovecha el power de VELOCIDAD del cubo
         }
         e.cd=Math.max(0,e.cd-dt); e.atkT=Math.max(0,e.atkT-dt);
         e.stun=Math.max(0,e.stun-dt); e.inv=Math.max(0,e.inv-dt);
@@ -266,11 +270,25 @@ function start(canvas, players, cfg, onEnd, eco){
       ctx.fillStyle=`rgba(255,180,80,${0.8*p})`;
       for(let x=0;x<W;x+=26) ctx.fillRect(x,628+Math.sin(time*3+x*0.05)*5,14,12);
     }
-    // stages estilo Smash (flotantes)
-    PLATS.forEach(pl=>{
+    // stages estilo Smash (flotantes) — más textura + luz de energía animada corriendo por el borde
+    PLATS.forEach((pl,pi)=>{
+      const topH = pl.main?6:4;
+      // CUERPO con gradiente vertical (volumen)
+      const bg=ctx.createLinearGradient(0,pl.y,0,pl.y+pl.h);
+      bg.addColorStop(0,th.deck); bg.addColorStop(1,th.deckDark);
+      ctx.fillStyle=bg; ctx.fillRect(pl.x,pl.y+topH,pl.w,pl.h-topH);
+      // TEXTURA: paneles verticales + tornillos (remaches)
+      ctx.strokeStyle='rgba(0,0,0,.22)'; ctx.lineWidth=1;
+      for(let sx=pl.x+34; sx<pl.x+pl.w-8; sx+=44){
+        ctx.beginPath(); ctx.moveTo(sx,pl.y+topH); ctx.lineTo(sx,pl.y+pl.h); ctx.stroke();
+      }
+      ctx.fillStyle='rgba(255,255,255,.10)';
+      for(let sx=pl.x+10; sx<pl.x+pl.w-6; sx+=44){ ctx.fillRect(sx,pl.y+pl.h-6,3,3); ctx.fillRect(sx,pl.y+topH+3,3,3); }
+      // TAPA superior brillante
+      ctx.fillStyle=th.deckTop; ctx.fillRect(pl.x,pl.y,pl.w,topH);
+      ctx.fillStyle='rgba(255,255,255,.14)'; ctx.fillRect(pl.x,pl.y,pl.w,2);
+      ctx.fillStyle='rgba(0,0,0,.18)'; ctx.fillRect(pl.x,pl.y+topH-1,pl.w,1);
       if(pl.main){
-        ctx.fillStyle=th.deckTop; ctx.fillRect(pl.x,pl.y,pl.w,6);
-        ctx.fillStyle=th.deck; ctx.fillRect(pl.x,pl.y+6,pl.w,pl.h-6);
         // panza angulada estilo Battlefield
         ctx.fillStyle=th.deckDark;
         ctx.beginPath();
@@ -282,22 +300,22 @@ function start(canvas, players, cfg, onEnd, eco){
         ctx.moveTo(pl.x+pl.w*0.5,pl.y+pl.h+46); ctx.lineTo(pl.x+pl.w*0.62,pl.y+pl.h+46);
         ctx.lineTo(pl.x+pl.w*0.56,pl.y+pl.h+110); ctx.lineTo(pl.x+pl.w*0.5,pl.y+pl.h+110);
         ctx.closePath(); ctx.fill();
-        // luces de borde
-        const p2=0.6+0.4*Math.sin(time*3);
-        ctx.fillStyle=`rgba(255,255,255,${0.35*p2})`;
-        ctx.fillRect(pl.x,pl.y,5,6); ctx.fillRect(pl.x+pl.w-5,pl.y,5,6);
       } else {
-        ctx.fillStyle=th.deckTop; ctx.fillRect(pl.x,pl.y,pl.w,4);
-        ctx.fillStyle=th.deck; ctx.fillRect(pl.x,pl.y+4,pl.w,pl.h-4);
         ctx.fillStyle='rgba(255,255,255,.18)';
         ctx.fillRect(pl.x,pl.y,3,pl.h); ctx.fillRect(pl.x+pl.w-3,pl.y,3,pl.h);
       }
-      if(layout.lava){ // borde de brasa en Norfair
-        const p3=0.6+0.4*Math.sin(time*3+pl.x);
-        ctx.fillStyle=`rgba(255,150,60,${0.55*p3})`;
-        ctx.fillRect(pl.x,pl.y,pl.w,2);
-        ctx.fillRect(pl.x,pl.y+pl.h-1,pl.w,2);
-      }
+      // LUZ DE ENERGÍA que corre por la tapa (animada) — vibe TowerFall/neón
+      const glow=layout.lava?'255,150,60':(pl.main?'120,210,255':'150,235,255');
+      const span=Math.max(30,pl.w*0.22);
+      const t=(time*140+pi*90)%(pl.w+span)-span;         // barrido que recorre la plataforma
+      const lg=ctx.createLinearGradient(pl.x+t,0,pl.x+t+span,0);
+      lg.addColorStop(0,`rgba(${glow},0)`); lg.addColorStop(0.5,`rgba(${glow},.85)`); lg.addColorStop(1,`rgba(${glow},0)`);
+      ctx.fillStyle=lg; ctx.fillRect(Math.max(pl.x,pl.x+t),pl.y,Math.min(span,pl.x+pl.w-(pl.x+t)),2);
+      // luces fijas en las esquinas (laten)
+      const p2=0.55+0.45*Math.sin(time*3+pi);
+      ctx.fillStyle=`rgba(${glow},${0.5*p2})`;
+      ctx.fillRect(pl.x,pl.y,5,topH); ctx.fillRect(pl.x+pl.w-5,pl.y,5,topH);
+      if(layout.lava){ ctx.fillStyle=`rgba(255,150,60,${0.5*p2})`; ctx.fillRect(pl.x,pl.y+pl.h-1,pl.w,2); }
     });
     heartsFloor.forEach(h=>M.drawHeart(ctx,h.x,h.y-8,1.1,time+h.t));
     if(box){
