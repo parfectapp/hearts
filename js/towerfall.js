@@ -12,7 +12,7 @@ const ARROW_TYPES={
 
 // fondos de arena (estilo TowerFall) por ecosistema
 const BACKDROPS={};
-['selva','desierto','nieve','volcan','japon','tokyo','egipto','grecia','china'].forEach(e=>{ const im=new Image(); im.onload=()=>BACKDROPS[e]=im; im.src='assets/maps/'+e+'.png?v=4'; });
+['selva','desierto','nieve','volcan','japon','tokyo','egipto','grecia','china','submarino','espacio','pantano'].forEach(e=>{ const im=new Image(); im.onload=()=>BACKDROPS[e]=im; im.src='assets/maps/'+e+'.png?v=4'; });
 
 function start(canvas, players, cfg, onEnd, eco){
   const ctx=canvas.getContext('2d');
@@ -111,7 +111,8 @@ function start(canvas, players, cfg, onEnd, eco){
     zone={ x:p.x+p.w/2, y:p.y-34, r:76 }; zoneMoveT=12; }
   if(GMID==='colina') placeZone();
   // 🧟 INFECCIÓN: elige al paciente cero al azar (no cuenta como su culpa)
-  if(GMID==='infeccion'){ const z=ents[Math.floor(Math.random()*ents.length)]; z.infected=true; z.patientZero=true; z.infAt=0; infReady=true; }
+  if(GMID==='infeccion'){ const bots=ents.filter(e=>e.p.bot); const pool=bots.length?bots:ents;   // el paciente cero NUNCA es el jugador humano
+    const z=pool[Math.floor(Math.random()*pool.length)]; z.infected=true; z.patientZero=true; z.infAt=0; infReady=true; }
   const espd=e=>{ let s=(e.pow==='berserk'&&e.p.hp<=1)?e.spd*1.4:e.spd; if(e.rageT>0)s*=1.5; if(e.phaseT>0)s*=1.25;
     if(GMID==='infeccion'&&e.infected)s*=1.14; return s; };   // 🧟 los infectados son un poco más rápidos (cazan)
   const MAXA=6;
@@ -184,10 +185,11 @@ function start(canvas, players, cfg, onEnd, eco){
       say(e.x,e.y-e.h-14,'¡ESCUDO ROTO!','#9ce8ff');
       SFX.hit(); return;
     }
-    // 🧟 INFECCIÓN: un humano NO mata a un infectado (solo lo empuja); un infectado CONTAGIA
+    // 🧟 INFECCIÓN: SOLO un infectado derriba (y contagia); los humanos no se matan entre sí
     if(GMID==='infeccion'){
-      if(e.infected){ if(!by || !by.infected) return; }
-      else if(by && by.infected){ e.infected=true; e.infAt=time; say(e.x,e.y-e.h-14,'🧟 ¡INFECTADO!','#8adf4a'); }
+      if(!by || !by.infected) return;   // atacante humano → no derriba a nadie (solo empuja)
+      if(e.infected) return;            // un infectado no derriba a otro infectado
+      e.infected=true; e.infAt=time; say(e.x,e.y-e.h-14,'🧟 ¡INFECTADO!','#8adf4a');
     }
     parts.spawn(e.x,e.y-e.h/2,'#ff5a4d',24,280);
     SFX.ko(); K.shake(10);

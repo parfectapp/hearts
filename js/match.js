@@ -90,6 +90,9 @@ const ECOS=[
   {id:'egipto',  name:'GIZA'},
   {id:'grecia',  name:'OLYMPUS'},
   {id:'china',   name:'DRAGON'},
+  {id:'submarino', name:'ABISMO'},
+  {id:'espacio',   name:'COSMOS'},
+  {id:'pantano',   name:'CIÉNAGA'},
 ];
 // RANKED: por ahora SOLO TowerFall (ciclando los 5 mundos). Bomberman y Battle Royale (Showdown)
 // están FUERA temporalmente mientras los perfeccionamos — se regresan descomentándolos.
@@ -339,9 +342,10 @@ async function runRound(){
     } else if(mode.id==='hunt'){                     // menos calaveras pierde (empate: menos derribos)
       const rk=parts.slice().sort((a,b)=>((b.skulls||0)-(a.skulls||0)) || ((b.kills||0)-(a.kills||0)));
       losers=[rk[rk.length-1]];
-    } else if(mode.id==='corazones'||mode.id==='colina'){   // el que MENOS métrica juntó pierde 1 ♥
-      const rk=parts.slice().sort((a,b)=>(b.score||0)-(a.score||0));
-      losers=[rk[rk.length-1]];
+    } else if(mode.id==='corazones'||mode.id==='colina'){   // el que MENOS juntó pierde; empate = al azar entre los últimos
+      const minS=Math.min(...parts.map(p=>p.score||0));
+      const low=parts.filter(p=>(p.score||0)===minS);
+      losers=[low[Math.floor(Math.random()*low.length)]];
     } else if(mode.id==='infeccion'){                // el humano que cayó PRIMERO pierde; si nadie cayó, el paciente cero (falló)
       const caught=parts.filter(p=>!p.patientZero && p.infected);
       if(caught.length){ const rk=caught.slice().sort((a,b)=>(b.score||0)-(a.score||0)); losers=[rk[rk.length-1]]; }

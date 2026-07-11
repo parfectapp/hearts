@@ -998,5 +998,11 @@ function makeScene(id,mode){
   return { bg, plat, fx, glowColor:th.glow };
 }
 
+// 🗺️ BIOMAS NUEVOS: backdrop propio (assets/maps/<id>.png) pero REUSAN tema+arena de un bioma base
+[['submarino','nieve'],['espacio','tokyo'],['pantano','selva']].forEach(([n,b])=>{
+  T[n]=T[b]; TFMAT[n]=TFMAT[b]; TF_ARENAS[n]=TF_ARENAS[b];
+  if(BROS_LAYOUTS[b]) BROS_LAYOUTS[n]=BROS_LAYOUTS[b];
+  if(CENTERPIECES[b]) CENTERPIECES[n]=CENTERPIECES[b];
+});
 window.THEMES={ T, bomberKit, makeScene, FALL_LAYOUTS, BROS_LAYOUTS, CENTERPIECES, TF_ARENAS, makeTFRender, getFallLayout };
 })();

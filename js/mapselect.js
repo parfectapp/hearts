@@ -6,13 +6,16 @@
 (function(){
 const $=s=>document.querySelector(s);
 const META={selva:['🌿','SELVA'],desierto:['🏜️','DESIERTO'],nieve:['❄️','NIEVE'],volcan:['🌋','VOLCÁN'],
-  japon:['🌸','SAKURA'],tokyo:['🌃','NEO-TOKYO'],egipto:['🐫','GIZA'],grecia:['🏛️','OLIMPO'],china:['🐉','DRAGÓN']};
-// disposición tipo mapa-mundo (3×3 con jitter suave)
-const GRID=[['nieve','egipto','japon'],['grecia','volcan','tokyo'],['selva','desierto','china']];
-const CW=720, CH=452, R=46;
+  japon:['🌸','SAKURA'],tokyo:['🌃','NEO-TOKYO'],egipto:['🐫','GIZA'],grecia:['🏛️','OLIMPO'],china:['🐉','DRAGÓN'],
+  submarino:['🐠','ABISMO'],espacio:['🪐','COSMOS'],pantano:['🧪','CIÉNAGA']};
+// disposición tipo mapa-mundo (4×3 con jitter suave)
+const GRID=[['nieve','egipto','japon'],['grecia','volcan','tokyo'],['selva','desierto','china'],['submarino','espacio','pantano']];
+const ROWS=GRID.length, COLS=3, R=42;
+const CW=720, CH=110+ROWS*112;
 const POS={};
-(function(){ const mx=150,my=80,gx=(CW-2*mx)/2,gy=(CH-2*my)/2, jt=[[6,-4],[-5,5],[4,6],[-6,-3],[0,0],[6,-5],[-4,7],[5,-6],[-6,4]];
-  let k=0; for(let r=0;r<3;r++)for(let c=0;c<3;c++){ const j=jt[k++]; POS[GRID[r][c]]=[mx+c*gx+j[0], my+r*gy+j[1]]; } })();
+(function(){ const mx=150,my=66,gx=(CW-2*mx)/(COLS-1),gy=(CH-2*my)/(ROWS-1);
+  const jt=[[6,-4],[-5,5],[4,6],[-6,-3],[0,0],[6,-5],[-4,7],[5,-6],[-6,4],[5,4],[-6,-4],[4,-6]];
+  let k=0; for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){ const j=jt[k++%jt.length]; POS[GRID[r][c]]=[mx+c*gx+j[0], my+r*gy+j[1]]; } })();
 const imgs={};
 function load(e){ if(!imgs[e]){ const im=new Image(); im.src='assets/maps/'+e+'.png?v=4'; imgs[e]=im; } return imgs[e]; }
 const tick=()=>{ if(window.SFX){ if(SFX.tick)SFX.tick(); else if(SFX.count)SFX.count(); } };
@@ -24,9 +27,9 @@ function draw(ctx, ecos, hi){
   ctx.strokeStyle='rgba(255,255,255,.045)'; ctx.lineWidth=1;                       // olas
   for(let y=18;y<CH;y+=24){ ctx.beginPath(); for(let x=0;x<=CW;x+=10){ ctx.lineTo(x, y+Math.sin((x+y)/20)*3); } ctx.stroke(); }
   ctx.strokeStyle='rgba(255,235,150,.22)'; ctx.setLineDash([3,7]); ctx.lineWidth=2.5;   // rutas punteadas
-  for(let r=0;r<3;r++)for(let c=0;c<3;c++){ const a=POS[GRID[r][c]];
-    if(c<2){ const b=POS[GRID[r][c+1]]; ctx.beginPath(); ctx.moveTo(a[0],a[1]); ctx.lineTo(b[0],b[1]); ctx.stroke(); }
-    if(r<2){ const b=POS[GRID[r+1][c]]; ctx.beginPath(); ctx.moveTo(a[0],a[1]); ctx.lineTo(b[0],b[1]); ctx.stroke(); } }
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){ const a=POS[GRID[r][c]];
+    if(c<COLS-1){ const b=POS[GRID[r][c+1]]; ctx.beginPath(); ctx.moveTo(a[0],a[1]); ctx.lineTo(b[0],b[1]); ctx.stroke(); }
+    if(r<ROWS-1){ const b=POS[GRID[r+1][c]]; ctx.beginPath(); ctx.moveTo(a[0],a[1]); ctx.lineTo(b[0],b[1]); ctx.stroke(); } }
   ctx.setLineDash([]);
   ecos.forEach((e,i)=>{ const p=POS[e]; if(!p) return; const x=p[0],y=p[1], sel=(i===hi);
     ctx.beginPath(); ctx.ellipse(x,y+R*0.86,R*0.92,R*0.28,0,0,7); ctx.fillStyle='rgba(0,0,0,.30)'; ctx.fill();
