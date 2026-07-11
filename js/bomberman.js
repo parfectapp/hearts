@@ -10,7 +10,7 @@ function start(canvas, players, cfg, onEnd, eco){
   const ctx=canvas.getContext('2d');
   const K=window.KIT;
   const KIT=THEMES.bomberKit(eco||'selva');
-  const isSelva=!!KIT.torchImg;
+  const isSelva=false;   // tablero SBR limpio: sin calaveras ni antorchas
   const DUR=cfg.duration||60, MIN=cfg.minAlive||2;
   // ---- mapa ----
   const map=[];
@@ -434,6 +434,13 @@ function start(canvas, players, cfg, onEnd, eco){
       drawTile(KIT.gold,OX+COLS*TILE/2-51,OY-FW,102,FW);
       drawTile(KIT.gold,OX+COLS*TILE/2-51,OY+ROWS*TILE,102,FW);
     }
+    // REMACHES del marco de acero (estilo Super Bomberman R)
+    { const rivet=(rx,ry)=>{ ctx.beginPath(); ctx.arc(rx,ry,4,0,7); ctx.fillStyle='#69727e'; ctx.fill();
+        ctx.beginPath(); ctx.arc(rx-1,ry-1.2,1.8,0,7); ctx.fillStyle='#e4e8ee'; ctx.fill(); };
+      const by0=OY-FW/2, by1=OY+ROWS*TILE+FW/2, bx0=OX-FW/2, bx1=OX+COLS*TILE+FW/2;
+      for(let x=0;x<=COLS;x++){ rivet(OX+x*TILE, by0); rivet(OX+x*TILE, by1); }
+      for(let y=0;y<=ROWS;y++){ rivet(bx0, OY+y*TILE); rivet(bx1, OY+y*TILE); }
+    }
     // celdas
     for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){
       const px=OX+x*TILE, py=OY+y*TILE;
@@ -447,10 +454,7 @@ function start(canvas, players, cfg, onEnd, eco){
         ctx.fillStyle='rgba(10,14,20,.28)'; ctx.fillRect(px,py,TILE,TILE);
       }
     }
-    skulls.forEach(([x,y])=>{ if(map[y][x]===0) drawTile(MI.skull,OX+x*TILE+5,OY+y*TILE+5,34,32); });
-    // antorchas
-    [[OX+2.5*TILE,OY-FW/2],[OX+10.5*TILE,OY-FW/2],[OX+2.5*TILE,OY+ROWS*TILE+FW/2],[OX+10.5*TILE,OY+ROWS*TILE+FW/2]]
-      .forEach(([tx,ty],i)=>drawTorch(tx,ty,i));
+    // (SBR: sin calaveras ni antorchas — tablero limpio)
     // power-up ÚNICO: la "P" (bombas infinitas + fuego 3) — cápsula dorada que flota y brilla
     pups.forEach(p=>{
       const cx=OX+(p.x+.5)*TILE, cy=OY+(p.y+.5)*TILE+Math.sin(time*5+p.x)*3;

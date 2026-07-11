@@ -234,21 +234,63 @@ function arenaTile(eco,pal,seed){
 }
 
 // ---------- kit de bomberman por ecosistema ----------
+// ===== SUPER BOMBERMAN R look: pasto verde a cuadros, bloques grises redondeados,
+//        ladrillo café destructible, marco de acero con remaches (tablero FIJO en todos los mundos) =====
+function rr(g,x,y,w,h,r){ g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); }
+function sbrGrass(S,light){
+  return cv(S,S,g=>{
+    g.fillStyle=light?'#7cc24a':'#5fa833'; g.fillRect(0,0,S,S);
+    g.globalAlpha=.10; g.fillStyle=light?'#ffffff':'#0a2a00';        // textura fina de pasto
+    for(let i=2;i<S;i+=6)for(let j=2;j<S;j+=6){ if(((i+j)/6|0)%2) g.fillRect(i,j,3,3); }
+    g.globalAlpha=1;
+    g.fillStyle='rgba(255,255,255,.10)'; g.fillRect(0,0,S,1);
+    g.strokeStyle='rgba(0,0,0,.10)'; g.strokeRect(.5,.5,S-1,S-1);
+  });
+}
+function sbrBrick(S){
+  return cv(S,S,g=>{
+    g.fillStyle='#6e3a1e'; g.fillRect(0,0,S,S);                       // mortero oscuro
+    const bh=S/4;
+    for(let row=0;row<4;row++){ const y=row*bh, off=(row%2)?-bh:0;    // ladrillos en cruz (running bond)
+      for(let bx=off;bx<S;bx+=bh*2){
+        g.fillStyle='#b56a34'; g.fillRect(bx+1.5,y+1.5,bh*2-3,bh-3);
+        g.fillStyle='rgba(255,224,184,.38)'; g.fillRect(bx+1.5,y+1.5,bh*2-3,2);
+        g.fillStyle='rgba(0,0,0,.24)'; g.fillRect(bx+1.5,y+bh-3.5,bh*2-3,2);
+      }
+    }
+    g.strokeStyle='rgba(0,0,0,.32)'; g.lineWidth=1.5; g.strokeRect(1,1,S-2,S-2);
+  });
+}
+function sbrSolid(S){
+  const H=S+6;
+  return cv(S,H,g=>{
+    const grad=g.createLinearGradient(0,6,0,H); grad.addColorStop(0,'#9aa6b8'); grad.addColorStop(1,'#454f5d');
+    g.fillStyle=grad; rr(g,2,9,S-4,H-12,9); g.fill();                 // cuerpo gris azulado redondeado
+    g.strokeStyle='rgba(0,0,0,.35)'; g.lineWidth=2; rr(g,2,9,S-4,H-12,9); g.stroke();
+    const gt=g.createLinearGradient(0,2,0,20); gt.addColorStop(0,'#c6cfdb'); gt.addColorStop(1,'#9aa5b4');
+    g.fillStyle=gt; rr(g,3,2,S-6,16,8); g.fill();                     // cara superior clara
+    g.fillStyle='rgba(255,255,255,.5)'; g.fillRect(7,5,S-18,3);       // brillo
+    g.beginPath(); g.arc(S/2,10,2.3,0,7); g.fillStyle='#69727f'; g.fill();
+  });
+}
+function sbrSteel(S){
+  return cv(S,S,g=>{
+    const grad=g.createLinearGradient(0,0,0,S); grad.addColorStop(0,'#cfd5dd'); grad.addColorStop(.5,'#98a0ac'); grad.addColorStop(1,'#5c6470');
+    g.fillStyle=grad; g.fillRect(0,0,S,S);
+    g.fillStyle='rgba(255,255,255,.42)'; g.fillRect(0,0,S,3);
+    g.fillStyle='rgba(0,0,0,.28)'; g.fillRect(0,S-3,S,3);
+  });
+}
+let _sbrKit=null;
 function bomberKit(id){
-  const th=T[id], m=TFMAT[id]||TFMAT.selva;
-  const MI=window.MAPART?window.MAPART.img:{};
+  if(_sbrKit) return _sbrKit;                                         // tablero FIJO (verde) — igual en todos los mundos
   const S=44;
-  const kit={ th, glow:th.glow };
-  // MISMO sistema unificado que TowerFall en TODOS los mundos (uniforme, no "cereal")
-  kit.floorA=[0,1,2].map(i=>tfGround(S,m,id.length*31+i));                                // piso oscuro
-  kit.floorB=[0,1,2].map(i=>tfGround(S,{lo:m.base,base:m.hi,edge:m.lo},id.length*77+i));  // piso claro (ajedrez)
-  kit.crate=[0,1].map(i=>tfBlock(S,CONCRETE,900+i,true)); // DESTRUCTIBLE = concreto gris agrietado (se nota)
-  kit.solid=[0,1].map(i=>tfBlock(S,m,300+i,false));       // SÓLIDO permanente = piedra temática del mundo
-  const frame=tfBlock(S,{base:m.lo,hi:m.base,lo:m.edge,edge:m.edge},50,false);            // marco oscuro
-  kit.frameH=frame; kit.frameV=frame; kit.corner=frame; kit.gold=null;
-  kit.torchImg=MI.torch;
-  kit.center = CENTERPIECES[id];
-  return kit;
+  _sbrKit={ th:T[id]||T.selva, glow:'#ffe08a',
+    floorA:[sbrGrass(S,false)], floorB:[sbrGrass(S,true)],
+    crate:[sbrBrick(S)], solid:[sbrSolid(S)],
+    frameH:sbrSteel(S), frameV:sbrSteel(S), corner:sbrSteel(S), gold:null,
+    torchImg:(window.MAPART?window.MAPART.img:{}).torch, center:null };
+  return _sbrKit;
 }
 
 // pieza central 3x3: MISMA pirámide pixel-art en TODOS los mundos, sólo tintada por ecosistema
