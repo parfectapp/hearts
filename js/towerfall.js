@@ -60,6 +60,9 @@ function start(canvas, players, cfg, onEnd, eco){
   const DUR=cfg.duration||GM.dur||60, MIN=cfg.minAlive||2;
   const skulls=[], targets=[];               // HEADHUNTERS calaveras · TRIALS blancos
   const flags=[]; let caps=[0,0];            // 🚩 CAPTURA LA BANDERA (por equipos)
+  let heartSpawnT=1.2;                       // ❤️ CORAZONES: lluvia continua de corazones
+  let zone=null, zoneMoveT=0;                // 👑 REY DE LA COLINA: zona a controlar
+  let infReady=false;                        // 🧟 INFECCIÓN: ¿ya se eligió al paciente cero?
   const result={mode:GMID}; let wave=1, questDone=false, questLost=false, targetT=0;
 
   const ents=players.map((p,i)=>{
@@ -83,6 +86,7 @@ function start(canvas, players, cfg, onEnd, eco){
       inv:1.2, runPh:Math.random()*6, landT:0, crouch:false, crouchT:0,
       dodgeT:0, dodgeCd:0, ddx:0, ddy:0, dropT:0,
       ultCd:2, rageT:0, phaseT:0, blitzT:0, skyfall:false, ultFlash:0,  // ULTIMATE (R) por animal
+      hoard:0, zoneT:0, infected:false, infAt:0,                         // MODOS: corazones / rey de la colina / infección
       team:(p.team!=null?p.team:i), enemy:!!p.enemy, respawnT:0 };       // MODOS: equipo / enemigo / respawn
   });
   function respawnEnt(e){
@@ -102,7 +106,14 @@ function start(canvas, players, cfg, onEnd, eco){
       flags.push({team:1, hx:b1.x, hy:b1.y-6, x:b1.x, y:b1.y-6, carrier:null});
     }
   }
-  const espd=e=>{ let s=(e.pow==='berserk'&&e.p.hp<=1)?e.spd*1.4:e.spd; if(e.rageT>0)s*=1.5; if(e.phaseT>0)s*=1.25; return s; };
+  // 👑 REY DE LA COLINA: coloca la zona sobre una plataforma amplia
+  function placeZone(){ const cand=PLATS.filter(p=>p.w>=70); const p=cand[Math.floor(Math.random()*cand.length)]||PLATS[Math.floor(PLATS.length/2)]||{x:W/2-40,y:H/2,w:80};
+    zone={ x:p.x+p.w/2, y:p.y-34, r:76 }; zoneMoveT=12; }
+  if(GMID==='colina') placeZone();
+  // 🧟 INFECCIÓN: elige al paciente cero al azar (no cuenta como su culpa)
+  if(GMID==='infeccion'){ const z=ents[Math.floor(Math.random()*ents.length)]; z.infected=true; z.patientZero=true; z.infAt=0; infReady=true; }
+  const espd=e=>{ let s=(e.pow==='berserk'&&e.p.hp<=1)?e.spd*1.4:e.spd; if(e.rageT>0)s*=1.5; if(e.phaseT>0)s*=1.25;
+    if(GMID==='infeccion'&&e.infected)s*=1.14; return s; };   // 🧟 los infectados son un poco más rápidos (cazan)
   const MAXA=6;
   const arrows=[], hearts=[], chests=[], floats=[], stuck=[], corpses=[], brambles=[];
   // cuerpo que se cae con la inercia de la flecha, se acuesta y se desvanece
@@ -173,6 +184,11 @@ function start(canvas, players, cfg, onEnd, eco){
       say(e.x,e.y-e.h-14,'¡ESCUDO ROTO!','#9ce8ff');
       SFX.hit(); return;
     }
+    // 🧟 INFECCIÓN: un humano NO mata a un infectado (solo lo empuja); un infectado CONTAGIA
+    if(GMID==='infeccion'){
+      if(e.infected){ if(!by || !by.infected) return; }
+      else if(by && by.infected){ e.infected=true; e.infAt=time; say(e.x,e.y-e.h-14,'🧟 ¡INFECTADO!','#8adf4a'); }
+    }
     parts.spawn(e.x,e.y-e.h/2,'#ff5a4d',24,280);
     SFX.ko(); K.shake(10);
     // sueltas tus flechas al piso (recuperables) y pierdes tus poderes
@@ -181,6 +197,7 @@ function start(canvas, players, cfg, onEnd, eco){
     // MODOS: cuenta la kill + suelta CALAVERA (headhunters)
     if(by && by!==e && by.p){ by.p.kills=(by.p.kills||0)+1; }
     if(GMID==='hunt'){ skulls.push({x:e.x,y:e.y-8,vx:(Math.random()-.5)*160,vy:-230,onG:false,t:0}); }
+    if(GMID==='corazones'){ const d=Math.floor((e.hoard||0)/2); if(d>0){ dropHearts(e.x,e.y,d); e.hoard-=d; } }  // sueltas la MITAD de tus corazones
     addCorpse(e,dir,by);   // el mono sale volando con la flecha y se acuesta
     e.dead=true; e.p.koRound=true; SFX.die();
     // vidas / RESPAWN según el modo
@@ -247,6 +264,12 @@ function start(canvas, players, cfg, onEnd, eco){
     else if(GMID==='tdm'){ const a=teamKills(0),b=teamKills(1); result.t0=a; result.t1=b; result.winTeam=(a>=b?0:1); result.win=!!(me&&me.team===result.winTeam); }
     else if(GMID==='quest'){ result.win=questDone; result.wave=Math.min(wave,GM.waves||3); result.kills=me?(me.p.kills||0):0; }
     else if(GMID==='trials'){ result.score=me?(me.p.score||0):0; result.win=result.score>=(GM.goal||20); }
+    else if(GMID==='corazones'){ ents.forEach(e=>e.p.score=e.hoard||0);   // más corazones = ganas; menos = pierde 1 ♥
+      const mx=Math.max(...ents.map(e=>e.hoard||0)); result.hoard=me?(me.hoard||0):0; result.win=!!(me&&(me.hoard||0)===mx); }
+    else if(GMID==='colina'){ ents.forEach(e=>e.p.score=Math.round(e.zoneT||0));
+      const mx=Math.max(...ents.map(e=>e.zoneT||0)); result.zoneT=me?Math.round(me.zoneT||0):0; result.win=!!(me&&(me.zoneT||0)===mx); }
+    else if(GMID==='infeccion'){ result.win=!!(me&&!me.infected);        // sobreviviste como humano = ganas
+      result.survivors=ents.filter(e=>!e.infected).length; }
     else if(GMID==='ctf'){ const a=caps[0], b=caps[1];
       result.c0=a; result.c1=b;
       result.winTeam = (a===b) ? (teamKills(0)>=teamKills(1)?0:1) : (a>b?0:1);   // empate: derribos del equipo
@@ -381,13 +404,23 @@ function start(canvas, players, cfg, onEnd, eco){
       else if((my.x!==my.hx||my.y!==my.hy)&&Math.random()<0.8) ctfGoal={x:my.x,y:my.y,h:20};
       else if(!en.carrier&&Math.random()<0.75) ctfGoal={x:en.x,y:en.y,h:20};
     }
-    const scared=!hunter&&!ctfGoal&&e.p.hp<=1; // último corazón: sobrevive y saquea
+    // 🆕 MODOS: corazones (junta), colina (a la zona), infección (infectado caza / humano huye)
+    let modeGoal=null, modeHunter=false;
+    if(GMID==='corazones'){ if(heartT) modeGoal={x:heartT.x,y:heartT.y-10,h:20}; }
+    else if(GMID==='colina'&&zone){ modeGoal={x:zone.x,y:zone.y,h:30}; }
+    else if(GMID==='infeccion'){
+      if(e.infected){ modeHunter=true; const hum=foes.filter(o=>!o.infected);
+        const t=hum.length?hum.reduce((a,b)=>Math.hypot(a.x-e.x,a.y-e.y)<Math.hypot(b.x-e.x,b.y-e.y)?a:b):null; if(t) modeGoal={x:t.x,y:t.y,h:42}; }
+      else { const inf=foes.filter(o=>o.infected); const n=inf.length?inf.reduce((a,b)=>Math.abs(a.x-e.x)<Math.abs(b.x-e.x)?a:b):null;
+        if(n&&Math.abs(n.x-e.x)<220) modeGoal={x:e.x-Math.sign(n.x-e.x)*260, y:e.y, h:42}; }
+    }
+    const scared=!hunter&&!modeHunter&&!ctfGoal&&!modeGoal&&e.p.hp<=1; // último corazón: sobrevive y saquea
     if(scared&&tg&&Math.abs(tg.x-e.x)<150&&!heartT){ e.mvx=-Math.sign(tg.x-e.x)*espd(e); e.face=tg.x<e.x?-1:1; return; }
-    const goHeart = !ctfGoal&&heartT&&(hunter ? (e.weap.kind==='bow'&&e.ammo===0) : (scared||(e.weap.kind==='bow'&&Math.random()<0.65)||!tg));
-    const target = ctfGoal || (goHeart ? {x:heartT.x,y:heartT.y-10,h:20} : tg);
+    const goHeart = !ctfGoal&&!modeGoal&&heartT&&(hunter ? (e.weap.kind==='bow'&&e.ammo===0) : (scared||(e.weap.kind==='bow'&&Math.random()<0.65)||!tg));
+    const target = modeGoal || ctfGoal || (goHeart ? {x:heartT.x,y:heartT.y-10,h:20} : tg);
     if(!target){ e.mvx=0; return; }
     const dx=target.x-e.x, dy=(target.y-(target.h||42)/2)-(e.y-e.h/2);
-    if(Math.abs(dx)>40) e.mvx=Math.sign(dx)*espd(e)*(hunter?1:0.85);
+    if(Math.abs(dx)>40) e.mvx=Math.sign(dx)*espd(e)*((hunter||modeHunter)?1:0.85);
     else if(Math.random()<0.35) e.mvx=(Math.random()<0.5?-1:1)*espd(e)*0.6;
     else e.mvx=0;
     if(dy<-60&&e.onG&&Math.random()<0.6) e.wantJump=true;
@@ -505,7 +538,15 @@ function start(canvas, players, cfg, onEnd, eco){
           const ch=chests[i];
           if(Math.abs(ch.x-e.x)<26&&ch.y>e.y-e.h-14&&ch.y<e.y+12){ openChest(ch,e); }
         }
-        // (sin corazones en el piso para recoger: nadie suma)
+        // ❤️ CORAZONES: recoge los corazones del piso/aire (suma a tu montón)
+        if(GMID==='corazones'){
+          for(let hi=hearts.length-1;hi>=0;hi--){ const h=hearts[hi];
+            if(Math.abs(h.x-e.x)<24 && Math.abs(h.y-(e.y-e.h*0.5))<30){
+              hearts.splice(hi,1); e.hoard=(e.hoard||0)+1; e.p.hoard=e.hoard;
+              SFX.coin&&SFX.coin(); parts.spawn(e.x,e.y-e.h*0.5,'#ff5a7a',8,180);
+            }
+          }
+        }
       });
       // stomps
       ents.forEach(a=>{ if(a.dead)return;
@@ -571,6 +612,17 @@ function start(canvas, players, cfg, onEnd, eco){
           if(Math.abs(o.x-b.x)<20 && Math.abs((o.y-6)-b.y)<26){ kill(o,null); } });
       }
       hearts.forEach(h=>heartPhysics(h,dt));
+      // ❤️ CORAZONES: lluvia continua desde arriba (siempre hay para juntar)
+      if(GMID==='corazones'){ heartSpawnT-=dt;
+        if(heartSpawnT<=0 && hearts.length < Math.max(7, ents.length*3)){ heartSpawnT=0.45+Math.random()*0.4;
+          hearts.push({x:60+Math.random()*(W-120), y:-20, vx:(Math.random()-.5)*60, vy:60+Math.random()*70, onG:false, t:Math.random()*6}); } }
+      // 👑 REY DE LA COLINA: la zona da tiempo si estás SOLO en ella; se muda cada ~12s
+      if(GMID==='colina' && zone){ zoneMoveT-=dt; if(zoneMoveT<=0) placeZone();
+        const inZ=living().filter(e=>Math.hypot(e.x-zone.x,(e.y-e.h*0.5)-zone.y)<zone.r);
+        if(inZ.length===1){ const e=inZ[0]; e.zoneT=(e.zoneT||0)+dt; e.p.score=Math.round(e.zoneT);
+          if(Math.random()<dt*6) parts.spawn(zone.x+(Math.random()-.5)*zone.r,zone.y+(Math.random()-.5)*40,'#4dd2a0',1,60); } }
+      // 🧟 INFECCIÓN: puntúa el tiempo sobrevivido (humano) — el infectado se congela en su instante
+      if(GMID==='infeccion'){ ents.forEach(e=>{ e.p.score=(e.infected&&!e.patientZero)?e.infAt:time; e.p.patientZero=!!e.patientZero; e.p.infected=!!e.infected; }); }
       // cuerpos: vuelan con la inercia de la flecha, aterrizan y se acuestan
       for(let i=corpses.length-1;i>=0;i--){ const c=corpses[i]; c.t-=dt;
         if(c.t<=0){ corpses.splice(i,1); continue; }
@@ -647,6 +699,9 @@ function start(canvas, players, cfg, onEnd, eco){
         else if(ents.filter(e=>e.p.hp>0).length<=1) endNow=true;                            // LMS suelto: último con vidas
       }
       else if(GMID==='hunt'){ if(topSkulls()>=(GM.goal||10)) endNow=true; }
+      else if(GMID==='corazones'){ if(ents.some(e=>(e.hoard||0)>=(GM.goal||30))) endNow=true; }        // primero a 30 al mismo tiempo
+      else if(GMID==='colina'){ if(ents.some(e=>(e.zoneT||0)>=(GM.goal||25))) endNow=true; }             // primero a N segundos en la zona
+      else if(GMID==='infeccion'){ if(ents.every(e=>e.infected)) endNow=true; }                          // todos infectados → fin
       else if(GMID==='tdm'){ if(teamKills(0)>=(GM.goal||15)||teamKills(1)>=(GM.goal||15)) endNow=true; }
       else if(GMID==='quest'){ if(questDone||questLost) endNow=true; }
       else if(GMID==='surv'){
@@ -737,6 +792,18 @@ function start(canvas, players, cfg, onEnd, eco){
       ctx.fillStyle='rgba(255,255,255,.35)'; ctx.fillRect(fx+2,fy-40,10,3);
       ctx.restore();
     });
+    // 👑 REY DE LA COLINA: la zona a controlar (círculo brillante que late)
+    if(GMID==='colina' && zone){ const pu=0.5+0.5*Math.sin(time*3);
+      ctx.save();
+      const zg=ctx.createRadialGradient(zone.x,zone.y,10,zone.x,zone.y,zone.r);
+      zg.addColorStop(0,'rgba(77,210,160,'+(0.10+0.08*pu)+')'); zg.addColorStop(1,'rgba(77,210,160,0)');
+      ctx.fillStyle=zg; ctx.beginPath(); ctx.arc(zone.x,zone.y,zone.r,0,7); ctx.fill();
+      ctx.strokeStyle='rgba(120,255,210,'+(0.5+0.4*pu)+')'; ctx.lineWidth=3; ctx.setLineDash([8,7]);
+      ctx.beginPath(); ctx.arc(zone.x,zone.y,zone.r,0,7); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle='rgba(120,255,210,.9)'; ctx.font='900 16px "Space Mono"'; ctx.textAlign='center';
+      ctx.fillText('👑',zone.x,zone.y-zone.r-6);
+      ctx.restore();
+    }
     // cofres del tesoro (estilo TowerFall)
     chests.forEach(ch=>{
       ch.t+=0.016;
@@ -856,6 +923,12 @@ function start(canvas, players, cfg, onEnd, eco){
         ctx.beginPath(); ctx.ellipse(e.x,e.y+2, 15, 5, 0,0,7); ctx.stroke();
         ctx.restore();
       }
+      // 🧟 INFECCIÓN: los infectados = resplandor verde en los pies + 🧟 sobre la cabeza (sin círculo de cuerpo)
+      if(GMID==='infeccion' && e.infected){ const pu=0.5+0.5*Math.sin(time*5+e.x*0.01);
+        ctx.save(); ctx.globalAlpha=0.28+0.2*pu; ctx.fillStyle='#7ac043';
+        ctx.beginPath(); ctx.ellipse(e.x,e.y+2, 20, 7, 0,0,7); ctx.fill(); ctx.restore();
+        ctx.font='15px system-ui'; ctx.textAlign='center'; ctx.fillText('🧟', e.x, e.y-e.h-14);
+      }
       const _phase=e.phaseT>0; if(_phase) ctx.globalAlpha=0.4;   // FANTASMA: casi invisible
       Sprites.drawAnimal(ctx,e.p.animal,e.x,e.y,56*(e.sz||1),e.face<0,
         {moving:e.onG&&Math.abs(e.vx)>30, run:e.runPh, air:!e.onG, vy:e.vy,
@@ -906,6 +979,12 @@ function start(canvas, players, cfg, onEnd, eco){
     else if(GMID==='tdm'){ ctx.fillStyle='#7fd0ff'; ctx.fillText('AZUL '+teamKills(0)+'  —  '+teamKills(1)+' ROJO  (meta '+(GM.goal||15)+')',VW/2,48); }
     else if(GMID==='quest'){ ctx.fillStyle='#7fe0a0'; ctx.fillText('OLEADA '+wave+'/'+(GM.waves||3)+'  ·  kills '+teamKills(0)+'/'+(GM.questGoal||18),VW/2,48); }
     else if(GMID==='trials'){ const me=ents[0]; ctx.fillStyle='#ffc078'; ctx.fillText('🎯 BLANCOS '+(me?(me.p.score||0):0)+' / '+(GM.goal||20),VW/2,48); }
+    else if(GMID==='corazones'){ const me=ents.find(e=>!e.p.bot); const ld=Math.max(...ents.map(e=>e.hoard||0));
+      ctx.fillStyle='#ff7a9c'; ctx.fillText('❤️ TÚ '+((me&&me.hoard)||0)+' / '+(GM.goal||30)+'  ·  líder '+ld,VW/2,48); }
+    else if(GMID==='colina'){ const me=ents.find(e=>!e.p.bot); const ld=Math.max(...ents.map(e=>e.zoneT||0));
+      ctx.fillStyle='#5fe0b8'; ctx.fillText('👑 TÚ '+Math.round((me&&me.zoneT)||0)+'s / '+(GM.goal||25)+'s  ·  líder '+Math.round(ld)+'s',VW/2,48); }
+    else if(GMID==='infeccion'){ const inf=ents.filter(e=>e.infected).length, hum=ents.length-inf;
+      ctx.fillStyle='#8adf4a'; ctx.fillText('🧟 infectados '+inf+'  ·  quedan '+hum+' humanos  ·  '+Math.max(0,Math.ceil(DUR-time))+'s',VW/2,48); }
     else if(GMID==='surv'){ ctx.fillStyle='#ffb36b'; ctx.fillText('🌊 OLEADA '+wave+'  ·  derribados '+((ents.find(e=>!e.p.bot)||{p:{}}).p.kills||0),VW/2,48); }
     else if(GMID==='ctf'){ ctx.fillStyle='#7fd0ff';
       ctx.fillText('🚩 AZUL '+caps[0]+'  —  '+caps[1]+' ROJO  ·  primera a '+(GM.goal||2)+' capturas',VW/2,48); }
@@ -960,7 +1039,7 @@ function start(canvas, players, cfg, onEnd, eco){
   raf=requestAnimationFrame(frame);
   // hook de debug/balance (solo lectura): window.__tf.ents / .wave / .flags / .caps
   window.__tf={ get ents(){ return ents; }, get wave(){ return wave; }, get mode(){ return GMID; },
-    get flags(){ return flags; }, get caps(){ return caps; } };
+    get flags(){ return flags; }, get caps(){ return caps; }, get zone(){ return zone; }, get hearts(){ return hearts; } };
   return { stop(){ cancelAnimationFrame(raf); } };
 }
 

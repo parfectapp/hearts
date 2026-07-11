@@ -281,6 +281,9 @@ const RANKED_MODES=[
   {id:'smash',   icon:'🥊', name:'SMASH',     color:'#7e46e0', desc:'LAST MAN STANDING — el último en el stage gana; los caídos pierden 1 ♥'},
   {id:'hunt',    icon:'💀', name:'CALAVERAS', color:'#9d4fd8', desc:'PRIMERO A 10 CALAVERAS — respawns infinitos, sin tiempo; el que junte MENOS pierde 1 ♥'},
   {id:'ctf',     icon:'🚩', name:'BANDERA',   color:'#3f8fdd', desc:'por EQUIPOS — roba la bandera enemiga y llévala a tu base; el equipo que pierde: −1 ♥ cada uno'},
+  {id:'corazones', icon:'❤️', name:'CORAZONES', color:'#e8467a', desc:'JUNTA 30 CORAZONES al mismo tiempo — llueven del cielo, sueltas la mitad al morir; el que junte MENOS pierde 1 ♥'},
+  {id:'colina',    icon:'👑', name:'REY DE LA COLINA', color:'#3fd0a0', desc:'DOMINA LA ZONA — solo suma si estás solo en ella; primera a 25s; el que menos aguante pierde 1 ♥'},
+  {id:'infeccion', icon:'🧟', name:'INFECCIÓN', color:'#7ac043', desc:'SOBREVIVE a los infectados — te contagian al tocarte; el primer humano en caer pierde 1 ♥'},
 ];
 const TEAM_COLS=[['#4d9fff','#7fc4ff'],['#ff5a4d','#ff8a3c']];   // CTF: azules vs rojos
 const ECO_WHEEL={
@@ -321,9 +324,9 @@ async function runRound(){
   const colSnap=new Map(parts.map(p=>[p,p.color]));
   const meP=parts.find(p=>!p.bot);
   if(meP) KIT.setLives(snap.get(meP), DATA.ECON.LIVES);      // TUS VIDAS al entrar la ronda
-  const entry={flechas:1, bombas:1, smash:1, hunt:null, ctf:null}[mode.id];   // LMS: 1 vida de RONDA c/u
+  const entry={flechas:1, bombas:1, smash:1, hunt:null, ctf:null, corazones:null, colina:null, infeccion:null}[mode.id];   // LMS: 1 vida de RONDA c/u
   if(entry!=null) parts.forEach(p=>p.hp=entry);
-  parts.forEach(p=>{ p.koRound=false; p.skulls=0; p.kills=0; p.score=0; });
+  parts.forEach(p=>{ p.koRound=false; p.skulls=0; p.kills=0; p.score=0; p.hoard=0; });
   if(mode.id==='ctf'){                              // EQUIPOS al azar: azules vs rojos
     const shuf=parts.slice().sort(()=>Math.random()-0.5);
     shuf.forEach((p,i)=>{ p.team=i%2; p.color=TEAM_COLS[i%2][(i>>1)%2]; });
@@ -336,6 +339,13 @@ async function runRound(){
     } else if(mode.id==='hunt'){                     // menos calaveras pierde (empate: menos derribos)
       const rk=parts.slice().sort((a,b)=>((b.skulls||0)-(a.skulls||0)) || ((b.kills||0)-(a.kills||0)));
       losers=[rk[rk.length-1]];
+    } else if(mode.id==='corazones'||mode.id==='colina'){   // el que MENOS métrica juntó pierde 1 ♥
+      const rk=parts.slice().sort((a,b)=>(b.score||0)-(a.score||0));
+      losers=[rk[rk.length-1]];
+    } else if(mode.id==='infeccion'){                // el humano que cayó PRIMERO pierde; si nadie cayó, el paciente cero (falló)
+      const caught=parts.filter(p=>!p.patientZero && p.infected);
+      if(caught.length){ const rk=caught.slice().sort((a,b)=>(b.score||0)-(a.score||0)); losers=[rk[rk.length-1]]; }
+      else losers=[parts.find(p=>p.patientZero)||parts[0]];
     } else {
       // LAST MAN STANDING: pierde quien fue ELIMINADO (koRound). Se decide por el KO real,
       // NO por hp (los motores mueven hp a su manera — bros repartía corazones del piso = injusto).
@@ -372,6 +382,9 @@ async function runRound(){
         else if(mode.id==='smash') BROS.start(classic832(), parts, {duration:90, minAlive:minA, oneLife:true}, done, ecoId);   // ranked = 1 vida por ronda
         else if(mode.id==='hunt') TOWERFALL.start($('#game-canvas'), parts, {duration:600, gameMode:DATA.byMode['hunt'], variant}, done, ecoId);   // PRIMERO A 10: sin límite de tiempo, respawns infinitos
         else if(mode.id==='ctf') TOWERFALL.start($('#game-canvas'), parts, {duration:90, gameMode:{id:'ctf', name:'BANDERA', teams:true, respawn:1.5, goal:2}, variant}, done, ecoId);
+        else if(mode.id==='corazones') TOWERFALL.start($('#game-canvas'), parts, {duration:150, gameMode:{id:'corazones', name:'CORAZONES', respawn:1.4, goal:30}, variant}, done, ecoId);
+        else if(mode.id==='colina') TOWERFALL.start($('#game-canvas'), parts, {duration:150, gameMode:{id:'colina', name:'REY DE LA COLINA', respawn:1.4, goal:25}, variant}, done, ecoId);
+        else if(mode.id==='infeccion') TOWERFALL.start($('#game-canvas'), parts, {duration:70, gameMode:{id:'infeccion', name:'INFECCIÓN', respawn:1.2}, variant}, done, ecoId);
         else TOWERFALL.start($('#game-canvas'), parts, {duration:60, minAlive:minA, rain:0, variant}, done, ecoId);
       },350);
     }
