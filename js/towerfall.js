@@ -820,11 +820,12 @@ function start(canvas, players, cfg, onEnd, eco){
         ctx.strokeStyle='rgba(200,244,255,.7)'; ctx.lineWidth=2;
         ctx.beginPath(); ctx.arc(e.x,e.y-e.h/2,32,0,7); ctx.stroke();
       }
-      if(ultReady(e)){   // aura pulsante = ULTIMATE lista (color del poder del animal)
+      if(ultReady(e)){   // ULTIMATE lista = CHISPA sobre la cabeza (NO un círculo — el círculo es SOLO del ESCUDO)
         const uc=((DATA.POWERS&&DATA.POWERS[e.pow])||{}).color||'#ffd34d';
-        const pu=0.5+Math.sin(time*6)*0.5;
-        ctx.save(); ctx.globalAlpha=0.28+pu*0.4; ctx.strokeStyle=uc; ctx.lineWidth=2.5;
-        ctx.beginPath(); ctx.arc(e.x,e.y-e.h/2,e.h*0.62+pu*3,0,7); ctx.stroke(); ctx.restore();
+        const pu=0.5+Math.sin(time*6)*0.5, hy=e.y-e.h-15, s=4+pu*2;
+        ctx.save(); ctx.globalAlpha=0.65+pu*0.35; ctx.fillStyle=uc;
+        ctx.beginPath(); ctx.moveTo(e.x,hy-s); ctx.lineTo(e.x+s*0.7,hy); ctx.lineTo(e.x,hy+s); ctx.lineTo(e.x-s*0.7,hy); ctx.closePath(); ctx.fill();
+        ctx.restore();
       }
       if(e.rageT>0){ ctx.save(); ctx.globalAlpha=0.6; ctx.strokeStyle='#ff7a3c'; ctx.lineWidth=3;
         ctx.beginPath(); ctx.arc(e.x,e.y-e.h/2,e.h*0.58,0,7); ctx.stroke(); ctx.restore(); }
@@ -843,16 +844,16 @@ function start(canvas, players, cfg, onEnd, eco){
       }
       if(e.boots&&e.onG){ ctx.fillStyle='rgba(157,255,138,.7)';
         ctx.fillRect(e.x-9,e.y-3,6,3); ctx.fillRect(e.x+3,e.y-3,6,3); }
-      // 🚩 CTF: CONTORNO del color de tu equipo (azul / rojo) — para distinguir aliados de rivales
+      // 🚩 CTF: color de equipo en un DISCO EN LOS PIES (no un círculo del cuerpo — ese es SOLO del escudo)
       if(GMID==='ctf'){ const tc=e.team===0?'#4d9fff':'#ff5a4d';
         const pu=0.55+0.45*Math.sin(time*4+e.team);
         ctx.save();
-        ctx.strokeStyle=tc; ctx.globalAlpha=0.9; ctx.lineWidth=3;
-        ctx.beginPath(); ctx.ellipse(e.x,e.y-e.h*0.5, e.w*0.95+2, e.h*0.6, 0,0,7); ctx.stroke();  // halo del cuerpo
-        ctx.globalAlpha=0.35+0.3*pu; ctx.lineWidth=2;
-        ctx.beginPath(); ctx.ellipse(e.x,e.y-e.h*0.5, e.w*0.95+6, e.h*0.66, 0,0,7); ctx.stroke();  // pulso exterior
-        ctx.globalAlpha=0.85; ctx.fillStyle=tc;                                                     // anillo en los pies
-        ctx.beginPath(); ctx.ellipse(e.x,e.y+1, 15, 5, 0,0,7); ctx.fill();
+        ctx.globalAlpha=0.30+0.22*pu; ctx.fillStyle=tc;      // resplandor del equipo bajo los pies
+        ctx.beginPath(); ctx.ellipse(e.x,e.y+2, 22, 8, 0,0,7); ctx.fill();
+        ctx.globalAlpha=0.95; ctx.fillStyle=tc;              // disco sólido
+        ctx.beginPath(); ctx.ellipse(e.x,e.y+2, 15, 5, 0,0,7); ctx.fill();
+        ctx.globalAlpha=1; ctx.strokeStyle='rgba(255,255,255,.7)'; ctx.lineWidth=1.5;
+        ctx.beginPath(); ctx.ellipse(e.x,e.y+2, 15, 5, 0,0,7); ctx.stroke();
         ctx.restore();
       }
       const _phase=e.phaseT>0; if(_phase) ctx.globalAlpha=0.4;   // FANTASMA: casi invisible
